@@ -1,4 +1,4 @@
-module sampyong-holdem
+module pls7-cli
 
 go 1.23.4
 

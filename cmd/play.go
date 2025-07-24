@@ -9,8 +9,8 @@ import (
 // playCmd represents the play command
 var playCmd = &cobra.Command{
 	Use:   "play",
-	Short: "새로운 삼평 하이-로우 게임을 시작합니다.",
-	Long:  `새로운 삼평 하이-로우 게임을 시작합니다. 1명의 플레이어와 5명의 CPU가 참여합니다.`,
+	Short: "새로운 삼평 하이-로우 (PLS7) 게임을 시작합니다.",
+	Long:  `새로운 삼평 하이-로우 (PLS7) 게임을 시작합니다. 1명의 플레이어와 5명의 CPU가 참여합니다.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// 1단계 목표: 환영 메시지 출력
 		fmt.Println("=======================================================")
