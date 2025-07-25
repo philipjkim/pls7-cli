@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"pls7-cli/internal/cli"
+	"pls7-cli/internal/game"
 	"pls7-cli/pkg/poker"
 
 	"github.com/spf13/cobra"
@@ -19,21 +21,41 @@ var playCmd = &cobra.Command{
 		fmt.Println("==================================================")
 		fmt.Println("\nStarting the game!")
 
-		// --- Step 2 Goal: Test Card & Deck implementation ---
-		fmt.Println("\n--- Deck Test ---")
+		// --- Step 3 Goal: Simulate a static game state ---
+
+		// 1. Create and shuffle the deck
 		deck := poker.NewDeck()
 		deck.Shuffle()
-		fmt.Println("Deck shuffled.")
 
-		fmt.Println("\nDealing 5 cards:")
-		for i := 0; i < 5; i++ {
-			card, err := deck.Deal()
-			if err != nil {
-				fmt.Println("Error dealing card:", err)
-				break
-			}
-			fmt.Printf("Dealt card: %s\n", card)
+		// 2. Create players
+		players := make([]*game.Player, 6)
+		players[0] = &game.Player{Name: "YOU"}
+		for i := 1; i < 6; i++ {
+			players[i] = &game.Player{Name: fmt.Sprintf("CPU %d", i)}
 		}
+
+		// 3. Deal hands to players (3 cards each)
+		for i := 0; i < 3; i++ {
+			for _, p := range players {
+				card, _ := deck.Deal()
+				p.Hand = append(p.Hand, card)
+			}
+		}
+
+		// 4. Deal community cards (5 cards)
+		communityCards := make([]poker.Card, 5)
+		for i := 0; i < 5; i++ {
+			communityCards[i], _ = deck.Deal()
+		}
+
+		// 5. Create the game state object
+		staticGame := &game.Game{
+			Players:        players,
+			CommunityCards: communityCards,
+		}
+
+		// 6. Display the static game state
+		cli.DisplayStaticGameState(staticGame)
 	},
 }
 
