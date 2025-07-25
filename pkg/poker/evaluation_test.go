@@ -93,7 +93,7 @@ func TestLowHands(t *testing.T) {
 		name           string
 		cardString     string
 		expectLowHand  bool   // Does a low hand exist?
-		expectedValues string // Expected best low hand, e.g., "7 6 4 2 A"
+		expectedValues string // Expected the best low hand, e.g., "7 6 4 2 A"
 	}{
 		{name: "Nut Low (A-5)", cardString: "As 2c 3d 4h 5s 8s 9s Ts", expectLowHand: true, expectedValues: "5 4 3 2 A"},
 		{name: "7-High Low", cardString: "As 2c 4d 6h 7s 8s 9s Ts", expectLowHand: true, expectedValues: "7 6 4 2 A"},
@@ -120,6 +120,85 @@ func TestLowHands(t *testing.T) {
 
 			// We will need a way to check if the hand values are correct
 			// For now, this structure sets up the test.
+		})
+	}
+}
+
+func TestFindBestStraight(t *testing.T) {
+	testCases := []struct {
+		name             string
+		cardString       string
+		expectStraight   bool
+		expectedTopRank  Rank   // The highest card of the expected straight
+		expectedCardsStr string // For visual confirmation
+	}{
+		{
+			name:             "Standard Straight",
+			cardString:       "9s 8d 7c 6h 5s 2s 3d",
+			expectStraight:   true,
+			expectedTopRank:  Nine,
+			expectedCardsStr: "[9s][8d][7c][6h][5s]",
+		},
+		{
+			name:             "Ace High Straight (Mountain)",
+			cardString:       "As Kd Qc Jh Ts 2s 3d 4c",
+			expectStraight:   true,
+			expectedTopRank:  Ace,
+			expectedCardsStr: "[As][Kd][Qc][Jh][Ts]",
+		},
+		{
+			name:             "Ace Low Straight (Wheel)",
+			cardString:       "As 2d 3c 4h 5s Ks Qd Jc",
+			expectStraight:   true,
+			expectedTopRank:  Five, // In a wheel, Five is the high card for ranking purposes
+			expectedCardsStr: "[5s][4h][3c][2d][As]",
+		},
+		{
+			name:           "No Straight",
+			cardString:     "As Ks Qs Js 9s 2c 3d 4h",
+			expectStraight: false,
+		},
+		{
+			name:             "Straight with Pairs",
+			cardString:       "As Ac 5d 4c 3h 2s Ks Qd",
+			expectStraight:   true,
+			expectedTopRank:  Five,
+			expectedCardsStr: "[5d][4c][3h][2s][As]",
+		},
+		{
+			name:             "Longer than 5 card straight",
+			cardString:       "9s 8d 7c 6h 5s 4d 3c 2h",
+			expectStraight:   true,
+			expectedTopRank:  Nine, // Should find the highest possible straight
+			expectedCardsStr: "[9s][8d][7c][6h][5s]",
+		},
+		{
+			name:           "Broken Straight",
+			cardString:     "As Ks Qs Jc 9d 8h 7c 6s",
+			expectStraight: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pool := cardsFromStrings(tc.cardString)
+			analysis := newHandAnalysis(pool)
+
+			straightCards, ok := findBestStraight(analysis)
+
+			if ok != tc.expectStraight {
+				t.Fatalf("Expected straight existence to be %v, but got %v", tc.expectStraight, ok)
+			}
+
+			if tc.expectStraight {
+				if len(straightCards) != 5 {
+					t.Fatalf("Expected 5 cards for a straight, but got %d", len(straightCards))
+				}
+				// The first card in the returned slice should be the highest rank
+				if straightCards[0].Rank != tc.expectedTopRank {
+					t.Errorf("Expected straight to be topped by %v, but got %v. Hand: %v", tc.expectedTopRank, straightCards[0].Rank, straightCards)
+				}
+			}
 		})
 	}
 }

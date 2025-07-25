@@ -69,6 +69,32 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 
 	// Check for hands in descending order of rank
 
+	// Check for Four of a Kind
+	if quadRank, ok := findBestNOfAKind(analysis.rankCounts, 4); ok {
+		kickers := findKickers(analysis.cards, []Rank{quadRank}, 1)
+		quadCards := findCardsByRank(pool, quadRank, 4)
+
+		highResult = &HandResult{
+			Rank:       FourOfAKind,
+			Cards:      append(quadCards, kickers...),
+			HighValues: []Rank{quadRank, kickers[0].Rank},
+		}
+		return highResult, nil
+	}
+
+	// Check for Full House
+	if tripleRank, pairRank, ok := findBestFullHouse(analysis.rankCounts); ok {
+		tripleCards := findCardsByRank(pool, tripleRank, 3)
+		pairCards := findCardsByRank(pool, pairRank, 2)
+
+		highResult = &HandResult{
+			Rank:       FullHouse,
+			Cards:      append(tripleCards, pairCards...),
+			HighValues: []Rank{tripleRank, pairRank},
+		}
+		return highResult, nil
+	}
+
 	// Check for Flush
 	if flushCards, ok := findBestFlush(analysis); ok {
 		highResult = &HandResult{
@@ -140,6 +166,40 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	}
 
 	return highResult, nil
+}
+
+// findBestFullHouse checks for the best full house.
+func findBestFullHouse(rankCounts map[Rank]int) (Rank, Rank, bool) {
+	var bestTripleRank Rank = -1
+	var bestPairRank Rank = -1
+
+	// Find the highest triple
+	for rank, count := range rankCounts {
+		if count >= 3 {
+			if rank > bestTripleRank {
+				bestTripleRank = rank
+			}
+		}
+	}
+
+	if bestTripleRank == -1 {
+		return -1, -1, false // No triple found
+	}
+
+	// Find the highest pair among the remaining cards
+	for rank, count := range rankCounts {
+		if count >= 2 && rank != bestTripleRank {
+			if rank > bestPairRank {
+				bestPairRank = rank
+			}
+		}
+	}
+
+	if bestPairRank == -1 {
+		return -1, -1, false // No pair found to go with the triple
+	}
+
+	return bestTripleRank, bestPairRank, true
 }
 
 // findBestFlush checks for a flush.
