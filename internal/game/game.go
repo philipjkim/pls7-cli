@@ -13,7 +13,12 @@ const (
 	PhaseTurn
 	PhaseRiver
 	PhaseShowdown
+	PhaseHandOver // A new phase to signal the hand is finished
 )
+
+func (gp GamePhase) String() string {
+	return []string{"Pre-Flop", "Flop", "Turn", "River", "Showdown", "Hand Over"}[gp]
+}
 
 // Game represents the state of a single hand of PLS7.
 type Game struct {

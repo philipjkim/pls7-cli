@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"pls7-cli/internal/cli"
 	"pls7-cli/internal/game"
 	"pls7-cli/pkg/poker"
 	"strings"
@@ -21,68 +22,59 @@ var playCmd = &cobra.Command{
 		fmt.Println("==================================================")
 		fmt.Println("\nStarting the game!")
 
-		// --- Integrate evaluation results ---
+		// --- Step 5: Run the automated game loop ---
 
-		// 1. Create and shuffle the deck
-		deck := poker.NewDeck()
-		deck.Shuffle()
+		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
+		initialChips := 10000
 
-		// 2. Create players
-		players := make([]*game.Player, 6)
-		players[0] = &game.Player{Name: "YOU"}
-		for i := 1; i < 6; i++ {
-			players[i] = &game.Player{Name: fmt.Sprintf("CPU %d", i)}
-		}
+		// Create a new game instance
+		g := game.NewGame(playerNames, initialChips)
 
-		// 3. Deal hands to players (3 cards each)
-		for i := 0; i < 3; i++ {
-			for _, p := range players {
-				card, _ := deck.Deal()
-				p.Hand = append(p.Hand, card)
+		// Start the first hand
+		g.StartNewHand()
+
+		// Main game loop for a single hand
+		for {
+			cli.DisplayGameState(g)
+			if g.Phase == game.PhaseShowdown {
+				showdownResults(g)
+			}
+
+			isHandOver := g.Advance()
+			if isHandOver {
+				break
 			}
 		}
 
-		// 4. Deal community cards (5 cards)
-		communityCards := make([]poker.Card, 5)
-		for i := 0; i < 5; i++ {
-			communityCards[i], _ = deck.Deal()
-		}
-
-		// 5. Display the results
-		fmt.Println("\n--- Static Game State with Evaluation ---")
-
-		var communityCardStrings []string
-		for _, c := range communityCards {
-			communityCardStrings = append(communityCardStrings, c.String())
-		}
-		fmt.Printf("Board: %s\n", strings.Join(communityCardStrings, " "))
-
-		fmt.Println("\nPlayers' Hands & Results:")
-		for _, player := range players {
-			// Call the evaluation function
-			highHand, lowHand := poker.EvaluateHand(player.Hand, communityCards)
-
-			// Build the result string using the new String() method
-			var resultStrings []string
-			if highHand != nil {
-				resultStrings = append(resultStrings, fmt.Sprintf("High: %s", highHand.String()))
-			}
-			if lowHand != nil {
-				var lowHandRanks []string
-				for _, c := range lowHand.Cards {
-					lowHandRanks = append(lowHandRanks, c.Rank.String())
-				}
-				// If Ace is the highest card in a low hand, move it to the end for readability
-				if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
-					lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
-				}
-				resultStrings = append(resultStrings, fmt.Sprintf("Low: %s-High", strings.Join(lowHandRanks, "-")))
-			}
-
-			fmt.Printf("- %-7s: %v -> %s\n", player.Name, player.Hand, strings.Join(resultStrings, " | "))
-		}
-		fmt.Println("\n-----------------------------------------")
+		fmt.Println("\nGame hand finished.")
 	},
+}
+
+func showdownResults(g *game.Game) {
+	fmt.Println("\nPlayers' Hands & Results:")
+	for _, player := range g.Players {
+		if player.Status == game.PlayerStatusFolded {
+			continue
+		}
+		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards)
+
+		var resultStrings []string
+		if highHand != nil {
+			resultStrings = append(resultStrings, fmt.Sprintf("High: %s", highHand.String()))
+		}
+		if lowHand != nil {
+			var lowHandRanks []string
+			for _, c := range lowHand.Cards {
+				lowHandRanks = append(lowHandRanks, c.Rank.String())
+			}
+			if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
+				lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
+			}
+			resultStrings = append(resultStrings, fmt.Sprintf("Low: %s-High", strings.Join(lowHandRanks, "-")))
+		}
+
+		fmt.Printf("- %-7s: %v -> %s\n", player.Name, player.Hand, strings.Join(resultStrings, " | "))
+	}
 }
 
 func init() {
