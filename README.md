@@ -19,7 +19,7 @@ go run main.go play
 ## Testing
 
 ```bash
-go test ./...
+go test -v ./...
 ```
 
 ## 📝 점진적 개발 계획 (Step-by-Step)
