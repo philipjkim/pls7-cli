@@ -1,11 +1,13 @@
 package poker
 
-import "sort"
+import (
+	"sort"
+)
 
 // HandRank defines the ranking of a poker hand.
+// The order is important, from lowest to highest rank.
 type HandRank int
 
-/* The order is important, from lowest to highest rank. */
 const (
 	HighCard HandRank = iota
 	OnePair
@@ -46,7 +48,6 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 	}
 	copy(analysis.cards, pool)
 
-	// Sort cards by rank descending for easier processing later
 	sort.Slice(analysis.cards, func(i, j int) bool {
 		return analysis.cards[i].Rank > analysis.cards[j].Rank
 	})
@@ -67,6 +68,26 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	analysis := newHandAnalysis(pool)
 
 	// Check for hands in descending order of rank
+
+	// Check for Flush
+	if flushCards, ok := findBestFlush(analysis); ok {
+		highResult = &HandResult{
+			Rank:       Flush,
+			Cards:      flushCards,
+			HighValues: []Rank{flushCards[0].Rank, flushCards[1].Rank, flushCards[2].Rank, flushCards[3].Rank, flushCards[4].Rank},
+		}
+		return highResult, nil
+	}
+
+	// Check for Straight
+	if straightCards, ok := findBestStraight(analysis); ok {
+		highResult = &HandResult{
+			Rank:       Straight,
+			Cards:      straightCards,
+			HighValues: []Rank{straightCards[0].Rank},
+		}
+		return highResult, nil
+	}
 
 	// Check for Three of a Kind
 	if tripleRank, ok := findBestNOfAKind(analysis.rankCounts, 3); ok {
@@ -119,6 +140,83 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	}
 
 	return highResult, nil
+}
+
+// findBestFlush checks for a flush.
+func findBestFlush(analysis *handAnalysis) ([]Card, bool) {
+	for suit, count := range analysis.suitCounts {
+		if count >= 5 {
+			flushCards := make([]Card, 0, count)
+			for _, card := range analysis.cards { // analysis.cards is already sorted
+				if card.Suit == suit {
+					flushCards = append(flushCards, card)
+				}
+			}
+			return flushCards[:5], true
+		}
+	}
+	return nil, false
+}
+
+// findBestStraight checks for a straight.
+func findBestStraight(analysis *handAnalysis) ([]Card, bool) {
+	uniqueRanks := make([]Rank, 0, len(analysis.rankCounts))
+	for rank := range analysis.rankCounts {
+		uniqueRanks = append(uniqueRanks, rank)
+	}
+	sort.Slice(uniqueRanks, func(i, j int) bool {
+		return uniqueRanks[i] > uniqueRanks[j]
+	})
+
+	// Check for wheel straight (A-2-3-4-5)
+	hasAce := uniqueRanks[0] == Ace
+	if hasAce && containsRank(uniqueRanks, Five) && containsRank(uniqueRanks, Four) && containsRank(uniqueRanks, Three) && containsRank(uniqueRanks, Two) {
+		return findCardsForStraight(analysis.cards, []Rank{Five, Four, Three, Two, Ace}), true
+	}
+
+	// Check for other straights
+	for i := 0; i <= len(uniqueRanks)-5; i++ {
+		isStraight := true
+		for j := 0; j < 4; j++ {
+			if uniqueRanks[i+j] != uniqueRanks[i+j+1]+1 {
+				isStraight = false
+				break
+			}
+		}
+		if isStraight {
+			topRank := uniqueRanks[i]
+			ranks := []Rank{topRank, topRank - 1, topRank - 2, topRank - 3, topRank - 4}
+			return findCardsForStraight(analysis.cards, ranks), true
+		}
+	}
+
+	return nil, false
+}
+
+// findCardsForStraight reconstructs the straight hand from the pool.
+func findCardsForStraight(pool []Card, ranks []Rank) []Card {
+	straightCards := make([]Card, 0, 5)
+	usedRanks := make(map[Rank]bool)
+	for _, rank := range ranks {
+		for _, card := range pool {
+			if card.Rank == rank && !usedRanks[rank] {
+				straightCards = append(straightCards, card)
+				usedRanks[rank] = true
+				break
+			}
+		}
+	}
+	return straightCards
+}
+
+// containsRank is a helper to check for a rank in a slice.
+func containsRank(ranks []Rank, target Rank) bool {
+	for _, r := range ranks {
+		if r == target {
+			return true
+		}
+	}
+	return false
 }
 
 // findBestNOfAKind finds the highest-ranked N-of-a-kind (e.g., pair, triple).

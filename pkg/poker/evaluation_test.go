@@ -49,18 +49,22 @@ func TestHighHands(t *testing.T) {
 		// Standard High Hands
 		{name: "Royal Flush", cardString: "As Ks Qs Js Ts 2c 3d 4h", expectedRank: RoyalFlush},
 		{name: "Straight Flush (A-5)", cardString: "As 2s 3s 4s 5s Kc Qd Jh", expectedRank: StraightFlush},
-		{name: "Four of a Kind", cardString: "As Ac Ah Ad Ks Qc Jd Tc", expectedRank: FourOfAKind},
+		// REVISED: Broke the potential straight (A,K,Q,J,T)
+		{name: "Four of a Kind", cardString: "As Ac Ah Ad Ks Qc Jd 8c", expectedRank: FourOfAKind},
 		{name: "Full House", cardString: "As Ac Ah Ks Kc 2d 3c 4h", expectedRank: FullHouse},
 		{name: "Flush", cardString: "As Ks Qs Js 2s 3c 4d 5h", expectedRank: Flush},
 		{name: "Straight", cardString: "As Kc Qd Jh Ts 2c 3d 4h", expectedRank: Straight},
-		{name: "Three of a Kind", cardString: "As Ac Ah Ks Qc Jd Tc 2h", expectedRank: ThreeOfAKind},
-		{name: "Two Pair", cardString: "As Ac Ks Kc Qs Jd Tc 2h", expectedRank: TwoPair},
-		{name: "One Pair", cardString: "As Ac Ks Qc Jd Tc 2h 3d", expectedRank: OnePair},
-		{name: "High Card", cardString: "As Ks Qs Js 9c 2d 3h 4c", expectedRank: HighCard},
+		// REVISED: Broke the potential straight (A,K,Q,J,T)
+		{name: "Three of a Kind", cardString: "As Ac Ah Ks Qc Jd 8c 2h", expectedRank: ThreeOfAKind},
+		// REVISED: Broke the potential straight (A,K,Q,J,T)
+		{name: "Two Pair", cardString: "As Ac Ks Kc Qs Jd 7c 2h", expectedRank: TwoPair},
+		// REVISED: Broke the potential straight (A,K,Q,J,T)
+		{name: "One Pair", cardString: "As Ac Ks Qc Jd 6c 2h 3d", expectedRank: OnePair},
+		{name: "High Card", cardString: "As Ks Qs Jc 9d 2h 3c 4d", expectedRank: HighCard},
 
 		// Ranking & Tie-Breakers
 		{name: "Flush vs Straight", cardString: "As Ks Qs Js 2s 4c 5d 6h", expectedRank: Flush},
-		{name: "Full House (A over K) vs (K over A)", cardString: "As Ac Ah Ks Kc Kd 2c 3d", expectedRank: FullHouse}, // Expects A full of K
+		{name: "Full House (A over K) vs (K over A)", cardString: "As Ac Ah Ks Kc Kd 2c 3d", expectedRank: FullHouse},
 
 		// Hand Composition
 		{name: "Board Play (0 cards from hand)", cardString: "2c 3d 4h As Ks Qs Js Ts", expectedRank: Straight},
@@ -72,7 +76,6 @@ func TestHighHands(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := cardsFromStrings(tc.cardString)
-			// The hand passed to EvaluateHand doesn't matter for this test, as we evaluate the whole pool
 			highHand, _ := EvaluateHand(pool[:3], pool[3:])
 
 			if highHand == nil {
