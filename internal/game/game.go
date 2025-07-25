@@ -25,10 +25,11 @@ type Game struct {
 	Players        []*Player
 	Deck           *poker.Deck
 	CommunityCards []poker.Card
-	Pot            int       // Total chips in the pot
-	DealerPos      int       // Index of the dealer in the Players slice
-	CurrentTurnPos int       // Index of the player whose turn it is
-	Phase          GamePhase // Current game phase
+	Pot            int
+	DealerPos      int
+	CurrentTurnPos int
+	Phase          GamePhase
+	BetToCall      int // Amount needed to call in the current round
 }
 
 // NewGame initializes a new game with players.

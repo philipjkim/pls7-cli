@@ -34,16 +34,16 @@ var playCmd = &cobra.Command{
 		g.StartNewHand()
 
 		// Main game loop for a single hand
-		for {
+		for g.Phase != game.PhaseHandOver {
 			cli.DisplayGameState(g)
+
 			if g.Phase == game.PhaseShowdown {
 				showdownResults(g)
+			} else {
+				g.RunBettingRound()
 			}
 
-			isHandOver := g.Advance()
-			if isHandOver {
-				break
-			}
+			g.Advance()
 		}
 
 		fmt.Println("\nGame hand finished.")

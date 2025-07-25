@@ -30,10 +30,7 @@ func (g *Game) StartNewHand() {
 }
 
 // Advance moves the game to the next phase.
-// It returns true if the hand is over.
-func (g *Game) Advance() bool {
-	g.runBettingRound() // Mock betting round
-
+func (g *Game) Advance() {
 	switch g.Phase {
 	case PhasePreFlop:
 		g.Phase = PhaseFlop
@@ -46,12 +43,59 @@ func (g *Game) Advance() bool {
 		g.dealCommunityCards(1)
 	case PhaseRiver:
 		g.Phase = PhaseShowdown
-		g.showdown()
 	case PhaseShowdown:
 		g.Phase = PhaseHandOver
-		return true // Hand is now over
 	}
-	return false
+}
+
+// RunBettingRound executes a full betting round.
+func (g *Game) RunBettingRound() {
+	// For now, we'll just mock a simple bet-call scenario
+	// In a real game, this would be a complex loop.
+	// Let's simulate one player betting and others calling.
+
+	if g.Phase == PhasePreFlop {
+		// Mock Blinds for now
+		g.Pot += 15
+		fmt.Println("--- Pre-Flop Betting (mock) ---")
+		g.BetToCall = 10 // Mock BB
+	} else {
+		fmt.Printf("--- %s Betting (mock) ---\n", g.Phase.String())
+		g.BetToCall = 0 // No bet yet
+	}
+
+	// Reset player bets for the new round
+	for _, p := range g.Players {
+		p.CurrentBet = 0
+	}
+
+	// This is a simplified loop. A real one is more complex.
+	// For now, we assume everyone just calls or checks.
+	numPlayers := len(g.Players)
+	startPos := (g.DealerPos + 1) % numPlayers
+	if g.Phase == PhasePreFlop {
+		startPos = (g.DealerPos + 3) % numPlayers // Action starts after BB
+	}
+
+	for i := 0; i < numPlayers; i++ {
+		playerPos := (startPos + i) % numPlayers
+		player := g.Players[playerPos]
+		g.CurrentTurnPos = playerPos
+
+		if player.Status == PlayerStatusPlaying {
+			// Mock action: everyone just checks or calls
+			if g.BetToCall > 0 {
+				// Call
+				callAmount := g.BetToCall - player.CurrentBet
+				if player.Chips >= callAmount {
+					player.Chips -= callAmount
+					player.CurrentBet += callAmount
+					g.Pot += callAmount
+				}
+			}
+			// If BetToCall is 0, they "check".
+		}
+	}
 }
 
 // dealCommunityCards deals n cards to the board.
@@ -60,15 +104,4 @@ func (g *Game) dealCommunityCards(n int) {
 		card, _ := g.Deck.Deal()
 		g.CommunityCards = append(g.CommunityCards, card)
 	}
-}
-
-// runBettingRound is a placeholder for now.
-func (g *Game) runBettingRound() {
-	fmt.Println("--- Betting Round (mock) ---")
-}
-
-// showdown handles the end of the hand.
-func (g *Game) showdown() {
-	fmt.Println("\n--- SHOWDOWN ---")
-	// This will be expanded to show results.
 }
