@@ -72,6 +72,10 @@ var playCmd = &cobra.Command{
 				for _, c := range lowHand.Cards {
 					lowHandRanks = append(lowHandRanks, c.Rank.String())
 				}
+				// If Ace is the highest card in a low hand, move it to the end for readability
+				if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
+					lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
+				}
 				resultStrings = append(resultStrings, fmt.Sprintf("Low: %s-High", strings.Join(lowHandRanks, "-")))
 			}
 
