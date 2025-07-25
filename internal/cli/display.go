@@ -38,7 +38,7 @@ func DisplayGameState(g *game.Game) {
 		fmt.Printf("%s%-7s: Chips: %-5d %s\n", indicator, p.Name, p.Chips, status)
 	}
 	fmt.Println("-------------------------------------------------")
-	time.Sleep(1 * time.Second) // Pause for cinematic effect
+	time.Sleep(2 * time.Second) // Pause for cinematic effect
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)

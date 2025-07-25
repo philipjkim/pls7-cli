@@ -5,7 +5,7 @@ import (
 	"pls7-cli/pkg/poker"
 )
 
-// StartNewHand prepares the game for a new hand and sets it to PreFlop.
+// StartNewHand prepares the game for a new hand, including posting blinds.
 func (g *Game) StartNewHand() {
 	g.Phase = PhasePreFlop
 	g.Deck = poker.NewDeck()
@@ -20,6 +20,15 @@ func (g *Game) StartNewHand() {
 		p.Status = PlayerStatusPlaying
 	}
 
+	// Post blinds
+	sbPos := (g.DealerPos + 1) % len(g.Players)
+	bbPos := (g.DealerPos + 2) % len(g.Players)
+	g.postBet(g.Players[sbPos], SmallBlindAmt)
+	g.postBet(g.Players[bbPos], BigBlindAmt)
+
+	g.BetToCall = BigBlindAmt
+	g.CurrentTurnPos = (bbPos + 1) % len(g.Players) // Action starts after BB
+
 	// Deal 3 cards to each player
 	for i := 0; i < 3; i++ {
 		for _, p := range g.Players {
@@ -29,18 +38,28 @@ func (g *Game) StartNewHand() {
 	}
 }
 
+// postBet is a helper to handle a player's bet.
+func (g *Game) postBet(player *Player, amount int) {
+	if player.Chips < amount {
+		amount = player.Chips // Player goes all-in
+	}
+	player.Chips -= amount
+	player.CurrentBet += amount
+	g.Pot += amount
+}
+
 // Advance moves the game to the next phase.
 func (g *Game) Advance() {
 	switch g.Phase {
 	case PhasePreFlop:
 		g.Phase = PhaseFlop
-		g.dealCommunityCards(3)
+		g.dealCommunityCards(3) // FIX: Deal Flop cards
 	case PhaseFlop:
 		g.Phase = PhaseTurn
-		g.dealCommunityCards(1)
+		g.dealCommunityCards(1) // FIX: Deal Turn card
 	case PhaseTurn:
 		g.Phase = PhaseRiver
-		g.dealCommunityCards(1)
+		g.dealCommunityCards(1) // FIX: Deal River card
 	case PhaseRiver:
 		g.Phase = PhaseShowdown
 	case PhaseShowdown:
@@ -48,34 +67,21 @@ func (g *Game) Advance() {
 	}
 }
 
-// RunBettingRound executes a full betting round.
+// RunBettingRound executes a full betting round where everyone calls.
 func (g *Game) RunBettingRound() {
-	// For now, we'll just mock a simple bet-call scenario
-	// In a real game, this would be a complex loop.
-	// Let's simulate one player betting and others calling.
+	fmt.Printf("\n--- %s Betting ---\n", g.Phase.String())
 
-	if g.Phase == PhasePreFlop {
-		// Mock Blinds for now
-		g.Pot += 15
-		fmt.Println("--- Pre-Flop Betting (mock) ---")
-		g.BetToCall = 10 // Mock BB
-	} else {
-		fmt.Printf("--- %s Betting (mock) ---\n", g.Phase.String())
-		g.BetToCall = 0 // No bet yet
+	// For post-flop rounds, reset bets and start with the player after the dealer.
+	if g.Phase != PhasePreFlop {
+		g.BetToCall = 0
+		for _, p := range g.Players {
+			p.CurrentBet = 0
+		}
+		g.CurrentTurnPos = (g.DealerPos + 1) % len(g.Players)
 	}
 
-	// Reset player bets for the new round
-	for _, p := range g.Players {
-		p.CurrentBet = 0
-	}
-
-	// This is a simplified loop. A real one is more complex.
-	// For now, we assume everyone just calls or checks.
 	numPlayers := len(g.Players)
-	startPos := (g.DealerPos + 1) % numPlayers
-	if g.Phase == PhasePreFlop {
-		startPos = (g.DealerPos + 3) % numPlayers // Action starts after BB
-	}
+	startPos := g.CurrentTurnPos
 
 	for i := 0; i < numPlayers; i++ {
 		playerPos := (startPos + i) % numPlayers
@@ -83,17 +89,11 @@ func (g *Game) RunBettingRound() {
 		g.CurrentTurnPos = playerPos
 
 		if player.Status == PlayerStatusPlaying {
-			// Mock action: everyone just checks or calls
-			if g.BetToCall > 0 {
-				// Call
-				callAmount := g.BetToCall - player.CurrentBet
-				if player.Chips >= callAmount {
-					player.Chips -= callAmount
-					player.CurrentBet += callAmount
-					g.Pot += callAmount
-				}
+			amountToCall := g.BetToCall - player.CurrentBet
+			if amountToCall > 0 {
+				g.postBet(player, amountToCall)
 			}
-			// If BetToCall is 0, they "check".
+			// If amountToCall is 0, the player "checks".
 		}
 	}
 }
