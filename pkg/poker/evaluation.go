@@ -1,6 +1,7 @@
 package poker
 
 import (
+	"fmt"
 	"sort"
 )
 
@@ -25,11 +26,73 @@ const (
 	RoyalFlush
 )
 
+// String makes HandRank implement the Stringer interface for easy printing.
+func (hr HandRank) String() string {
+	return []string{
+		"High Card",
+		"One Pair",
+		"Two Pair",
+		"Tri-Pair",
+		"Three of a Kind",
+		"Straight",
+		"Skip Straight",
+		"Flush",
+		"Full House",
+		"Double Triple",
+		"Four of a Kind",
+		"Quad-Pair",
+		"Straight Flush",
+		"Royal Flush",
+	}[hr]
+}
+
 // HandResult stores the outcome of a hand evaluation.
 type HandResult struct {
 	Rank       HandRank
 	Cards      []Card
 	HighValues []Rank // For tie-breaking (e.g., [Ace, King] for A-high flush)
+}
+
+// String makes HandResult implement the Stringer interface for detailed printing.
+func (hr *HandResult) String() string {
+	if hr == nil {
+		return "N/A"
+	}
+
+	switch hr.Rank {
+	case RoyalFlush:
+		return "Royal Flush"
+	case StraightFlush, Straight, SkipStraight:
+		topCard := hr.HighValues[0].String()
+		return fmt.Sprintf("%s-High %s", topCard, hr.Rank.String())
+	case FourOfAKind:
+		quadRank := hr.HighValues[0].String()
+		return fmt.Sprintf("%s Four of a Kind", quadRank)
+	case FullHouse:
+		tripleRank := hr.HighValues[0].String()
+		pairRank := hr.HighValues[1].String()
+		return fmt.Sprintf("Full House, %ss full of %ss", tripleRank, pairRank)
+	case Flush:
+		topCard := hr.HighValues[0].String()
+		return fmt.Sprintf("%s-High Flush", topCard)
+	case ThreeOfAKind:
+		tripleRank := hr.HighValues[0].String()
+		return fmt.Sprintf("%s Three of a Kind", tripleRank)
+	case TwoPair:
+		highPair := hr.HighValues[0].String()
+		lowPair := hr.HighValues[1].String()
+		return fmt.Sprintf("Two Pair, %ss and %ss", highPair, lowPair)
+	case OnePair:
+		pairRank := hr.HighValues[0].String()
+		return fmt.Sprintf("%s One Pair", pairRank)
+	case QuadPair, DoubleTriple, TriPair:
+		return hr.Rank.String() // These names are descriptive enough
+	case HighCard:
+		topCard := hr.HighValues[0].String()
+		return fmt.Sprintf("%s-High", topCard)
+	default:
+		return "Unknown Hand"
+	}
 }
 
 // handAnalysis is a helper struct to hold counts of ranks and suits.

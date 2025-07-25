@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"pls7-cli/internal/cli"
 	"pls7-cli/internal/game"
 	"pls7-cli/pkg/poker"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +21,7 @@ var playCmd = &cobra.Command{
 		fmt.Println("==================================================")
 		fmt.Println("\nStarting the game!")
 
-		// --- Step 3 Goal: Simulate a static game state ---
+		// --- Integrate evaluation results ---
 
 		// 1. Create and shuffle the deck
 		deck := poker.NewDeck()
@@ -48,20 +48,39 @@ var playCmd = &cobra.Command{
 			communityCards[i], _ = deck.Deal()
 		}
 
-		// 5. Create the game state object
-		staticGame := &game.Game{
-			Players:        players,
-			CommunityCards: communityCards,
-		}
+		// 5. Display the results
+		fmt.Println("\n--- Static Game State with Evaluation ---")
 
-		// 6. Display the static game state
-		cli.DisplayStaticGameState(staticGame)
+		var communityCardStrings []string
+		for _, c := range communityCards {
+			communityCardStrings = append(communityCardStrings, c.String())
+		}
+		fmt.Printf("Board: %s\n", strings.Join(communityCardStrings, " "))
+
+		fmt.Println("\nPlayers' Hands & Results:")
+		for _, player := range players {
+			// Call the evaluation function
+			highHand, lowHand := poker.EvaluateHand(player.Hand, communityCards)
+
+			// Build the result string using the new String() method
+			var resultStrings []string
+			if highHand != nil {
+				resultStrings = append(resultStrings, fmt.Sprintf("High: %s", highHand.String()))
+			}
+			if lowHand != nil {
+				var lowHandRanks []string
+				for _, c := range lowHand.Cards {
+					lowHandRanks = append(lowHandRanks, c.Rank.String())
+				}
+				resultStrings = append(resultStrings, fmt.Sprintf("Low: %s-High", strings.Join(lowHandRanks, "-")))
+			}
+
+			fmt.Printf("- %-7s: %v -> %s\n", player.Name, player.Hand, strings.Join(resultStrings, " | "))
+		}
+		fmt.Println("\n-----------------------------------------")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(playCmd)
-
-	// Here you will define your flags and configuration settings.
-	// Example: playCmd.Flags().IntP("players", "p", 6, "Number of players to participate")
 }
