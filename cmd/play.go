@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"pls7-cli/internal/cli"
 	"pls7-cli/internal/game"
 	"pls7-cli/pkg/poker"
 	"strings"
@@ -16,34 +15,34 @@ var playCmd = &cobra.Command{
 	Short: "Starts a new game of PLS7",
 	Long:  `Starts a new game of PLS7 with 1 player and 5 CPUs.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// --- Welcome Message ---
 		fmt.Println("==================================================")
 		fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
 		fmt.Println("==================================================")
 		fmt.Println("\nStarting the game!")
 
-		// --- Step 5: Run the automated game loop ---
-
 		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 		initialChips := 10000
-
-		// Create a new game instance
 		g := game.NewGame(playerNames, initialChips)
 
-		// Start the first hand
 		g.StartNewHand()
 
 		// Main game loop for a single hand
 		for g.Phase != game.PhaseHandOver {
-			cli.DisplayGameState(g)
+			// The betting round now handles its own internal loop of player actions
+			g.RunBettingRound()
 
-			if g.Phase == game.PhaseShowdown {
-				showdownResults(g)
-			} else {
-				g.RunBettingRound()
+			// Stop the hand if only one player is left
+			if g.CountActivePlayers() <= 1 {
+				// In a real game, we'd award the pot here. For now, just end.
+				break
 			}
 
 			g.Advance()
+
+			if g.Phase == game.PhaseShowdown {
+				showdownResults(g)
+				g.Advance() // Move to HandOver
+			}
 		}
 
 		fmt.Println("\nGame hand finished.")
@@ -51,7 +50,7 @@ var playCmd = &cobra.Command{
 }
 
 func showdownResults(g *game.Game) {
-	fmt.Println("\nPlayers' Hands & Results:")
+	fmt.Println("\n--- SHOWDOWN ---")
 	for _, player := range g.Players {
 		if player.Status == game.PlayerStatusFolded {
 			continue
