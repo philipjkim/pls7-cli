@@ -16,6 +16,12 @@ TODO
 go run main.go play
 ```
 
+## Testing
+
+```bash
+go test ./...
+```
+
 ## 📝 점진적 개발 계획 (Step-by-Step)
 
 ### **1단계: 프로젝트 뼈대 구축 (Cobra & 디렉토리)**
