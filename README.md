@@ -10,6 +10,12 @@ https://philipjkim.github.io/posts/20250724-sampyeong-holdem-guide-v1-4/
 
 TODO
 
+## Running the App
+
+```bash
+go run main.go play
+```
+
 ## 📝 점진적 개발 계획 (Step-by-Step)
 
 ### **1단계: 프로젝트 뼈대 구축 (Cobra & 디렉토리)**
