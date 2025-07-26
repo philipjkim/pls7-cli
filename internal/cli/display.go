@@ -12,7 +12,8 @@ func DisplayGameState(g *game.Game) {
 	clearScreen() // Clears the console for a fresh display
 
 	phaseName := strings.ToUpper(g.Phase.String())
-	fmt.Printf("--- HAND #%d | PHASE: %s | POT: %d ---\n", 1, phaseName, g.Pot) // Hand # is static for now
+	// Hand # is static for now, will be dynamic later.
+	fmt.Printf("--- HAND #1 | PHASE: %s | POT: %d ---\n", phaseName, g.Pot)
 
 	var communityCardStrings []string
 	for _, c := range g.CommunityCards {
@@ -35,10 +36,22 @@ func DisplayGameState(g *game.Game) {
 			status = "(Folded)"
 		}
 
-		fmt.Printf("%s%-7s: Chips: %-5d %s\n", indicator, p.Name, p.Chips, status)
+		// Display hole cards only for the human player
+		handInfo := ""
+		if !p.IsCPU {
+			var handStrings []string
+			for _, c := range p.Hand {
+				handStrings = append(handStrings, c.String())
+			}
+			handInfo = fmt.Sprintf("| Hand: %s", strings.Join(handStrings, " "))
+		}
+
+		// Trim trailing space if handInfo is empty
+		line := fmt.Sprintf("%s%-7s: Chips: %-5d %s %s", indicator, p.Name, p.Chips, status, handInfo)
+		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
-	time.Sleep(2 * time.Second) // Pause for cinematic effect
+	time.Sleep(2 * time.Second) // Pause for 2 seconds to let the player see the state
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)
