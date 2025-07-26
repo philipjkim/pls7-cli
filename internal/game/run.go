@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"pls7-cli/internal/cli"
 	"pls7-cli/pkg/poker"
 )
 
@@ -53,45 +52,16 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) {
 	}
 }
 
-// RunBettingRound now handles the interactive loop.
-func (g *Game) RunBettingRound() {
-	// This logic will become more complex to handle re-raises.
-	// For now, it's a single pass.
-	if g.Phase != PhasePreFlop {
-		g.BetToCall = 0
-		for _, p := range g.Players {
-			p.CurrentBet = 0
-		}
-		g.CurrentTurnPos = (g.DealerPos + 1) % len(g.Players)
+// PrepareNewBettingRound resets player bets for the new round.
+func (g *Game) PrepareNewBettingRound() {
+	if g.Phase == PhasePreFlop {
+		return // Pre-flop bets (blinds) are already posted.
 	}
-
-	numPlayers := len(g.Players)
-	playersInRound := g.CountActivePlayers()
-
-	for i := 0; i < playersInRound; i++ {
-		// This loop needs to be smarter to handle betting correctly.
-		// We will fix this in the next step.
-		player := g.Players[g.CurrentTurnPos]
-
-		if player.Status == PlayerStatusPlaying {
-			cli.DisplayGameState(g) // Display state before each action
-
-			var action PlayerAction
-			if player.IsCPU {
-				// Mock CPU action: always check or call
-				if player.CurrentBet < g.BetToCall {
-					action = PlayerAction{Type: ActionCall}
-				} else {
-					action = PlayerAction{Type: ActionCheck}
-				}
-			} else {
-				// Get action from human player
-				action = cli.PromptForAction(g)
-			}
-			g.ProcessAction(player, action)
-		}
-		g.CurrentTurnPos = (g.CurrentTurnPos + 1) % numPlayers
+	g.BetToCall = 0
+	for _, p := range g.Players {
+		p.CurrentBet = 0
 	}
+	g.CurrentTurnPos = (g.DealerPos + 1) % len(g.Players)
 }
 
 // CountActivePlayers returns the number of players still in the hand.
@@ -133,6 +103,7 @@ func (g *Game) Advance() {
 	}
 }
 
+// dealCommunityCards deals n cards to the board.
 func (g *Game) dealCommunityCards(n int) {
 	for i := 0; i < n; i++ {
 		card, _ := g.Deck.Deal()
