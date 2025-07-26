@@ -51,7 +51,7 @@ func DisplayGameState(g *game.Game) {
 		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
-	time.Sleep(2 * time.Second) // Pause for 2 seconds to let the player see the state
+	time.Sleep(1 * time.Second) // Pause for 2 seconds to let the player see the state
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)

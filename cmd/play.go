@@ -33,7 +33,6 @@ var playCmd = &cobra.Command{
 
 			if g.CountActivePlayers() <= 1 {
 				fmt.Println("\nOnly one player left. Hand is over.")
-				// In a real game, award pot to the winner.
 				break
 			}
 
@@ -54,10 +53,34 @@ var playCmd = &cobra.Command{
 func runInteractiveBettingRound(g *game.Game) {
 	g.PrepareNewBettingRound()
 
-	// This betting loop logic is still simplified and will be improved later
-	// to handle re-raises correctly.
+	if g.CountActivePlayers() < 2 {
+		return
+	}
+
 	numPlayers := len(g.Players)
-	for i := 0; i < numPlayers; i++ {
+	playersToAct := g.CountActivePlayers()
+	actionCount := 0
+	lastAggressorPos := -1
+
+	// In Pre-Flop, the Big Blind is the initial "aggressor".
+	// The action must go around at least once and get back to the BB.
+	if g.Phase == game.PhasePreFlop {
+		lastAggressorPos = (g.DealerPos + 2) % numPlayers
+	}
+
+	for {
+		// This condition checks if everyone has had a chance to act since the last raise.
+		if actionCount >= playersToAct {
+			// If action is back to the last aggressor, the round is over.
+			if g.CurrentTurnPos == lastAggressorPos {
+				break
+			}
+			// If there was no aggression and everyone has checked, the round is over.
+			if lastAggressorPos == -1 {
+				break
+			}
+		}
+
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == game.PlayerStatusPlaying {
@@ -72,11 +95,20 @@ func runInteractiveBettingRound(g *game.Game) {
 					action = game.PlayerAction{Type: game.ActionCheck}
 				}
 			} else {
-				// Get action from human player
 				action = cli.PromptForAction(g)
 			}
-			g.ProcessAction(player, action)
+
+			wasAggressive := g.ProcessAction(player, action)
+			actionCount++
+
+			if wasAggressive {
+				lastAggressorPos = g.CurrentTurnPos
+				// Reset action counter, as all players need to act again.
+				playersToAct = g.CountActivePlayers()
+				actionCount = 1
+			}
 		}
+
 		g.CurrentTurnPos = (g.CurrentTurnPos + 1) % numPlayers
 	}
 }
