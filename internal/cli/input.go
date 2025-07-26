@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 	"pls7-cli/internal/game"
+	"strconv"
 	"strings"
 )
 
-// PromptForAction asks the human player for their move.
+// PromptForAction requests the player to choose an action during their turn.
 func PromptForAction(g *game.Game) game.PlayerAction {
 	player := g.Players[g.CurrentTurnPos]
 	canCheck := player.CurrentBet == g.BetToCall
 
-	// Build the prompt string based on legal moves
 	var prompt strings.Builder
 	prompt.WriteString("Choose your action: ")
 
@@ -24,13 +24,11 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 	}
 
 	fmt.Print(prompt.String())
-
-	// Read user input
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(input)
 
-	// Parse input and return the corresponding action
+	// 입력을 파싱하여 해당하는 액션을 반환합니다.
 	switch input {
 	case "f":
 		return game.PlayerAction{Type: game.ActionFold}
@@ -42,10 +40,42 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 		if !canCheck {
 			return game.PlayerAction{Type: game.ActionCall}
 		}
-		// TODO: Bet and Raise will be implemented in a later step
+	case "b":
+		if canCheck {
+			return promptForAmount(g, game.ActionBet)
+		}
+	case "r":
+		if !canCheck {
+			return promptForAmount(g, game.ActionRaise)
+		}
 	}
 
-	// Default or invalid action
+	// 잘못된 액션 처리
 	fmt.Println("Invalid action. Folding.")
 	return game.PlayerAction{Type: game.ActionFold}
+}
+
+// promptForAmount는 베팅/레이즈 금액을 요청합니다.
+func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction {
+	minBet, maxBet := g.CalculateBettingLimits()
+	// ActionType의 String() 메소드가 필요합니다. (다음 단계에서 추가 예정)
+	actionName := "action"
+	if actionType == game.ActionBet {
+		actionName = "bet"
+	} else if actionType == game.ActionRaise {
+		actionName = "raise"
+	}
+
+	fmt.Printf("Enter amount to %s (minBet: %d, maxBet: %d): ", actionName, minBet, maxBet)
+
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	amount, err := strconv.Atoi(strings.TrimSpace(input))
+
+	if err != nil || amount < minBet || amount > maxBet {
+		fmt.Println("Invalid amount. Folding.")
+		return game.PlayerAction{Type: game.ActionFold}
+	}
+
+	return game.PlayerAction{Type: actionType, Amount: amount}
 }

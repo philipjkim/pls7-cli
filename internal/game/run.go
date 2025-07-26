@@ -5,6 +5,35 @@ import (
 	"pls7-cli/pkg/poker"
 )
 
+// ProcessAction updates the game state based on a player's action.
+// It returns true if an aggressive action (bet, raise) was taken.
+func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool) {
+	switch action.Type {
+	case ActionFold:
+		player.Status = PlayerStatusFolded
+		fmt.Printf("%s folds.\n", player.Name)
+	case ActionCheck:
+		fmt.Printf("%s checks.\n", player.Name)
+	case ActionCall:
+		amountToCall := g.BetToCall - player.CurrentBet
+		g.postBet(player, amountToCall)
+		fmt.Printf("%s calls %d.\n", player.Name, amountToCall)
+	case ActionBet:
+		g.postBet(player, action.Amount)
+		g.BetToCall = player.CurrentBet
+		fmt.Printf("%s bets %d.\n", player.Name, action.Amount)
+		return true // Aggressive action
+	case ActionRaise:
+		// In a Raise action, Amount means the total final bet size.
+		amountToPost := action.Amount - player.CurrentBet
+		g.postBet(player, amountToPost)
+		g.BetToCall = player.CurrentBet
+		fmt.Printf("%s raises to %d.\n", player.Name, action.Amount)
+		return true // Aggressive action
+	}
+	return false
+}
+
 // StartNewHand prepares the game for a new hand, including posting blinds.
 func (g *Game) StartNewHand() {
 	g.Phase = PhasePreFlop
@@ -36,22 +65,6 @@ func (g *Game) StartNewHand() {
 	}
 }
 
-// ProcessAction updates the game state based on a player's action.
-func (g *Game) ProcessAction(player *Player, action PlayerAction) {
-	switch action.Type {
-	case ActionFold:
-		player.Status = PlayerStatusFolded
-		fmt.Printf("%s folds.\n", player.Name)
-	case ActionCheck:
-		fmt.Printf("%s checks.\n", player.Name)
-	case ActionCall:
-		amountToCall := g.BetToCall - player.CurrentBet
-		g.postBet(player, amountToCall)
-		fmt.Printf("%s calls %d.\n", player.Name, amountToCall)
-		// TODO: Bet and Raise logic will be added here.
-	}
-}
-
 // PrepareNewBettingRound resets player bets for the new round.
 func (g *Game) PrepareNewBettingRound() {
 	if g.Phase == PhasePreFlop {
@@ -75,7 +88,7 @@ func (g *Game) CountActivePlayers() int {
 	return count
 }
 
-// (Other functions like postBet, Advance, dealCommunityCards remain the same)
+// postBet is a helper to handle a player's bet.
 func (g *Game) postBet(player *Player, amount int) {
 	if player.Chips < amount {
 		amount = player.Chips
@@ -85,6 +98,7 @@ func (g *Game) postBet(player *Player, amount int) {
 	g.Pot += amount
 }
 
+// Advance moves the game to the next phase.
 func (g *Game) Advance() {
 	switch g.Phase {
 	case PhasePreFlop:
