@@ -26,8 +26,9 @@ func (g *Game) GetCPUAction(player *Player) PlayerAction {
 func (g *Game) getEasyAction(player *Player, r *rand.Rand) PlayerAction {
 	canCheck := player.CurrentBet == g.BetToCall
 
+	callProbability := 0.25
 	if !canCheck {
-		if r.Float64() < 0.25 { // 25% chance to call
+		if r.Float64() < callProbability {
 			return PlayerAction{Type: ActionCall}
 		}
 		return PlayerAction{Type: ActionFold}
@@ -88,7 +89,7 @@ func (g *Game) getHardAction(player *Player, r *rand.Rand) PlayerAction {
 
 // evaluateHandStrength is now a standalone function, not a method, so it can be assigned to the handEvaluator field.
 func evaluateHandStrength(g *Game, player *Player) float64 {
-	// Post-Flop Evaluation (based on current best hand)
+	// Post-Flop Evaluation (based on the current best hand)
 	if g.Phase > PhasePreFlop {
 		highHand, _ := poker.EvaluateHand(player.Hand, g.CommunityCards)
 		return float64(highHand.Rank)

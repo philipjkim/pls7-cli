@@ -44,9 +44,16 @@ var playCmd = &cobra.Command{
 
 			// Single Hand Loop
 			for {
-				// Check if the hand should end before the betting round starts
 				if g.CountPlayersInHand() <= 1 {
 					break
+				}
+
+				// If no more betting is possible (e.g., everyone is all-in),
+				// fast-forward to the showdown.
+				if g.CountPlayersAbleToAct() < 2 {
+					for g.Phase != game.PhaseShowdown {
+						g.Advance()
+					}
 				}
 
 				switch g.Phase {
@@ -78,7 +85,13 @@ var playCmd = &cobra.Command{
 
 			g.CleanupHand()
 
-			// Use the new function to check for game over condition.
+			// Check if the human player ("YOU") has been eliminated.
+			if g.Players[0].Status == game.PlayerStatusEliminated {
+				fmt.Println("\nYou have been eliminated. GAME OVER.")
+				break
+			}
+
+			// Check for general game over condition.
 			if g.CountRemainingPlayers() <= 1 {
 				fmt.Println("\n--- GAME OVER ---")
 				break
@@ -183,7 +196,7 @@ func showdownResults(g *game.Game) {
 
 	fmt.Println("\n--- POT DISTRIBUTION ---")
 	for _, result := range distributionResults {
-		fmt.Printf("%s won %s chips with %s\n", result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc)
+		fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc)
 	}
 	fmt.Println("------------------------")
 }

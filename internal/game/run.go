@@ -45,6 +45,54 @@ func (g *Game) CleanupHand() {
 	}
 }
 
+// CountRemainingPlayers counts players who have not been eliminated from the entire game.
+// This is used to check for a game-over condition (e.g., only one player is left).
+func (g *Game) CountRemainingPlayers() int {
+	count := 0
+	for _, p := range g.Players {
+		if p.Status != PlayerStatusEliminated {
+			count++
+		}
+	}
+	return count
+}
+
+// CountPlayersInHand counts players who have not folded in the current hand.
+// This is used to determine if a betting round should continue or if a hand should end early.
+func (g *Game) CountPlayersInHand() int {
+	count := 0
+	for _, p := range g.Players {
+		if p.Status != PlayerStatusFolded {
+			count++
+		}
+	}
+	return count
+}
+
+// CountNonFoldedPlayers counts players who have not folded in the current hand.
+// This includes players who are all-in and will see the showdown.
+func (g *Game) CountNonFoldedPlayers() int {
+	count := 0
+	for _, p := range g.Players {
+		if p.Status == PlayerStatusPlaying || p.Status == PlayerStatusAllIn {
+			count++
+		}
+	}
+	return count
+}
+
+// CountPlayersAbleToAct counts players who can still take betting actions.
+// This excludes players who are all-in or have folded.
+func (g *Game) CountPlayersAbleToAct() int {
+	count := 0
+	for _, p := range g.Players {
+		if p.Status == PlayerStatusPlaying {
+			count++
+		}
+	}
+	return count
+}
+
 // StartNewHand now skips eliminated players.
 func (g *Game) StartNewHand() {
 	g.HandCount++
@@ -54,7 +102,7 @@ func (g *Game) StartNewHand() {
 	g.CommunityCards = []poker.Card{}
 	g.Pot = 0
 
-	// Move the dealer button to the next active player
+	// Move dealer button to the next active player
 	g.DealerPos = g.FindNextActivePlayer(g.DealerPos)
 
 	for _, p := range g.Players {
@@ -96,6 +144,19 @@ func (g *Game) FindNextActivePlayer(startPos int) int {
 	}
 }
 
+// postBet is a helper to handle a player's bet.
+func (g *Game) postBet(player *Player, amount int) {
+	if player.Chips < amount {
+		amount = player.Chips
+	}
+	player.Chips -= amount
+	player.CurrentBet += amount
+	g.Pot += amount
+	if player.Chips == 0 {
+		player.Status = PlayerStatusAllIn
+	}
+}
+
 // PrepareNewBettingRound resets player bets for the new round.
 func (g *Game) PrepareNewBettingRound() {
 	if g.Phase == PhasePreFlop {
@@ -106,40 +167,6 @@ func (g *Game) PrepareNewBettingRound() {
 		p.CurrentBet = 0
 	}
 	g.CurrentTurnPos = (g.DealerPos + 1) % len(g.Players)
-}
-
-// CountRemainingPlayers counts players who have not been eliminated from the entire game.
-// This is used to check for a game-over condition (e.g., only one player is left).
-func (g *Game) CountRemainingPlayers() int {
-	count := 0
-	for _, p := range g.Players {
-		if p.Status != PlayerStatusEliminated {
-			count++
-		}
-	}
-	return count
-}
-
-// CountPlayersInHand counts players who have not folded in the current hand.
-// This is used to determine if a betting round should continue or if a hand should end early.
-func (g *Game) CountPlayersInHand() int {
-	count := 0
-	for _, p := range g.Players {
-		if p.Status != PlayerStatusFolded {
-			count++
-		}
-	}
-	return count
-}
-
-// postBet is a helper to handle a player's bet.
-func (g *Game) postBet(player *Player, amount int) {
-	if player.Chips < amount {
-		amount = player.Chips
-	}
-	player.Chips -= amount
-	player.CurrentBet += amount
-	g.Pot += amount
 }
 
 // Advance moves the game to the next phase.
