@@ -120,16 +120,9 @@ func TestEvaluateHandStrength(t *testing.T) {
 
 // TestCPUActionWithRandomness tests the AI actions that depend on randomness.
 func TestCPUActionWithRandomness(t *testing.T) {
-	// Use a fixed seed for deterministic "random" behavior.
-	const seed = 12345
-	r := rand.New(rand.NewSource(seed))
-
-	// With seed 12345, the first r.Float64() is approx 0.515 ( > 0.25)
-	// The second r.Float64() is approx 0.463 ( > 0.20)
-	// The third r.Float64() is approx 0.133 ( < 0.25 and < 0.20)
-
 	testCases := []struct {
 		name           string
+		seed           int64 // Each test case gets its own seed for deterministic results.
 		difficulty     Difficulty
 		betToCall      int
 		playerBet      int
@@ -137,45 +130,51 @@ func TestCPUActionWithRandomness(t *testing.T) {
 		phase          GamePhase
 		expectedAction ActionType
 	}{
+		// Seed 12345's first float is approx 0.515 (> 0.25 and > 0.20)
 		{
-			name:           "Easy AI - Folds when random > 0.25",
+			name:           "Easy AI - Folds on high random number",
+			seed:           12345,
 			difficulty:     DifficultyEasy,
 			betToCall:      1000,
 			playerBet:      0,
 			expectedAction: ActionFold,
 		},
 		{
-			name:           "Easy AI - Calls when random < 0.25",
+			name:           "Hard AI - No Bluff on high random number",
+			seed:           12345,
+			difficulty:     DifficultyHard,
+			betToCall:      0,
+			playerBet:      0,
+			handStrength:   float64(poker.HighCard),
+			phase:          PhaseFlop,
+			expectedAction: ActionCheck,
+		},
+		// Seed 2's first float is approx 0.167 (< 0.25 and < 0.20)
+		{
+			name:           "Easy AI - Calls on low random number",
+			seed:           2,
 			difficulty:     DifficultyEasy,
 			betToCall:      1000,
 			playerBet:      0,
-			expectedAction: ActionCall, // This will use the third random number (0.133)
+			expectedAction: ActionCall,
 		},
 		{
-			name:           "Hard AI - No Bluff when random > 0.20",
+			name:           "Hard AI - Bluffs on low random number",
+			seed:           2,
 			difficulty:     DifficultyHard,
 			betToCall:      0,
 			playerBet:      0,
 			handStrength:   float64(poker.HighCard),
 			phase:          PhaseFlop,
-			expectedAction: ActionCheck, // Should default to Medium AI's action
-		},
-		{
-			name:           "Hard AI - Bluffs when random < 0.20",
-			difficulty:     DifficultyHard,
-			betToCall:      0,
-			playerBet:      0,
-			handStrength:   float64(poker.HighCard),
-			phase:          PhaseFlop,
-			expectedAction: ActionBet, // This will use the third random number (0.133)
+			expectedAction: ActionBet,
 		},
 	}
 
-	// Reset the seed before running tests
-	r.Seed(seed)
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Create a new, deterministic random generator for EACH test case.
+			r := rand.New(rand.NewSource(tc.seed))
+
 			g := &Game{
 				Difficulty: tc.difficulty,
 				BetToCall:  tc.betToCall,
@@ -192,7 +191,7 @@ func TestCPUActionWithRandomness(t *testing.T) {
 			case DifficultyEasy:
 				action = g.getEasyAction(player, r)
 			case DifficultyHard:
-				// FIX: Mock the handEvaluator function field, not the method.
+				// Mock the handEvaluator function field for this specific test run.
 				originalEval := g.handEvaluator
 				g.handEvaluator = func(g *Game, p *Player) float64 { return tc.handStrength }
 				action = g.getHardAction(player, r)
