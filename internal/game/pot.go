@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"pls7-cli/pkg/poker"
+	"strings"
 )
 
 // DistributionResult stores the results of the pot distribution for printing.
@@ -13,7 +14,6 @@ type DistributionResult struct {
 }
 
 // DistributePot calculates and distributes the pot to the winner(s).
-// It returns a slice of results for display purposes.
 func (g *Game) DistributePot() []DistributionResult {
 	results := []DistributionResult{}
 	showdownPlayers := g.getShowdownPlayers()
@@ -31,21 +31,29 @@ func (g *Game) DistributePot() []DistributionResult {
 	}
 
 	highWinners, bestHighHand := findBestHighHand(showdownPlayers, g.CommunityCards)
-	lowWinners, _ := findBestLowHand(showdownPlayers, g.CommunityCards)
+	lowWinners, bestLowHand := findBestLowHand(showdownPlayers, g.CommunityCards)
 
 	if len(lowWinners) > 0 {
-		// Hi-Lo Split
 		lowPot := g.Pot / 2
-		highPot := g.Pot - lowPot // Handle odd chips
+		highPot := g.Pot - lowPot
 
 		// Distribute Low Pot
 		lowShare := lowPot / len(lowWinners)
+		var lowHandRanks []string
+		for _, c := range bestLowHand.Cards {
+			lowHandRanks = append(lowHandRanks, c.Rank.String())
+		}
+		if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
+			lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
+		}
+		lowHandDesc := fmt.Sprintf("Low: %s-High", strings.Join(lowHandRanks, "-"))
+
 		for _, winner := range lowWinners {
 			winner.Chips += lowShare
 			results = append(results, DistributionResult{
 				PlayerName: winner.Name,
 				AmountWon:  lowShare,
-				HandDesc:   "Low",
+				HandDesc:   lowHandDesc,
 			})
 		}
 
@@ -106,7 +114,7 @@ func findBestLowHand(players []*Player, communityCards []poker.Card) (winners []
 		if lowHand == nil {
 			continue
 		}
-		if bestHand == nil || compareHandResults(lowHand, bestHand) == -1 { // For low, smaller is better
+		if bestHand == nil || compareHandResults(lowHand, bestHand) == -1 {
 			bestHand = lowHand
 			winners = []*Player{p}
 		} else if compareHandResults(lowHand, bestHand) == 0 {
@@ -116,8 +124,6 @@ func findBestLowHand(players []*Player, communityCards []poker.Card) (winners []
 	return
 }
 
-// compareHandResults compares two hands.
-// Returns 1 if h1 > h2, -1 if h1 < h2, 0 if tie.
 func compareHandResults(h1, h2 *poker.HandResult) int {
 	if h1.Rank > h2.Rank {
 		return 1
@@ -125,7 +131,6 @@ func compareHandResults(h1, h2 *poker.HandResult) int {
 	if h1.Rank < h2.Rank {
 		return -1
 	}
-	// Ranks are the same, compare high values (kickers)
 	for i := 0; i < len(h1.HighValues); i++ {
 		if h1.HighValues[i] > h2.HighValues[i] {
 			return 1
@@ -134,5 +139,5 @@ func compareHandResults(h1, h2 *poker.HandResult) int {
 			return -1
 		}
 	}
-	return 0 // Tie
+	return 0
 }

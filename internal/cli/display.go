@@ -13,7 +13,8 @@ func DisplayGameState(g *game.Game) {
 
 	phaseName := strings.ToUpper(g.Phase.String())
 	// Hand # is static for now, will be dynamic later.
-	fmt.Printf("--- HAND #1 | PHASE: %s | POT: %d ---\n", phaseName, g.Pot)
+	fmt.Printf("--- HAND #1 | PHASE: %s | POT: %d | BLINDS: %d/%d ---\n",
+		phaseName, g.Pot, game.SmallBlindAmt, game.BigBlindAmt)
 
 	var communityCardStrings []string
 	for _, c := range g.CommunityCards {
@@ -36,7 +37,6 @@ func DisplayGameState(g *game.Game) {
 			status = "(Folded)"
 		}
 
-		// Display hole cards only for the human player
 		handInfo := ""
 		if !p.IsCPU {
 			var handStrings []string
@@ -46,8 +46,7 @@ func DisplayGameState(g *game.Game) {
 			handInfo = fmt.Sprintf("| Hand: %s", strings.Join(handStrings, " "))
 		}
 
-		// Trim trailing space if handInfo is empty
-		line := fmt.Sprintf("%s%-7s: Chips: %-5d %s %s", indicator, p.Name, p.Chips, status, handInfo)
+		line := fmt.Sprintf("%s%-7s: Chips: %-7d %s %s", indicator, p.Name, p.Chips, status, handInfo)
 		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
