@@ -108,10 +108,12 @@ func (g *Game) DistributePot() []DistributionResult {
 	return results
 }
 
+// getShowdownPlayers filters for players who are eligible for the showdown.
 func (g *Game) getShowdownPlayers() []*Player {
 	active := []*Player{}
 	for _, p := range g.Players {
-		if p.Status != PlayerStatusFolded {
+		// FIX: Eliminated players cannot be in the showdown.
+		if p.Status != PlayerStatusFolded && p.Status != PlayerStatusEliminated {
 			active = append(active, p)
 		}
 	}
