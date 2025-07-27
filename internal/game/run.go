@@ -29,23 +29,23 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 	case ActionBet:
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
-		desc := fmt.Sprintf("Bet %s", util.FormatNumber(action.Amount))
+		desc := fmt.Sprintf("Bet %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s bets %s.\n", player.Name, util.FormatNumber(action.Amount))
+		fmt.Printf("%s bets %s.\n", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
 		return true
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
-		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(action.Amount))
+		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s raises to %s.\n", player.Name, util.FormatNumber(action.Amount))
+		fmt.Printf("%s raises to %s.\n", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
 		return true
 	}
 	return false
