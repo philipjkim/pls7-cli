@@ -2,6 +2,6 @@ package game
 
 // Game settings constants
 const (
-	SmallBlindAmt = 5
-	BigBlindAmt   = 10
+	SmallBlindAmt = 500
+	BigBlindAmt   = 1000
 )
