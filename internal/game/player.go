@@ -14,10 +14,11 @@ const (
 
 // Player represents a single player in the game.
 type Player struct {
-	Name       string
-	Hand       []poker.Card
-	Chips      int
-	CurrentBet int
-	Status     PlayerStatus
-	IsCPU      bool
+	Name           string
+	Hand           []poker.Card
+	Chips          int
+	CurrentBet     int
+	Status         PlayerStatus
+	IsCPU          bool
+	LastActionDesc string // Describes the last action taken in the round
 }

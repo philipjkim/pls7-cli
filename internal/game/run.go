@@ -11,23 +11,27 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 	switch action.Type {
 	case ActionFold:
 		player.Status = PlayerStatusFolded
+		player.LastActionDesc = "Fold"
 		fmt.Printf("%s folds.\n", player.Name)
 	case ActionCheck:
+		player.LastActionDesc = "Check"
 		fmt.Printf("%s checks.\n", player.Name)
 	case ActionCall:
 		amountToCall := g.BetToCall - player.CurrentBet
 		g.postBet(player, amountToCall)
+		player.LastActionDesc = fmt.Sprintf("Call %d", amountToCall)
 		fmt.Printf("%s calls %d.\n", player.Name, amountToCall)
 	case ActionBet:
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
+		player.LastActionDesc = fmt.Sprintf("Bet %d", action.Amount)
 		fmt.Printf("%s bets %d.\n", player.Name, action.Amount)
 		return true // Aggressive action
 	case ActionRaise:
-		// In a Raise action, Amount means the total final bet size.
 		amountToPost := action.Amount - player.CurrentBet
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
+		player.LastActionDesc = fmt.Sprintf("Raise to %d", action.Amount)
 		fmt.Printf("%s raises to %d.\n", player.Name, action.Amount)
 		return true // Aggressive action
 	}
@@ -93,7 +97,7 @@ func (g *Game) CountPlayersAbleToAct() int {
 	return count
 }
 
-// StartNewHand now skips eliminated players.
+// StartNewHand now resets the LastActionDesc field.
 func (g *Game) StartNewHand() {
 	g.HandCount++
 	g.Phase = PhasePreFlop
@@ -102,7 +106,6 @@ func (g *Game) StartNewHand() {
 	g.CommunityCards = []poker.Card{}
 	g.Pot = 0
 
-	// Move dealer button to the next active player
 	g.DealerPos = g.FindNextActivePlayer(g.DealerPos)
 
 	for _, p := range g.Players {
@@ -110,10 +113,10 @@ func (g *Game) StartNewHand() {
 			p.Hand = []poker.Card{}
 			p.CurrentBet = 0
 			p.Status = PlayerStatusPlaying
+			p.LastActionDesc = "" // Reset action description
 		}
 	}
 
-	// Post blinds from active players
 	sbPos := g.FindNextActivePlayer(g.DealerPos)
 	bbPos := g.FindNextActivePlayer(sbPos)
 	g.postBet(g.Players[sbPos], SmallBlindAmt)
@@ -122,7 +125,6 @@ func (g *Game) StartNewHand() {
 	g.BetToCall = BigBlindAmt
 	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
-	// Deal cards to active players
 	for i := 0; i < 3; i++ {
 		for pos, p := range g.Players {
 			if p.Status == PlayerStatusPlaying {

@@ -47,7 +47,16 @@ func DisplayGameState(g *game.Game) {
 			handInfo = fmt.Sprintf("| Hand: %s", strings.Join(handStrings, " "))
 		}
 
-		line := fmt.Sprintf("%s%-7s: Chips: %-9s %s %s", indicator, p.Name, FormatNumber(p.Chips), status, handInfo)
+		actionInfo := ""
+		if p.Status != game.PlayerStatusEliminated {
+			actionInfo = fmt.Sprintf(", Current Bet: %-6s", FormatNumber(p.CurrentBet))
+			// Show last action unless it's the current player's turn
+			if p.LastActionDesc != "" && i != g.CurrentTurnPos {
+				actionInfo += fmt.Sprintf(" - %s", p.LastActionDesc)
+			}
+		}
+
+		line := fmt.Sprintf("%s%-7s: Chips: %-9s%s %s %s", indicator, p.Name, FormatNumber(p.Chips), actionInfo, status, handInfo)
 		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
