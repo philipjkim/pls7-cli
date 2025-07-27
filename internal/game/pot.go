@@ -13,6 +13,29 @@ type DistributionResult struct {
 	HandDesc   string
 }
 
+// AwardPotToLastPlayer finds the single remaining player and gives them the pot.
+func (g *Game) AwardPotToLastPlayer() []DistributionResult {
+	var winner *Player
+	for _, p := range g.Players {
+		if p.Status != PlayerStatusFolded {
+			winner = p
+			break
+		}
+	}
+
+	if winner != nil {
+		winner.Chips += g.Pot
+		result := DistributionResult{
+			PlayerName: winner.Name,
+			AmountWon:  g.Pot,
+			HandDesc:   "takes the pot as the last remaining player",
+		}
+		g.Pot = 0
+		return []DistributionResult{result}
+	}
+	return []DistributionResult{}
+}
+
 // DistributePot calculates and distributes the pot to the winner(s).
 func (g *Game) DistributePot() []DistributionResult {
 	results := []DistributionResult{}

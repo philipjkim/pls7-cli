@@ -42,38 +42,44 @@ var playCmd = &cobra.Command{
 		for {
 			g.StartNewHand()
 
-			// Single Hand Loop - RESTRUCTURED
+			// Single Hand Loop
 			for {
-				if g.CountActivePlayers() <= 1 {
-					break // End hand early if only one player remains
+				// Check if the hand should end before the betting round starts
+				if g.CountPlayersInHand() <= 1 {
+					break
 				}
 
 				switch g.Phase {
 				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
 					runInteractiveBettingRound(g)
 					g.Advance()
-				case game.PhaseShowdown:
-					cli.DisplayGameState(g)
-					showdownResults(g)
-					g.Advance() // Move to HandOver
-				case game.PhaseHandOver:
+				case game.PhaseShowdown, game.PhaseHandOver:
 					break // Exit the single hand loop
 				}
 
-				if g.Phase == game.PhaseHandOver {
+				if g.Phase == game.PhaseShowdown || g.Phase == game.PhaseHandOver {
 					break
 				}
 			}
 
-			// Conclude the hand
-			if g.CountActivePlayers() == 1 {
-				// Award pot to the last remaining player
-				fmt.Println("Awarding pot to the last player...")
+			if g.CountPlayersInHand() > 1 {
+				// Scenario 1: More than one player left, so it's a showdown.
+				cli.DisplayGameState(g)
+				showdownResults(g)
+			} else {
+				// Scenario 2: Only one player left, award them the pot.
+				fmt.Println("\n--- POT DISTRIBUTION ---")
+				results := g.AwardPotToLastPlayer()
+				for _, result := range results {
+					fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc)
+				}
+				fmt.Println("------------------------")
 			}
 
 			g.CleanupHand()
 
-			if g.CountActivePlayers() <= 1 {
+			// Use the new function to check for game over condition.
+			if g.CountRemainingPlayers() <= 1 {
 				fmt.Println("\n--- GAME OVER ---")
 				break
 			}
@@ -93,7 +99,7 @@ var playCmd = &cobra.Command{
 func runInteractiveBettingRound(g *game.Game) {
 	g.PrepareNewBettingRound()
 
-	if g.CountActivePlayers() < 2 {
+	if g.CountPlayersInHand() < 2 {
 		return
 	}
 

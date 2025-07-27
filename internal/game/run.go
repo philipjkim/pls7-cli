@@ -108,8 +108,21 @@ func (g *Game) PrepareNewBettingRound() {
 	g.CurrentTurnPos = (g.DealerPos + 1) % len(g.Players)
 }
 
-// CountActivePlayers returns the number of players still in the hand.
-func (g *Game) CountActivePlayers() int {
+// CountRemainingPlayers counts players who have not been eliminated from the entire game.
+// This is used to check for a game-over condition (e.g., only one player is left).
+func (g *Game) CountRemainingPlayers() int {
+	count := 0
+	for _, p := range g.Players {
+		if p.Status != PlayerStatusEliminated {
+			count++
+		}
+	}
+	return count
+}
+
+// CountPlayersInHand counts players who have not folded in the current hand.
+// This is used to determine if a betting round should continue or if a hand should end early.
+func (g *Game) CountPlayersInHand() int {
 	count := 0
 	for _, p := range g.Players {
 		if p.Status != PlayerStatusFolded {
