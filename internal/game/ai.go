@@ -1,24 +1,56 @@
 package game
 
-import "pls7-cli/pkg/poker"
+import (
+	"math/rand"
+	"pls7-cli/pkg/poker"
+	"time"
+)
 
-// GetCPUAction determines the action for a CPU player based on "Medium" difficulty logic.
+// GetCPUAction is a dispatcher that calls the appropriate AI logic based on difficulty.
 func (g *Game) GetCPUAction(player *Player) PlayerAction {
-	strength := g.evaluateHandStrength(player)
+	// For the actual game, we create a random source here.
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	switch g.Difficulty {
+	case DifficultyEasy:
+		return g.getEasyAction(player, r)
+	case DifficultyMedium:
+		return g.getMediumAction(player) // Medium AI doesn't use randomness
+	case DifficultyHard:
+		return g.getHardAction(player, r)
+	}
+	return g.getMediumAction(player)
+}
+
+// getEasyAction implements the "Easy" AI: unpredictable and random.
+func (g *Game) getEasyAction(player *Player, r *rand.Rand) PlayerAction {
+	canCheck := player.CurrentBet == g.BetToCall
+
+	if !canCheck {
+		if r.Float64() < 0.25 { // 25% chance to call
+			return PlayerAction{Type: ActionCall}
+		}
+		return PlayerAction{Type: ActionFold}
+	}
+	return PlayerAction{Type: ActionCheck}
+}
+
+// getMediumAction implements the "Medium" AI: honest and rule-based.
+func (g *Game) getMediumAction(player *Player) PlayerAction {
+	strength := g.handEvaluator(g, player) // Use the function field
 	canCheck := player.CurrentBet == g.BetToCall
 
 	// Post-Flop Logic
 	if g.Phase > PhasePreFlop {
-		if strength >= float64(poker.FullHouse) { // Very strong hand
-			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2} // Simple 2x raise for now
+		if strength >= float64(poker.FullHouse) {
+			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
 		}
-		if strength >= float64(poker.TwoPair) { // Decent hand
+		if strength >= float64(poker.TwoPair) {
 			if canCheck {
-				return PlayerAction{Type: ActionBet, Amount: g.Pot / 2} // Bet half pot
+				return PlayerAction{Type: ActionBet, Amount: g.Pot / 2}
 			}
 			return PlayerAction{Type: ActionCall}
 		}
-		// Weak hand
 		if canCheck {
 			return PlayerAction{Type: ActionCheck}
 		}
@@ -26,27 +58,39 @@ func (g *Game) GetCPUAction(player *Player) PlayerAction {
 	}
 
 	// Pre-Flop Logic
-	if strength > 25 { // Premium hands
-		return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 3} // 3x raise
+	if strength > 25 {
+		return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 3}
 	}
-	if strength > 15 { // Playable hands
+	if strength > 15 {
 		return PlayerAction{Type: ActionCall}
 	}
-
-	// Fold weak pre-flop hands if there's a bet to call
 	if !canCheck {
 		return PlayerAction{Type: ActionFold}
 	}
-	// Otherwise, check for free
 	return PlayerAction{Type: ActionCheck}
 }
 
-// evaluateHandStrength calculates a numerical score for a player's hand.
-func (g *Game) evaluateHandStrength(player *Player) float64 {
+// getHardAction implements the "Hard" AI: strategic with bluffing.
+func (g *Game) getHardAction(player *Player, r *rand.Rand) PlayerAction {
+	strength := g.handEvaluator(g, player) // Use the function field
+	canCheck := player.CurrentBet == g.BetToCall
+
+	// 20% chance to bluff with a weak hand post-flop
+	if g.Phase > PhasePreFlop && strength < float64(poker.OnePair) && r.Float64() < 0.20 {
+		if canCheck {
+			return PlayerAction{Type: ActionBet, Amount: g.Pot / 2}
+		}
+		return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
+	}
+
+	return g.getMediumAction(player)
+}
+
+// evaluateHandStrength is now a standalone function, not a method, so it can be assigned to the handEvaluator field.
+func evaluateHandStrength(g *Game, player *Player) float64 {
 	// Post-Flop Evaluation (based on current best hand)
 	if g.Phase > PhasePreFlop {
 		highHand, _ := poker.EvaluateHand(player.Hand, g.CommunityCards)
-		// We can directly use the HandRank as a score.
 		return float64(highHand.Rank)
 	}
 
@@ -56,11 +100,7 @@ func (g *Game) evaluateHandStrength(player *Player) float64 {
 
 	// 1. High card points
 	rankPoints := map[poker.Rank]float64{
-		poker.Ace:   10,
-		poker.King:  8,
-		poker.Queen: 7,
-		poker.Jack:  6,
-		poker.Ten:   5,
+		poker.Ace: 10, poker.King: 8, poker.Queen: 7, poker.Jack: 6, poker.Ten: 5,
 	}
 	for _, c := range hand {
 		score += rankPoints[c.Rank]
@@ -72,7 +112,7 @@ func (g *Game) evaluateHandStrength(player *Player) float64 {
 		if hand[1].Rank == hand[2].Rank {
 			pairRank = hand[1].Rank
 		}
-		score += 15 + float64(pairRank) // Higher pairs are better
+		score += 15 + float64(pairRank)
 	}
 
 	// 3. Suited bonus

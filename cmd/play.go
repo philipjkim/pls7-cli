@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+var difficultyStr string // To hold the flag value
+
 // playCmd represents the play command
 var playCmd = &cobra.Command{
 	Use:   "play",
@@ -20,11 +22,21 @@ var playCmd = &cobra.Command{
 		fmt.Println("==================================================")
 		fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
 		fmt.Println("==================================================")
-		fmt.Println("\nStarting the game!")
+		fmt.Printf("\nStarting the game with %s difficulty!\n", difficultyStr)
+
+		var difficulty game.Difficulty
+		switch strings.ToLower(difficultyStr) {
+		case "easy":
+			difficulty = game.DifficultyEasy
+		case "hard":
+			difficulty = game.DifficultyHard
+		default:
+			difficulty = game.DifficultyMedium
+		}
 
 		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 		initialChips := game.BigBlindAmt * 300 // 300BB
-		g := game.NewGame(playerNames, initialChips)
+		g := game.NewGame(playerNames, initialChips, difficulty)
 
 		// Main Game Loop (multi-hand)
 		for {
@@ -172,4 +184,5 @@ func showdownResults(g *game.Game) {
 
 func init() {
 	rootCmd.AddCommand(playCmd)
+	playCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 }

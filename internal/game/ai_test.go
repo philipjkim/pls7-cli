@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math/rand"
 	"pls7-cli/pkg/poker"
 	"strings"
 	"testing"
@@ -108,10 +109,98 @@ func TestEvaluateHandStrength(t *testing.T) {
 				Hand: cardsFromStrings(tc.holeCardsStr),
 			}
 
-			score := g.evaluateHandStrength(player)
+			score := evaluateHandStrength(g, player)
 
 			if score < tc.minExpectedScore || score > tc.maxExpectedScore {
 				t.Errorf("Expected score between %.2f and %.2f, but got %.2f", tc.minExpectedScore, tc.maxExpectedScore, score)
+			}
+		})
+	}
+}
+
+// TestCPUActionWithRandomness tests the AI actions that depend on randomness.
+func TestCPUActionWithRandomness(t *testing.T) {
+	// Use a fixed seed for deterministic "random" behavior.
+	const seed = 12345
+	r := rand.New(rand.NewSource(seed))
+
+	// With seed 12345, the first r.Float64() is approx 0.515 ( > 0.25)
+	// The second r.Float64() is approx 0.463 ( > 0.20)
+	// The third r.Float64() is approx 0.133 ( < 0.25 and < 0.20)
+
+	testCases := []struct {
+		name           string
+		difficulty     Difficulty
+		betToCall      int
+		playerBet      int
+		handStrength   float64 // For Hard AI
+		phase          GamePhase
+		expectedAction ActionType
+	}{
+		{
+			name:           "Easy AI - Folds when random > 0.25",
+			difficulty:     DifficultyEasy,
+			betToCall:      1000,
+			playerBet:      0,
+			expectedAction: ActionFold,
+		},
+		{
+			name:           "Easy AI - Calls when random < 0.25",
+			difficulty:     DifficultyEasy,
+			betToCall:      1000,
+			playerBet:      0,
+			expectedAction: ActionCall, // This will use the third random number (0.133)
+		},
+		{
+			name:           "Hard AI - No Bluff when random > 0.20",
+			difficulty:     DifficultyHard,
+			betToCall:      0,
+			playerBet:      0,
+			handStrength:   float64(poker.HighCard),
+			phase:          PhaseFlop,
+			expectedAction: ActionCheck, // Should default to Medium AI's action
+		},
+		{
+			name:           "Hard AI - Bluffs when random < 0.20",
+			difficulty:     DifficultyHard,
+			betToCall:      0,
+			playerBet:      0,
+			handStrength:   float64(poker.HighCard),
+			phase:          PhaseFlop,
+			expectedAction: ActionBet, // This will use the third random number (0.133)
+		},
+	}
+
+	// Reset the seed before running tests
+	r.Seed(seed)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := &Game{
+				Difficulty: tc.difficulty,
+				BetToCall:  tc.betToCall,
+				Phase:      tc.phase,
+			}
+			// Initialize the default evaluator, which we might override.
+			g.handEvaluator = evaluateHandStrength
+			player := &Player{
+				CurrentBet: tc.playerBet,
+			}
+
+			var action PlayerAction
+			switch tc.difficulty {
+			case DifficultyEasy:
+				action = g.getEasyAction(player, r)
+			case DifficultyHard:
+				// FIX: Mock the handEvaluator function field, not the method.
+				originalEval := g.handEvaluator
+				g.handEvaluator = func(g *Game, p *Player) float64 { return tc.handStrength }
+				action = g.getHardAction(player, r)
+				g.handEvaluator = originalEval // Restore original function
+			}
+
+			if action.Type != tc.expectedAction {
+				t.Errorf("Expected action %v, but got %v", tc.expectedAction, action.Type)
 			}
 		})
 	}

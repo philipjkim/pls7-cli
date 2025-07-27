@@ -20,7 +20,7 @@ func (gp GamePhase) String() string {
 	return []string{"Pre-Flop", "Flop", "Turn", "River", "Showdown", "Hand Over"}[gp]
 }
 
-// The Game represents the state of a single hand of PLS7.
+// Game represents the state of a single hand of PLS7.
 type Game struct {
 	Players        []*Player
 	Deck           *poker.Deck
@@ -29,15 +29,18 @@ type Game struct {
 	DealerPos      int
 	CurrentTurnPos int
 	Phase          GamePhase
-	BetToCall      int // Amount needed to call in the current round
-	HandCount      int // To track the hand number
+	BetToCall      int
+	HandCount      int
+	Difficulty     Difficulty // To store the selected AI difficulty
+	// handEvaluator is a function field to allow mocking in tests.
+	handEvaluator func(g *Game, player *Player) float64
 }
 
-// NewGame initializes a new game with players.
-func NewGame(playerNames []string, initialChips int) *Game {
+// NewGame initializes a new game with players and difficulty.
+func NewGame(playerNames []string, initialChips int, difficulty Difficulty) *Game {
 	players := make([]*Player, len(playerNames))
 	for i, name := range playerNames {
-		isCPU := name != "YOU"
+		isCPU := (name != "YOU")
 		players[i] = &Player{
 			Name:  name,
 			Chips: initialChips,
@@ -45,8 +48,12 @@ func NewGame(playerNames []string, initialChips int) *Game {
 		}
 	}
 
-	return &Game{
-		Players:   players,
-		DealerPos: -1, // Will be set to 0 on the first hand
+	g := &Game{
+		Players:    players,
+		DealerPos:  -1,
+		Difficulty: difficulty,
 	}
+	// Set the default hand evaluator.
+	g.handEvaluator = evaluateHandStrength
+	return g
 }
