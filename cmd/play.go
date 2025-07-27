@@ -30,21 +30,31 @@ var playCmd = &cobra.Command{
 		for {
 			g.StartNewHand()
 
-			// Single Hand Loop
-			for g.Phase != game.PhaseHandOver {
-				runInteractiveBettingRound(g)
-
+			// Single Hand Loop - RESTRUCTURED
+			for {
 				if g.CountActivePlayers() <= 1 {
+					break // End hand early if only one player remains
+				}
+
+				switch g.Phase {
+				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
+					runInteractiveBettingRound(g)
+					g.Advance()
+				case game.PhaseShowdown:
+					cli.DisplayGameState(g)
+					showdownResults(g)
+					g.Advance() // Move to HandOver
+				case game.PhaseHandOver:
+					break // Exit the single hand loop
+				}
+
+				if g.Phase == game.PhaseHandOver {
 					break
 				}
-				g.Advance()
 			}
 
 			// Conclude the hand
-			if g.CountActivePlayers() > 1 {
-				cli.DisplayGameState(g)
-				showdownResults(g)
-			} else {
+			if g.CountActivePlayers() == 1 {
 				// Award pot to the last remaining player
 				fmt.Println("Awarding pot to the last player...")
 			}
@@ -76,14 +86,11 @@ func runInteractiveBettingRound(g *game.Game) {
 	}
 
 	numPlayers := len(g.Players)
-	// The position of the player who needs to act last for the round to be complete.
 	actionCloserPos := 0
 
 	if g.Phase == game.PhasePreFlop {
-		// In Pre-Flop, the Big Blind is the last to act initially.
 		actionCloserPos = (g.DealerPos + 2) % numPlayers
 	} else {
-		// In Post-Flop, the Dealer is the last to act.
 		actionCloserPos = g.DealerPos
 	}
 
@@ -106,13 +113,10 @@ func runInteractiveBettingRound(g *game.Game) {
 
 			wasAggressive := g.ProcessAction(player, action)
 			if wasAggressive {
-				// If a player bets or raises, the action must go all the way around again.
-				// The new "last to act" is the player right before the aggressor.
 				actionCloserPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
 			}
 		}
 
-		// The round is over AFTER the action has reached and been completed by the target player.
 		if g.CurrentTurnPos == actionCloserPos {
 			break
 		}
@@ -165,7 +169,7 @@ func showdownResults(g *game.Game) {
 
 	fmt.Println("\n--- POT DISTRIBUTION ---")
 	for _, result := range distributionResults {
-		fmt.Printf("%s won %d chips with %s\n", result.PlayerName, result.AmountWon, result.HandDesc)
+		fmt.Printf("%s won %s chips with %s\n", result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc)
 	}
 	fmt.Println("------------------------")
 }

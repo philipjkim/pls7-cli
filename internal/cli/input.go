@@ -20,7 +20,7 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 	if canCheck {
 		prompt.WriteString("chec(k), (b)et, (f)old > ")
 	} else {
-		prompt.WriteString(fmt.Sprintf("(c)all %d, (r)aise, (f)old > ", g.BetToCall-player.CurrentBet))
+		prompt.WriteString(fmt.Sprintf("(c)all %s, (r)aise, (f)old > ", FormatNumber(g.BetToCall-player.CurrentBet)))
 	}
 
 	fmt.Print(prompt.String())
@@ -66,7 +66,7 @@ func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction
 		actionName = "raise"
 	}
 
-	fmt.Printf("Enter amount to %s (minBet: %d, maxBet: %d): ", actionName, minBet, maxBet)
+	fmt.Printf("Enter amount to %s (min: %s, max: %s): ", actionName, FormatNumber(minBet), FormatNumber(maxBet))
 
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')

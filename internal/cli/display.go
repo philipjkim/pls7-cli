@@ -12,8 +12,8 @@ func DisplayGameState(g *game.Game) {
 	clearScreen() // Clears the console for a fresh display
 
 	phaseName := strings.ToUpper(g.Phase.String())
-	fmt.Printf("--- HAND #%d | PHASE: %s | POT: %d | BLINDS: %d/%d ---\n",
-		g.HandCount, phaseName, g.Pot, game.SmallBlindAmt, game.BigBlindAmt)
+	fmt.Printf("--- HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
+		g.HandCount, phaseName, FormatNumber(g.Pot), FormatNumber(game.SmallBlindAmt), FormatNumber(game.BigBlindAmt))
 
 	var communityCardStrings []string
 	for _, c := range g.CommunityCards {
@@ -34,6 +34,8 @@ func DisplayGameState(g *game.Game) {
 		status := ""
 		if p.Status == game.PlayerStatusFolded {
 			status = "(Folded)"
+		} else if p.Status == game.PlayerStatusEliminated {
+			status = "(Eliminated)"
 		}
 
 		handInfo := ""
@@ -45,7 +47,7 @@ func DisplayGameState(g *game.Game) {
 			handInfo = fmt.Sprintf("| Hand: %s", strings.Join(handStrings, " "))
 		}
 
-		line := fmt.Sprintf("%s%-7s: Chips: %-7d %s %s", indicator, p.Name, p.Chips, status, handInfo)
+		line := fmt.Sprintf("%s%-7s: Chips: %-9s %s %s", indicator, p.Name, FormatNumber(p.Chips), status, handInfo)
 		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
