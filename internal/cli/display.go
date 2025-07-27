@@ -12,9 +12,8 @@ func DisplayGameState(g *game.Game) {
 	clearScreen() // Clears the console for a fresh display
 
 	phaseName := strings.ToUpper(g.Phase.String())
-	// Hand # is static for now, will be dynamic later.
-	fmt.Printf("--- HAND #1 | PHASE: %s | POT: %d | BLINDS: %d/%d ---\n",
-		phaseName, g.Pot, game.SmallBlindAmt, game.BigBlindAmt)
+	fmt.Printf("--- HAND #%d | PHASE: %s | POT: %d | BLINDS: %d/%d ---\n",
+		g.HandCount, phaseName, g.Pot, game.SmallBlindAmt, game.BigBlindAmt)
 
 	var communityCardStrings []string
 	for _, c := range g.CommunityCards {

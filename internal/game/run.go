@@ -34,34 +34,65 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 	return false
 }
 
-// StartNewHand prepares the game for a new hand, including posting blinds.
+// CleanupHand checks for eliminated players and prepares for the next hand.
+func (g *Game) CleanupHand() {
+	fmt.Println("\n--- End of Hand ---")
+	for _, p := range g.Players {
+		if p.Chips == 0 && p.Status != PlayerStatusEliminated {
+			p.Status = PlayerStatusEliminated
+			fmt.Printf("%s has been eliminated!\n", p.Name)
+		}
+	}
+}
+
+// StartNewHand now skips eliminated players.
 func (g *Game) StartNewHand() {
+	g.HandCount++
 	g.Phase = PhasePreFlop
 	g.Deck = poker.NewDeck()
 	g.Deck.Shuffle()
 	g.CommunityCards = []poker.Card{}
 	g.Pot = 0
-	g.DealerPos = (g.DealerPos + 1) % len(g.Players)
+
+	// Move the dealer button to the next active player
+	g.DealerPos = g.findNextActivePlayer(g.DealerPos)
 
 	for _, p := range g.Players {
-		p.Hand = []poker.Card{}
-		p.CurrentBet = 0
-		p.Status = PlayerStatusPlaying
+		if p.Status != PlayerStatusEliminated {
+			p.Hand = []poker.Card{}
+			p.CurrentBet = 0
+			p.Status = PlayerStatusPlaying
+		}
 	}
 
-	sbPos := (g.DealerPos + 1) % len(g.Players)
-	bbPos := (g.DealerPos + 2) % len(g.Players)
+	// Post blinds from active players
+	sbPos := g.findNextActivePlayer(g.DealerPos)
+	bbPos := g.findNextActivePlayer(sbPos)
 	g.postBet(g.Players[sbPos], SmallBlindAmt)
 	g.postBet(g.Players[bbPos], BigBlindAmt)
 
 	g.BetToCall = BigBlindAmt
-	g.CurrentTurnPos = (bbPos + 1) % len(g.Players)
+	g.CurrentTurnPos = g.findNextActivePlayer(bbPos)
 
+	// Deal cards to active players
 	for i := 0; i < 3; i++ {
-		for _, p := range g.Players {
-			card, _ := g.Deck.Deal()
-			p.Hand = append(p.Hand, card)
+		for pos, p := range g.Players {
+			if p.Status == PlayerStatusPlaying {
+				card, _ := g.Deck.Deal()
+				g.Players[pos].Hand = append(g.Players[pos].Hand, card)
+			}
 		}
+	}
+}
+
+// findNextActivePlayer finds the index of the next player who is not eliminated.
+func (g *Game) findNextActivePlayer(startPos int) int {
+	pos := (startPos + 1) % len(g.Players)
+	for {
+		if g.Players[pos].Status != PlayerStatusEliminated {
+			return pos
+		}
+		pos = (pos + 1) % len(g.Players)
 	}
 }
 

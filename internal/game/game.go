@@ -20,7 +20,7 @@ func (gp GamePhase) String() string {
 	return []string{"Pre-Flop", "Flop", "Turn", "River", "Showdown", "Hand Over"}[gp]
 }
 
-// Game represents the state of a single hand of PLS7.
+// The Game represents the state of a single hand of PLS7.
 type Game struct {
 	Players        []*Player
 	Deck           *poker.Deck
@@ -30,6 +30,7 @@ type Game struct {
 	CurrentTurnPos int
 	Phase          GamePhase
 	BetToCall      int // Amount needed to call in the current round
+	HandCount      int // To track the hand number
 }
 
 // NewGame initializes a new game with players.

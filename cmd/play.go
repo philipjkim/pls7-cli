@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"github.com/spf13/cobra"
+	"os"
 	"pls7-cli/internal/cli"
 	"pls7-cli/internal/game"
 	"pls7-cli/pkg/poker"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 // playCmd represents the play command
@@ -25,27 +26,47 @@ var playCmd = &cobra.Command{
 		initialChips := game.BigBlindAmt * 300 // 300BB
 		g := game.NewGame(playerNames, initialChips)
 
-		g.StartNewHand()
+		// Main Game Loop (multi-hand)
+		for {
+			g.StartNewHand()
 
-		// Main game loop for a single hand
-		for g.Phase != game.PhaseHandOver {
-			runInteractiveBettingRound(g)
+			// Single Hand Loop
+			for g.Phase != game.PhaseHandOver {
+				runInteractiveBettingRound(g)
 
+				if g.CountActivePlayers() <= 1 {
+					break // End hand early if only one player remains
+				}
+				g.Advance()
+			}
+
+			// Conclude the hand
+			if g.CountActivePlayers() > 1 {
+				cli.DisplayGameState(g)
+				showdownResults(g)
+			} else {
+				// Award pot to the last remaining player
+				fmt.Println("Awarding pot to the last player...")
+				// (Full logic for this will be in pot distribution)
+			}
+
+			g.CleanupHand()
+
+			// Check for Game Over condition
 			if g.CountActivePlayers() <= 1 {
-				fmt.Println("\nOnly one player left. Hand is over.")
+				fmt.Println("\n--- GAME OVER ---")
+				// Find and announce the winner
 				break
 			}
 
-			g.Advance()
-
-			if g.Phase == game.PhaseShowdown {
-				cli.DisplayGameState(g)
-				showdownResults(g)
-				g.Advance() // Move to HandOver
+			fmt.Print("\nPress ENTER to start the next hand, or type 'quit' to exit > ")
+			reader := bufio.NewReader(os.Stdin)
+			input, _ := reader.ReadString('\n')
+			if strings.TrimSpace(strings.ToLower(input)) == "quit" {
+				fmt.Println("Thanks for playing!")
+				break
 			}
 		}
-
-		fmt.Println("\nGame hand finished.")
 	},
 }
 
