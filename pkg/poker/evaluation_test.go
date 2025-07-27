@@ -195,3 +195,68 @@ func TestFindBestStraight(t *testing.T) {
 		})
 	}
 }
+
+// TestLowHandComparison specifically tests the comparison logic between two low hands.
+func TestLowHandComparison(t *testing.T) {
+	// compare is a helper to simulate the comparison logic.
+	// Returns 1 if h1 is better (lower), -1 if h2 is better, 0 if tie.
+	compare := func(h1, h2 *HandResult) int {
+		for i := 0; i < 5; i++ {
+			v1 := getLowRankValue(h1.HighValues[i])
+			v2 := getLowRankValue(h2.HighValues[i])
+			if v1 < v2 {
+				return 1 // h1 is better
+			}
+			if v1 > v2 {
+				return -1 // h2 is better
+			}
+		}
+		return 0 // Tie
+	}
+
+	testCases := []struct {
+		name           string
+		hand1Str       string // Pool for hand 1
+		hand2Str       string // Pool for hand 2
+		expectedWinner int    // 1 for hand1, -1 for hand2
+	}{
+		{
+			name:           "7-6-5-3-A should beat 7-6-5-4-3",
+			hand1Str:       "As 7d 6s 5c 3h Ks Qs Js", // Makes 7-6-5-3-A
+			hand2Str:       "7d 6s 5c 4d 3h Ks Qs Js", // Makes 7-6-5-4-3
+			expectedWinner: 1,
+		},
+		{
+			name:           "6-5-4-3-2 should beat 7-5-4-3-2",
+			hand1Str:       "6s 5d 4c 3h 2s Ks Qs Js", // Makes 6-5-4-3-2
+			hand2Str:       "7s 5d 4c 3h 2s Ks Qs Js", // Makes 7-5-4-3-2
+			expectedWinner: 1,
+		},
+		{
+			name:           "Nut low should beat 6-low",
+			hand1Str:       "As 2d 3c 4h 5s Ks Qs Js", // Makes A-2-3-4-5
+			hand2Str:       "As 2d 3c 4h 6s Ks Qs Js", // Makes A-2-3-4-6
+			expectedWinner: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pool1 := cardsFromStrings(tc.hand1Str)
+			pool2 := cardsFromStrings(tc.hand2Str)
+
+			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:])
+			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:])
+
+			if lowHand1 == nil || lowHand2 == nil {
+				t.Fatal("Both hands should qualify for a low hand in this test")
+			}
+
+			winner := compare(lowHand1, lowHand2)
+			if winner != tc.expectedWinner {
+				t.Errorf("Expected winner to be %d, but got %d. Hand1: %v, Hand2: %v",
+					tc.expectedWinner, winner, lowHand1.HighValues, lowHand2.HighValues)
+			}
+		})
+	}
+}

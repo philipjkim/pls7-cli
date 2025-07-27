@@ -188,13 +188,13 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 
 // --- New Helper Function for Low Hand ---
 
+// findBestLowHand finds the best possible 7-or-better low hand from the pool.
 func findBestLowHand(analysis *handAnalysis) (*HandResult, bool) {
 	uniqueLowCards := make([]Card, 0, 8)
 	usedRanks := make(map[Rank]bool)
 
 	// Find all unique cards with rank 7 or lower, treating Ace as a low card.
 	for _, card := range analysis.cards {
-		// FIX: Ace must be included as a low card candidate.
 		isLowCard := card.Rank <= Seven || card.Rank == Ace
 		if isLowCard && !usedRanks[card.Rank] {
 			uniqueLowCards = append(uniqueLowCards, card)
@@ -209,23 +209,15 @@ func findBestLowHand(analysis *handAnalysis) (*HandResult, bool) {
 
 	// Sort the unique low cards by rank ascending to find the best (lowest) hand
 	sort.Slice(uniqueLowCards, func(i, j int) bool {
-		// Special handling for Ace as the lowest card
-		rankI, rankJ := uniqueLowCards[i].Rank, uniqueLowCards[j].Rank
-		if rankI == Ace {
-			rankI = 1
-		}
-		if rankJ == Ace {
-			rankJ = 1
-		}
-		return rankI < rankJ
+		return getLowRankValue(uniqueLowCards[i].Rank) < getLowRankValue(uniqueLowCards[j].Rank)
 	})
 
 	// The best low hand consists of the 5 lowest cards
 	bestLowCards := uniqueLowCards[:5]
 
-	// Sort descending for HighValues comparison (e.g., 7-5-4-3-2 is better than 7-6-3-2-A)
+	// Sort descending for HighValues comparison, treating Ace as the lowest rank.
 	sort.Slice(bestLowCards, func(i, j int) bool {
-		return bestLowCards[i].Rank > bestLowCards[j].Rank
+		return getLowRankValue(bestLowCards[i].Rank) > getLowRankValue(bestLowCards[j].Rank)
 	})
 
 	return &HandResult{
@@ -233,6 +225,14 @@ func findBestLowHand(analysis *handAnalysis) (*HandResult, bool) {
 		Cards:      bestLowCards,
 		HighValues: []Rank{bestLowCards[0].Rank, bestLowCards[1].Rank, bestLowCards[2].Rank, bestLowCards[3].Rank, bestLowCards[4].Rank},
 	}, true
+}
+
+// getLowRankValue returns the integer value of a rank for low hand comparisons, treating Ace as 1.
+func getLowRankValue(r Rank) int {
+	if r == Ace {
+		return 1
+	}
+	return int(r)
 }
 
 // --- Existing Helper Functions ---

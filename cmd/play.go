@@ -102,11 +102,7 @@ func runInteractiveBettingRound(g *game.Game) {
 
 			var action game.PlayerAction
 			if player.IsCPU {
-				if player.CurrentBet < g.BetToCall {
-					action = game.PlayerAction{Type: game.ActionCall}
-				} else {
-					action = game.PlayerAction{Type: game.ActionCheck}
-				}
+				action = g.GetCPUAction(player)
 			} else {
 				action = cli.PromptForAction(g)
 			}

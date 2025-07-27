@@ -11,6 +11,11 @@ const (
 	ActionRaise
 )
 
+// String makes ActionType implement the Stringer interface.
+func (at ActionType) String() string {
+	return []string{"Fold", "Check", "Call", "Bet", "Raise"}[at]
+}
+
 // PlayerAction represents an action taken by a player.
 type PlayerAction struct {
 	Type   ActionType
