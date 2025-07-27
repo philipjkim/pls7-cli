@@ -55,7 +55,7 @@ func (g *Game) StartNewHand() {
 	g.Pot = 0
 
 	// Move the dealer button to the next active player
-	g.DealerPos = g.findNextActivePlayer(g.DealerPos)
+	g.DealerPos = g.FindNextActivePlayer(g.DealerPos)
 
 	for _, p := range g.Players {
 		if p.Status != PlayerStatusEliminated {
@@ -66,13 +66,13 @@ func (g *Game) StartNewHand() {
 	}
 
 	// Post blinds from active players
-	sbPos := g.findNextActivePlayer(g.DealerPos)
-	bbPos := g.findNextActivePlayer(sbPos)
+	sbPos := g.FindNextActivePlayer(g.DealerPos)
+	bbPos := g.FindNextActivePlayer(sbPos)
 	g.postBet(g.Players[sbPos], SmallBlindAmt)
 	g.postBet(g.Players[bbPos], BigBlindAmt)
 
 	g.BetToCall = BigBlindAmt
-	g.CurrentTurnPos = g.findNextActivePlayer(bbPos)
+	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
 	// Deal cards to active players
 	for i := 0; i < 3; i++ {
@@ -85,8 +85,8 @@ func (g *Game) StartNewHand() {
 	}
 }
 
-// findNextActivePlayer finds the index of the next player who is not eliminated.
-func (g *Game) findNextActivePlayer(startPos int) int {
+// FindNextActivePlayer finds the index of the next player who is not eliminated.
+func (g *Game) FindNextActivePlayer(startPos int) int {
 	pos := (startPos + 1) % len(g.Players)
 	for {
 		if g.Players[pos].Status != PlayerStatusEliminated {

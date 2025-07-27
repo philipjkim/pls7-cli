@@ -77,14 +77,14 @@ func runInteractiveBettingRound(g *game.Game) {
 
 	numPlayers := len(g.Players)
 	// The position of the player who needs to act last for the round to be complete.
-	actionTargetPos := 0
+	actionCloserPos := 0
 
 	if g.Phase == game.PhasePreFlop {
 		// In Pre-Flop, the Big Blind is the last to act initially.
-		actionTargetPos = (g.DealerPos + 2) % numPlayers
+		actionCloserPos = (g.DealerPos + 2) % numPlayers
 	} else {
 		// In Post-Flop, the Dealer is the last to act.
-		actionTargetPos = g.DealerPos
+		actionCloserPos = g.DealerPos
 	}
 
 	for {
@@ -108,27 +108,25 @@ func runInteractiveBettingRound(g *game.Game) {
 			if wasAggressive {
 				// If a player bets or raises, the action must go all the way around again.
 				// The new "last to act" is the player right before the aggressor.
-				actionTargetPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
+				actionCloserPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
 			}
 		}
 
-		// The round is over when the action has reached the target player.
-		if g.CurrentTurnPos == actionTargetPos {
+		// The round is over AFTER the action has reached and been completed by the target player.
+		if g.CurrentTurnPos == actionCloserPos {
 			break
 		}
 
-		g.CurrentTurnPos = (g.CurrentTurnPos + 1) % numPlayers
+		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
 	}
 }
 
 func showdownResults(g *game.Game) {
 	fmt.Println("\n--- SHOWDOWN ---")
 
-	// Get distribution results first to identify winners
 	distributionResults := g.DistributePot()
 
-	// Create a lookup map for winners
-	winnerMap := make(map[string][]string) // map[playerName] -> ["High Winner", "Low Winner"]
+	winnerMap := make(map[string][]string)
 	for _, result := range distributionResults {
 		winType := ""
 		if strings.HasPrefix(result.HandDesc, "High") || strings.HasPrefix(result.HandDesc, "takes") {
@@ -139,14 +137,12 @@ func showdownResults(g *game.Game) {
 		winnerMap[result.PlayerName] = append(winnerMap[result.PlayerName], winType)
 	}
 
-	// Show everyone's hands and winner status
 	for _, player := range g.Players {
 		if player.Status == game.PlayerStatusFolded {
 			continue
 		}
 		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards)
 
-		// Build the full hand description
 		handDesc := highHand.String()
 		if lowHand != nil {
 			var lowHandRanks []string
@@ -159,7 +155,6 @@ func showdownResults(g *game.Game) {
 			handDesc += fmt.Sprintf(" | Low: %s-High", strings.Join(lowHandRanks, "-"))
 		}
 
-		// Add winner status if they won
 		winnerStatus := ""
 		if statuses, ok := winnerMap[player.Name]; ok {
 			winnerStatus = fmt.Sprintf(" (%s)", strings.Join(statuses, " & "))
@@ -168,7 +163,6 @@ func showdownResults(g *game.Game) {
 		fmt.Printf("- %-7s: %v -> %s%s\n", player.Name, player.Hand, handDesc, winnerStatus)
 	}
 
-	// Then, show the pot distribution results
 	fmt.Println("\n--- POT DISTRIBUTION ---")
 	for _, result := range distributionResults {
 		fmt.Printf("%s won %d chips with %s\n", result.PlayerName, result.AmountWon, result.HandDesc)
