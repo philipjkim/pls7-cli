@@ -7,6 +7,7 @@ import (
 	"os"
 	"pls7-cli/internal/cli"
 	"pls7-cli/internal/game"
+	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 	"strings"
 )
@@ -48,8 +49,6 @@ var playCmd = &cobra.Command{
 					break
 				}
 
-				// If no more betting is possible (e.g., everyone is all-in),
-				// fast-forward to the showdown.
 				if g.CountPlayersAbleToAct() < 2 {
 					for g.Phase != game.PhaseShowdown {
 						g.Advance()
@@ -61,7 +60,7 @@ var playCmd = &cobra.Command{
 					runInteractiveBettingRound(g)
 					g.Advance()
 				case game.PhaseShowdown, game.PhaseHandOver:
-					break // Exit the single hand loop
+					break
 				}
 
 				if g.Phase == game.PhaseShowdown || g.Phase == game.PhaseHandOver {
@@ -69,29 +68,26 @@ var playCmd = &cobra.Command{
 				}
 			}
 
+			// Conclude the hand
 			if g.CountPlayersInHand() > 1 {
-				// Scenario 1: More than one player left, so it's a showdown.
 				cli.DisplayGameState(g)
 				showdownResults(g)
 			} else {
-				// Scenario 2: Only one player left, award them the pot.
 				fmt.Println("\n--- POT DISTRIBUTION ---")
 				results := g.AwardPotToLastPlayer()
 				for _, result := range results {
-					fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc)
+					fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc)
 				}
 				fmt.Println("------------------------")
 			}
 
 			g.CleanupHand()
 
-			// Check if the human player ("YOU") has been eliminated.
 			if g.Players[0].Status == game.PlayerStatusEliminated {
 				fmt.Println("\nYou have been eliminated. GAME OVER.")
 				break
 			}
 
-			// Check for general game over condition.
 			if g.CountRemainingPlayers() <= 1 {
 				fmt.Println("\n--- GAME OVER ---")
 				break
@@ -169,7 +165,8 @@ func showdownResults(g *game.Game) {
 	}
 
 	for _, player := range g.Players {
-		if player.Status == game.PlayerStatusFolded {
+		// FIX: Do not show eliminated or folded players in the showdown result list.
+		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
 			continue
 		}
 		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards)
@@ -196,7 +193,7 @@ func showdownResults(g *game.Game) {
 
 	fmt.Println("\n--- POT DISTRIBUTION ---")
 	for _, result := range distributionResults {
-		fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc)
+		fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc)
 	}
 	fmt.Println("------------------------")
 }

@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 )
 
@@ -19,21 +20,33 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 	case ActionCall:
 		amountToCall := g.BetToCall - player.CurrentBet
 		g.postBet(player, amountToCall)
-		player.LastActionDesc = fmt.Sprintf("Call %d", amountToCall)
-		fmt.Printf("%s calls %d.\n", player.Name, amountToCall)
+		desc := fmt.Sprintf("Call %s", util.FormatNumber(amountToCall))
+		if player.Status == PlayerStatusAllIn {
+			desc += " (All-in)"
+		}
+		player.LastActionDesc = desc
+		fmt.Printf("%s calls %s.\n", player.Name, util.FormatNumber(amountToCall))
 	case ActionBet:
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
-		player.LastActionDesc = fmt.Sprintf("Bet %d", action.Amount)
-		fmt.Printf("%s bets %d.\n", player.Name, action.Amount)
-		return true // Aggressive action
+		desc := fmt.Sprintf("Bet %s", util.FormatNumber(action.Amount))
+		if player.Status == PlayerStatusAllIn {
+			desc += " (All-in)"
+		}
+		player.LastActionDesc = desc
+		fmt.Printf("%s bets %s.\n", player.Name, util.FormatNumber(action.Amount))
+		return true
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
-		player.LastActionDesc = fmt.Sprintf("Raise to %d", action.Amount)
-		fmt.Printf("%s raises to %d.\n", player.Name, action.Amount)
-		return true // Aggressive action
+		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(action.Amount))
+		if player.Status == PlayerStatusAllIn {
+			desc += " (All-in)"
+		}
+		player.LastActionDesc = desc
+		fmt.Printf("%s raises to %s.\n", player.Name, util.FormatNumber(action.Amount))
+		return true
 	}
 	return false
 }

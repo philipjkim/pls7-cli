@@ -1,4 +1,4 @@
-package cli
+package util
 
 import "strconv"
 
@@ -10,16 +10,13 @@ func FormatNumber(n int) string {
 		return s
 	}
 
-	// Calculate the length of the first group of digits
 	firstGroupLen := length % 3
 	if firstGroupLen == 0 {
 		firstGroupLen = 3
 	}
 
-	// Start with the first group
 	result := s[:firstGroupLen]
 
-	// Append the rest with commas
 	for i := firstGroupLen; i < length; i += 3 {
 		result += "," + s[i:i+3]
 	}

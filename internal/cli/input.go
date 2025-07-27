@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"pls7-cli/internal/game"
+	"pls7-cli/internal/util"
 	"strconv"
 	"strings"
 )
@@ -13,6 +14,7 @@ import (
 func PromptForAction(g *game.Game) game.PlayerAction {
 	player := g.Players[g.CurrentTurnPos]
 	canCheck := player.CurrentBet == g.BetToCall
+	amountToCall := g.BetToCall - player.CurrentBet
 
 	var prompt strings.Builder
 	prompt.WriteString("Choose your action: ")
@@ -20,7 +22,13 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 	if canCheck {
 		prompt.WriteString("chec(k), (b)et, (f)old > ")
 	} else {
-		prompt.WriteString(fmt.Sprintf("(c)all %s, (r)aise, (f)old > ", FormatNumber(g.BetToCall-player.CurrentBet)))
+		prompt.WriteString(fmt.Sprintf("(c)all %s, ", util.FormatNumber(amountToCall)))
+		// Only show raise option if the player has enough chips to make a valid raise.
+		minRaise, _ := g.CalculateBettingLimits()
+		if player.Chips > amountToCall && player.CurrentBet+player.Chips >= minRaise {
+			prompt.WriteString("(r)aise, ")
+		}
+		prompt.WriteString("(f)old > ")
 	}
 
 	fmt.Print(prompt.String())
@@ -58,15 +66,15 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 // promptForAmount는 베팅/레이즈 금액을 요청합니다.
 func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction {
 	minBet, maxBet := g.CalculateBettingLimits()
-	// ActionType의 String() 메소드가 필요합니다. (다음 단계에서 추가 예정)
-	actionName := "action"
-	if actionType == game.ActionBet {
-		actionName = "bet"
-	} else if actionType == game.ActionRaise {
-		actionName = "raise"
+	actionName := "bet"
+	if actionType == game.ActionRaise {
+		actionName = "raise to"
 	}
 
-	fmt.Printf("Enter amount to %s (min: %s, max: %s): ", actionName, FormatNumber(minBet), FormatNumber(maxBet))
+	fmt.Printf(
+		"Enter amount to %s (min: %s, max: %s): ",
+		actionName, util.FormatNumber(minBet), util.FormatNumber(maxBet),
+	)
 
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')

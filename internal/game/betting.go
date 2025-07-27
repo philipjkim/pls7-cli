@@ -1,24 +1,36 @@
 package game
 
-// CalculateBettingLimits returns the minimum and maximum allowed bet/raise amounts.
-func (g *Game) CalculateBettingLimits() (min int, max int) {
-	// Minimum bet/raise is typically the size of the big blind, or the previous bet size.
-	// For simplicity, we'll use BigBlindAmt for now.
-	min = BigBlindAmt
-
-	// Pot-Limit calculation:
-	// Max raise = Pot + (2 * last bet)
-	// The amount a player can put in total = Pot + (2 * last bet) + their own previous call
-	// So the final bet amount = Pot + last_bet + call_amount
-	// A simpler way: Max bet is the size of the pot.
-	// Let's use a simplified version for now: max bet is the size of the pot.
-	max = g.Pot + g.BetToCall
-
-	// A player cannot bet more than they have.
+// CalculateBettingLimits returns the minimum and maximum allowed raise amounts.
+// Note: The amounts returned are the TOTAL size of the new bet.
+func (g *Game) CalculateBettingLimits() (minRaiseTotal int, maxRaiseTotal int) {
 	player := g.Players[g.CurrentTurnPos]
-	if max > player.Chips {
-		max = player.Chips
+	amountToCall := g.BetToCall - player.CurrentBet
+
+	// Minimum Raise calculation:
+	// A raise must be at least as large as the previous bet or raise.
+	// For simplicity, we'll define a min raise as doubling the current bet to call.
+	minRaiseTotal = g.BetToCall * 2
+	if g.BetToCall == 0 { // If no bet, min bet is the Big Blind
+		minRaiseTotal = BigBlindAmt
 	}
 
-	return min, max
+	// Pot-Limit Raise calculation:
+	// The max raise is the size of the pot after the player has called.
+	// Pot size after calling = current pot + all bets on the table + the call amount.
+	// Our g.Pot already includes all bets, so:
+	potAfterCall := g.Pot + amountToCall
+	maxRaiseAmount := potAfterCall
+	maxRaiseTotal = g.BetToCall + maxRaiseAmount
+
+	// A player cannot bet more than they have.
+	if maxRaiseTotal > player.Chips+player.CurrentBet {
+		maxRaiseTotal = player.Chips + player.CurrentBet
+	}
+
+	// A player must have enough chips to make a minimum raise.
+	if minRaiseTotal > player.Chips+player.CurrentBet {
+		minRaiseTotal = player.Chips + player.CurrentBet
+	}
+
+	return minRaiseTotal, maxRaiseTotal
 }

@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"pls7-cli/internal/game"
+	"pls7-cli/internal/util"
 	"strings"
 	"time"
 )
@@ -13,7 +14,7 @@ func DisplayGameState(g *game.Game) {
 
 	phaseName := strings.ToUpper(g.Phase.String())
 	fmt.Printf("--- HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
-		g.HandCount, phaseName, FormatNumber(g.Pot), FormatNumber(game.SmallBlindAmt), FormatNumber(game.BigBlindAmt))
+		g.HandCount, phaseName, util.FormatNumber(g.Pot), util.FormatNumber(game.SmallBlindAmt), util.FormatNumber(game.BigBlindAmt))
 
 	var communityCardStrings []string
 	for _, c := range g.CommunityCards {
@@ -49,14 +50,17 @@ func DisplayGameState(g *game.Game) {
 
 		actionInfo := ""
 		if p.Status != game.PlayerStatusEliminated {
-			actionInfo = fmt.Sprintf(", Current Bet: %-6s", FormatNumber(p.CurrentBet))
+			actionInfo = fmt.Sprintf(", Current Bet: %-6s", util.FormatNumber(p.CurrentBet))
 			// Show last action unless it's the current player's turn
 			if p.LastActionDesc != "" && i != g.CurrentTurnPos {
 				actionInfo += fmt.Sprintf(" - %s", p.LastActionDesc)
 			}
 		}
 
-		line := fmt.Sprintf("%s%-7s: Chips: %-9s%s %s %s", indicator, p.Name, FormatNumber(p.Chips), actionInfo, status, handInfo)
+		line := fmt.Sprintf(
+			"%s%-7s: Chips: %-9s%s %s %s",
+			indicator, p.Name, util.FormatNumber(p.Chips), actionInfo, status, handInfo,
+		)
 		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
