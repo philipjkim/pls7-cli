@@ -35,7 +35,7 @@ var playCmd = &cobra.Command{
 				runInteractiveBettingRound(g)
 
 				if g.CountActivePlayers() <= 1 {
-					break // End hand early if only one player remains
+					break
 				}
 				g.Advance()
 			}
@@ -47,15 +47,12 @@ var playCmd = &cobra.Command{
 			} else {
 				// Award pot to the last remaining player
 				fmt.Println("Awarding pot to the last player...")
-				// (Full logic for this will be in pot distribution)
 			}
 
 			g.CleanupHand()
 
-			// Check for Game Over condition
 			if g.CountActivePlayers() <= 1 {
 				fmt.Println("\n--- GAME OVER ---")
-				// Find and announce the winner
 				break
 			}
 
@@ -70,7 +67,7 @@ var playCmd = &cobra.Command{
 	},
 }
 
-// runInteractiveBettingRound has a more robust loop to handle betting correctly.
+// runInteractiveBettingRound has a robust loop to handle all betting scenarios.
 func runInteractiveBettingRound(g *game.Game) {
 	g.PrepareNewBettingRound()
 
@@ -78,21 +75,19 @@ func runInteractiveBettingRound(g *game.Game) {
 		return
 	}
 
-	lastAggressorPos := -1
+	numPlayers := len(g.Players)
+	// The position of the player who needs to act last for the round to be complete.
+	actionTargetPos := 0
+
 	if g.Phase == game.PhasePreFlop {
-		lastAggressorPos = (g.DealerPos + 2) % len(g.Players) // BB is the initial aggressor
+		// In Pre-Flop, the Big Blind is the last to act initially.
+		actionTargetPos = (g.DealerPos + 2) % numPlayers
+	} else {
+		// In Post-Flop, the Dealer is the last to act.
+		actionTargetPos = g.DealerPos
 	}
 
-	turnsTaken := 0
 	for {
-		if turnsTaken >= g.CountActivePlayers() {
-			if g.Phase == game.PhasePreFlop && g.CurrentTurnPos == lastAggressorPos && g.BetToCall == game.BigBlindAmt {
-				// Allow BB to act
-			} else {
-				break
-			}
-		}
-
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == game.PlayerStatusPlaying {
@@ -111,14 +106,18 @@ func runInteractiveBettingRound(g *game.Game) {
 
 			wasAggressive := g.ProcessAction(player, action)
 			if wasAggressive {
-				lastAggressorPos = g.CurrentTurnPos
-				turnsTaken = 1 // Reset counter after an aggressive action
-			} else {
-				turnsTaken++
+				// If a player bets or raises, the action must go all the way around again.
+				// The new "last to act" is the player right before the aggressor.
+				actionTargetPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
 			}
 		}
 
-		g.CurrentTurnPos = (g.CurrentTurnPos + 1) % len(g.Players)
+		// The round is over when the action has reached the target player.
+		if g.CurrentTurnPos == actionTargetPos {
+			break
+		}
+
+		g.CurrentTurnPos = (g.CurrentTurnPos + 1) % numPlayers
 	}
 }
 
