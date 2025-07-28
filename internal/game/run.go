@@ -210,3 +210,46 @@ func (g *Game) dealCommunityCards(n int) {
 		g.CommunityCards = append(g.CommunityCards, card)
 	}
 }
+
+// RunInteractiveBettingRound handles the logic for a full betting round.
+// It now takes an ActionProvider to decouple from the CLI.
+func (g *Game) RunInteractiveBettingRound(provider ActionProvider) {
+	g.PrepareNewBettingRound()
+
+	if g.CountPlayersInHand() < 2 {
+		return
+	}
+
+	numPlayers := len(g.Players)
+	actionCloserPos := 0
+
+	if g.Phase == PhasePreFlop {
+		actionCloserPos = (g.DealerPos + 2) % numPlayers
+	} else {
+		actionCloserPos = g.DealerPos
+	}
+
+	for {
+		player := g.Players[g.CurrentTurnPos]
+
+		if player.Status == PlayerStatusPlaying {
+			var action PlayerAction
+			if player.IsCPU {
+				action = g.GetCPUAction(player)
+			} else {
+				action = provider.GetAction(g) // Use the provider
+			}
+
+			wasAggressive := g.ProcessAction(player, action)
+			if wasAggressive {
+				actionCloserPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
+			}
+		}
+
+		if g.CurrentTurnPos == actionCloserPos {
+			break
+		}
+
+		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
+	}
+}

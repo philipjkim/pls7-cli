@@ -14,6 +14,13 @@ import (
 
 var difficultyStr string // To hold the flag value
 
+// CLIActionProvider implements the ActionProvider interface using the CLI.
+type CLIActionProvider struct{}
+
+func (p *CLIActionProvider) GetAction(g *game.Game) game.PlayerAction {
+	return cli.PromptForAction(g)
+}
+
 // playCmd represents the play command
 var playCmd = &cobra.Command{
 	Use:   "play",
@@ -24,6 +31,8 @@ var playCmd = &cobra.Command{
 		fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
 		fmt.Println("==================================================")
 		fmt.Printf("\nStarting the game with %s difficulty!\n", difficultyStr)
+
+		provider := &CLIActionProvider{}
 
 		var difficulty game.Difficulty
 		switch strings.ToLower(difficultyStr) {
@@ -57,7 +66,7 @@ var playCmd = &cobra.Command{
 
 				switch g.Phase {
 				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
-					runInteractiveBettingRound(g)
+					g.RunInteractiveBettingRound(provider)
 					g.Advance()
 				case game.PhaseShowdown, game.PhaseHandOver:
 					break
@@ -102,50 +111,6 @@ var playCmd = &cobra.Command{
 			}
 		}
 	},
-}
-
-// runInteractiveBettingRound has a robust loop to handle all betting scenarios.
-func runInteractiveBettingRound(g *game.Game) {
-	g.PrepareNewBettingRound()
-
-	if g.CountPlayersInHand() < 2 {
-		return
-	}
-
-	numPlayers := len(g.Players)
-	actionCloserPos := 0
-
-	if g.Phase == game.PhasePreFlop {
-		actionCloserPos = (g.DealerPos + 2) % numPlayers
-	} else {
-		actionCloserPos = g.DealerPos
-	}
-
-	for {
-		player := g.Players[g.CurrentTurnPos]
-
-		if player.Status == game.PlayerStatusPlaying {
-			cli.DisplayGameState(g)
-
-			var action game.PlayerAction
-			if player.IsCPU {
-				action = g.GetCPUAction(player)
-			} else {
-				action = cli.PromptForAction(g)
-			}
-
-			wasAggressive := g.ProcessAction(player, action)
-			if wasAggressive {
-				actionCloserPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
-			}
-		}
-
-		if g.CurrentTurnPos == actionCloserPos {
-			break
-		}
-
-		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
-	}
 }
 
 func showdownResults(g *game.Game) {
