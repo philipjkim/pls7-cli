@@ -17,7 +17,7 @@ type DistributionResult struct {
 func (g *Game) AwardPotToLastPlayer() []DistributionResult {
 	var winner *Player
 	for _, p := range g.Players {
-		if p.Status != PlayerStatusFolded {
+		if p.Status != PlayerStatusFolded && p.Status != PlayerStatusEliminated {
 			winner = p
 			break
 		}
@@ -112,7 +112,6 @@ func (g *Game) DistributePot() []DistributionResult {
 func (g *Game) getShowdownPlayers() []*Player {
 	active := []*Player{}
 	for _, p := range g.Players {
-		// FIX: Eliminated players cannot be in the showdown.
 		if p.Status != PlayerStatusFolded && p.Status != PlayerStatusEliminated {
 			active = append(active, p)
 		}

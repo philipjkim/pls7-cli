@@ -67,8 +67,7 @@ var playCmd = &cobra.Command{
 				switch g.Phase {
 				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
 					g.PrepareNewBettingRound()
-					cli.DisplayGameState(g)
-					g.ExecuteBettingLoop(provider)
+					g.ExecuteBettingLoop(provider, cli.DisplayGameState)
 					g.Advance()
 				case game.PhaseShowdown, game.PhaseHandOver:
 					break
@@ -132,7 +131,6 @@ func showdownResults(g *game.Game) {
 	}
 
 	for _, player := range g.Players {
-		// FIX: Do not show eliminated or folded players in the showdown result list.
 		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
 			continue
 		}

@@ -19,9 +19,7 @@ const (
 	SkipStraight // PLS7 Special
 	Flush
 	FullHouse
-	DoubleTriple // PLS7 Special
 	FourOfAKind
-	QuadPair // PLS7 Special
 	StraightFlush
 	RoyalFlush
 )
@@ -38,9 +36,7 @@ func (hr HandRank) String() string {
 		"Skip Straight",
 		"Flush",
 		"Full House",
-		"Double Triple",
 		"Four of a Kind",
-		"Quad-Pair",
 		"Straight Flush",
 		"Royal Flush",
 	}[hr]
@@ -85,8 +81,11 @@ func (hr *HandResult) String() string {
 	case OnePair:
 		pairRank := hr.HighValues[0].String()
 		return fmt.Sprintf("%s One Pair", pairRank)
-	case QuadPair, DoubleTriple, TriPair:
-		return hr.Rank.String() // These names are descriptive enough
+	case TriPair:
+		return fmt.Sprintf(
+			"Tri-Pair, %s-%s-%s",
+			hr.HighValues[0].String(), hr.HighValues[1].String(), hr.HighValues[2].String(),
+		)
 	case HighCard:
 		topCard := hr.HighValues[0].String()
 		return fmt.Sprintf("%s-High", topCard)
@@ -139,10 +138,6 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 			rank = RoyalFlush
 		}
 		highResult = &HandResult{Rank: rank, Cards: sfCards, HighValues: []Rank{sfCards[0].Rank}}
-	} else if qpCards, ok := findQuadPair(analysis); ok {
-		highResult = &HandResult{Rank: QuadPair, Cards: qpCards}
-	} else if dtCards, ok := findDoubleTriple(analysis); ok {
-		highResult = &HandResult{Rank: DoubleTriple, Cards: dtCards}
 	} else if quadRank, ok := findBestNOfAKind(analysis.rankCounts, 4); ok {
 		kickers := findKickers(analysis.cards, []Rank{quadRank}, 1)
 		quadCards := findCardsByRank(pool, quadRank, 4)
@@ -152,7 +147,17 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 		pairCards := findCardsByRank(pool, pairRank, 2)
 		highResult = &HandResult{Rank: FullHouse, Cards: append(tripleCards, pairCards...), HighValues: []Rank{tripleRank, pairRank}}
 	} else if flushCards, ok := findBestFlush(analysis); ok {
-		highResult = &HandResult{Rank: Flush, Cards: flushCards, HighValues: []Rank{flushCards[0].Rank, flushCards[1].Rank, flushCards[2].Rank, flushCards[3].Rank, flushCards[4].Rank}}
+		highResult = &HandResult{
+			Rank:  Flush,
+			Cards: flushCards,
+			HighValues: []Rank{
+				flushCards[0].Rank,
+				flushCards[1].Rank,
+				flushCards[2].Rank,
+				flushCards[3].Rank,
+				flushCards[4].Rank,
+			},
+		}
 	} else if ssCards, ok := findSkipStraight(analysis); ok {
 		highResult = &HandResult{Rank: SkipStraight, Cards: ssCards, HighValues: []Rank{ssCards[0].Rank}}
 	} else if straightCards, ok := findBestStraight(analysis); ok {
@@ -162,7 +167,11 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	} else if tripleRank, ok := findBestNOfAKind(analysis.rankCounts, 3); ok {
 		kickers := findKickers(analysis.cards, []Rank{tripleRank}, 2)
 		tripleCards := findCardsByRank(pool, tripleRank, 3)
-		highResult = &HandResult{Rank: ThreeOfAKind, Cards: append(tripleCards, kickers...), HighValues: []Rank{tripleRank, kickers[0].Rank, kickers[1].Rank}}
+		highResult = &HandResult{
+			Rank:       ThreeOfAKind,
+			Cards:      append(tripleCards, kickers...),
+			HighValues: []Rank{tripleRank, kickers[0].Rank, kickers[1].Rank},
+		}
 	} else if highPair, lowPair, ok := findBestTwoPair(analysis.rankCounts); ok {
 		kickers := findKickers(analysis.cards, []Rank{highPair, lowPair}, 1)
 		highPairCards := findCardsByRank(pool, highPair, 2)
@@ -173,9 +182,23 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	} else if pairRank, ok := findBestNOfAKind(analysis.rankCounts, 2); ok {
 		kickers := findKickers(analysis.cards, []Rank{pairRank}, 3)
 		pairCards := findCardsByRank(pool, pairRank, 2)
-		highResult = &HandResult{Rank: OnePair, Cards: append(pairCards, kickers...), HighValues: []Rank{pairRank, kickers[0].Rank, kickers[1].Rank, kickers[2].Rank}}
+		highResult = &HandResult{
+			Rank:       OnePair,
+			Cards:      append(pairCards, kickers...),
+			HighValues: []Rank{pairRank, kickers[0].Rank, kickers[1].Rank, kickers[2].Rank},
+		}
 	} else {
-		highResult = &HandResult{Rank: HighCard, Cards: analysis.cards[:5], HighValues: []Rank{analysis.cards[0].Rank, analysis.cards[1].Rank, analysis.cards[2].Rank, analysis.cards[3].Rank, analysis.cards[4].Rank}}
+		highResult = &HandResult{
+			Rank:  HighCard,
+			Cards: analysis.cards[:5],
+			HighValues: []Rank{
+				analysis.cards[0].Rank,
+				analysis.cards[1].Rank,
+				analysis.cards[2].Rank,
+				analysis.cards[3].Rank,
+				analysis.cards[4].Rank,
+			},
+		}
 	}
 
 	// --- Low Hand Evaluation ---
@@ -221,9 +244,15 @@ func findBestLowHand(analysis *handAnalysis) (*HandResult, bool) {
 	})
 
 	return &HandResult{
-		Rank:       HighCard, // Rank is not relevant for low hands in this context
-		Cards:      bestLowCards,
-		HighValues: []Rank{bestLowCards[0].Rank, bestLowCards[1].Rank, bestLowCards[2].Rank, bestLowCards[3].Rank, bestLowCards[4].Rank},
+		Rank:  HighCard, // Rank is not relevant for low hands in this context
+		Cards: bestLowCards,
+		HighValues: []Rank{
+			bestLowCards[0].Rank,
+			bestLowCards[1].Rank,
+			bestLowCards[2].Rank,
+			bestLowCards[3].Rank,
+			bestLowCards[4].Rank,
+		},
 	}, true
 }
 
@@ -251,36 +280,6 @@ func findStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 				return sfCards, true
 			}
 		}
-	}
-	return nil, false
-}
-
-func findQuadPair(analysis *handAnalysis) ([]Card, bool) {
-	pairCount := 0
-	for _, count := range analysis.rankCounts {
-		if count == 2 {
-			pairCount++
-		}
-	}
-	if pairCount == 4 {
-		return analysis.cards, true
-	}
-	return nil, false
-}
-
-func findDoubleTriple(analysis *handAnalysis) ([]Card, bool) {
-	tripleRanks := []Rank{}
-	for rank, count := range analysis.rankCounts {
-		if count >= 3 {
-			tripleRanks = append(tripleRanks, rank)
-		}
-	}
-	if len(tripleRanks) >= 2 {
-		sort.Slice(tripleRanks, func(i, j int) bool { return tripleRanks[i] > tripleRanks[j] })
-		cards := make([]Card, 0, 6)
-		cards = append(cards, findCardsByRank(analysis.cards, tripleRanks[0], 3)...)
-		cards = append(cards, findCardsByRank(analysis.cards, tripleRanks[1], 3)...)
-		return cards, true
 	}
 	return nil, false
 }
@@ -373,7 +372,11 @@ func findBestStraight(analysis *handAnalysis) ([]Card, bool) {
 		uniqueRanks = append(uniqueRanks, rank)
 	}
 	sort.Slice(uniqueRanks, func(i, j int) bool { return uniqueRanks[i] > uniqueRanks[j] })
-	if uniqueRanks[0] == Ace && containsRank(uniqueRanks, Five) && containsRank(uniqueRanks, Four) && containsRank(uniqueRanks, Three) && containsRank(uniqueRanks, Two) {
+	if uniqueRanks[0] == Ace &&
+		containsRank(uniqueRanks, Five) &&
+		containsRank(uniqueRanks, Four) &&
+		containsRank(uniqueRanks, Three) &&
+		containsRank(uniqueRanks, Two) {
 		return findCardsForStraight(analysis.cards, []Rank{Five, Four, Three, Two, Ace}), true
 	}
 	for i := 0; i <= len(uniqueRanks)-5; i++ {

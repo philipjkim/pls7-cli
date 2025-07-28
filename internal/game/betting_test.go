@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -42,7 +43,7 @@ func TestBettingRound_PlayerMustCallAllIn(t *testing.T) {
 	// --- This is the action we are testing ---
 	// 3. YOU must now call the 2000 all-in.
 	providerYOU := &MockActionProvider{Action: PlayerAction{Type: ActionCall}}
-	g.ExecuteBettingLoop(providerYOU)
+	g.ExecuteBettingLoop(providerYOU, displayMiniGameState)
 
 	// --- Assertions ---
 	// The betting loop should have terminated correctly.
@@ -90,7 +91,7 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 	// --- This is the action we are testing ---
 	// The betting loop should recognize that no further action is possible and return immediately.
 	providerYOU := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}} // This should not be called.
-	g.ExecuteBettingLoop(providerYOU)
+	g.ExecuteBettingLoop(providerYOU, displayMiniGameState)
 
 	// --- Assertions ---
 	// The main assertion is that the test completes without timing out.
@@ -100,5 +101,13 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 	}
 	if g.Pot != 8000 { // 5000 (YOU) + 1000 (CPU 1) + 2000 (CPU 2)
 		t.Errorf("Expected final pot to be 8000, but got %d", g.Pot)
+	}
+}
+
+func displayMiniGameState(g *Game) {
+	for _, p := range g.Players {
+		if p.Status == PlayerStatusPlaying {
+			fmt.Printf("%s's turn: Chips: %d, Current Bet: %d, Action: %v\n", p.Name, p.Chips, p.CurrentBet, p.LastActionDesc)
+		}
 	}
 }

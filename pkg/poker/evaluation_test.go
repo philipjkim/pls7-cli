@@ -38,16 +38,14 @@ func TestHighHands(t *testing.T) {
 		expectedRank HandRank
 	}{
 		// Special High Hands
-		{name: "Quad Pair", cardString: "As Ac Ks Kc Qs Qc Js Jc", expectedRank: QuadPair},
-		{name: "Double Triple", cardString: "As Ac Ah Ks Kc Kh Qs Jc", expectedRank: DoubleTriple},
-		{name: "Tri-Pair", cardString: "As Ac Ks Kc Qs Qc Js 9c", expectedRank: TriPair}, // REVISED: Broke the straight
+		{name: "Tri-Pair", cardString: "As Ac Ks Kc Qs Qc Js 9c", expectedRank: TriPair},
 		{name: "Skip Straight (A-Low)", cardString: "As 3c 5d 7h 9s Kd Qc Jc", expectedRank: SkipStraight},
 		{name: "Skip Straight (A-High)", cardString: "6s 8c Td Qh As 2c 3d 4h", expectedRank: SkipStraight},
 
 		// Standard High Hands
 		{name: "Royal Flush", cardString: "As Ks Qs Js Ts 2c 3d 4h", expectedRank: RoyalFlush},
 		{name: "Straight Flush (A-5)", cardString: "As 2s 3s 4s 5s Kc Qd Jh", expectedRank: StraightFlush},
-		{name: "Four of a Kind with a Pair", cardString: "As Ac Ah Ad Ks Kc Qs Jc", expectedRank: FourOfAKind}, // REVISED: Test name and expectation clarified
+		{name: "Four of a Kind with a Pair", cardString: "As Ac Ah Ad Ks Kc Qs Jc", expectedRank: FourOfAKind},
 		{name: "Full House", cardString: "As Ac Ah Ks Kc 2d 3c 4h", expectedRank: FullHouse},
 		{name: "Flush", cardString: "As Ks Qs Js 2s 3c 4d 5h", expectedRank: Flush},
 		{name: "Straight", cardString: "As Kc Qd Jh Ts 2c 3d 4h", expectedRank: Straight},
@@ -60,9 +58,9 @@ func TestHighHands(t *testing.T) {
 		{name: "Flush vs Straight", cardString: "As Ks Qs Js 2s 4c 5d 6h", expectedRank: Flush},
 
 		// Hand Composition
-		{name: "Board Play (Straight)", cardString: "2c 3d 4h Ah Ks Qd Jc Tc", expectedRank: Straight}, // REVISED: Broke the flush
+		{name: "Board Play (Straight)", cardString: "2c 3d 4h Ah Ks Qd Jc Tc", expectedRank: Straight},
 		{name: "1 Card Play (Royal Flush)", cardString: "As 2c 3d Ks Qs Js Ts 4h", expectedRank: RoyalFlush},
-		{name: "2 Card Play (Full House)", cardString: "As Ks 2d Ac Ah Kd 3h 4c", expectedRank: FullHouse}, // REVISED: Data now makes a clear Full House
+		{name: "2 Card Play (Full House)", cardString: "As Ks 2d Ac Ah Kd 3h 4c", expectedRank: FullHouse},
 		{name: "3 Card Play (Full House)", cardString: "As Ac Ah Ks Kc 2d 3c 4d", expectedRank: FullHouse},
 	}
 

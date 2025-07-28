@@ -5,15 +5,12 @@ import (
 	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
 	"strings"
-	"time"
 )
 
 // DisplayGameState prints the current state of the game board and players.
 func DisplayGameState(g *game.Game) {
-	clearScreen()
-
 	phaseName := strings.ToUpper(g.Phase.String())
-	fmt.Printf("--- HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
+	fmt.Printf("\n\n--- HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
 		g.HandCount, phaseName, util.FormatNumber(g.Pot), util.FormatNumber(game.SmallBlindAmt), util.FormatNumber(game.BigBlindAmt))
 
 	var communityCardStrings []string
@@ -64,7 +61,6 @@ func DisplayGameState(g *game.Game) {
 		fmt.Println(strings.TrimSpace(line))
 	}
 	fmt.Println("-------------------------------------------------")
-	time.Sleep(1 * time.Second) // Pause for 2 seconds to let the player see the state
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)

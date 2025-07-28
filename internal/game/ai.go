@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+var cpuThinkTime = 1 * time.Millisecond // Default thinking time for CPU actions
+
 // GetCPUAction is a dispatcher that calls the appropriate AI logic based on difficulty.
 func (g *Game) GetCPUAction(player *Player) PlayerAction {
 	// For the actual game, we create a random source here.
@@ -26,6 +28,8 @@ func (g *Game) GetCPUAction(player *Player) PlayerAction {
 func (g *Game) getEasyAction(player *Player, r *rand.Rand) PlayerAction {
 	canCheck := player.CurrentBet == g.BetToCall
 
+	time.Sleep(cpuThinkTime)
+
 	callProbability := 0.25
 	if !canCheck {
 		if r.Float64() < callProbability {
@@ -41,13 +45,17 @@ func (g *Game) getMediumAction(player *Player) PlayerAction {
 	strength := g.handEvaluator(g, player) // Use the function field
 	canCheck := player.CurrentBet == g.BetToCall
 
+	time.Sleep(cpuThinkTime)
+
 	// Post-Flop Logic
 	if g.Phase > PhasePreFlop {
 		if strength >= float64(poker.FullHouse) {
+			time.Sleep(cpuThinkTime)
 			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
 		}
 		if strength >= float64(poker.TwoPair) {
 			if canCheck {
+				time.Sleep(cpuThinkTime)
 				return PlayerAction{Type: ActionBet, Amount: g.Pot / 2}
 			}
 			return PlayerAction{Type: ActionCall}
@@ -60,6 +68,7 @@ func (g *Game) getMediumAction(player *Player) PlayerAction {
 
 	// Pre-Flop Logic
 	if strength > 25 {
+		time.Sleep(cpuThinkTime)
 		return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 3}
 	}
 	if strength > 15 {
@@ -76,8 +85,11 @@ func (g *Game) getHardAction(player *Player, r *rand.Rand) PlayerAction {
 	strength := g.handEvaluator(g, player) // Use the function field
 	canCheck := player.CurrentBet == g.BetToCall
 
+	time.Sleep(cpuThinkTime)
+
 	// 20% chance to bluff with a weak hand post-flop
 	if g.Phase > PhasePreFlop && strength < float64(poker.OnePair) && r.Float64() < 0.20 {
+		time.Sleep(cpuThinkTime)
 		if canCheck {
 			return PlayerAction{Type: ActionBet, Amount: g.Pot / 2}
 		}

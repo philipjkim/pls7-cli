@@ -222,7 +222,10 @@ func (g *Game) PrepareNewBettingRound() {
 
 // ExecuteBettingLoop runs the core betting logic for a round.
 // It assumes the round has already been prepared.
-func (g *Game) ExecuteBettingLoop(provider ActionProvider) {
+func (g *Game) ExecuteBettingLoop(
+	provider ActionProvider,
+	displayCurrentStatus func(g *Game),
+) {
 	if g.CountPlayersAbleToAct() < 2 {
 		// If only one player can act, check if they need to call a previous all-in.
 		player := g.Players[g.CurrentTurnPos]
@@ -244,6 +247,8 @@ func (g *Game) ExecuteBettingLoop(provider ActionProvider) {
 
 	for {
 		player := g.Players[g.CurrentTurnPos]
+
+		displayCurrentStatus(g) // Display the current game state
 
 		if player.Status == PlayerStatusPlaying {
 			var action PlayerAction
