@@ -2,6 +2,7 @@ package poker
 
 import (
 	"fmt"
+	"pls7-cli/internal/util"
 	"sort"
 )
 
@@ -56,42 +57,42 @@ func (hr *HandResult) String() string {
 	}
 
 	switch hr.Rank {
-	case RoyalFlush:
-		return "Royal Flush"
-	case StraightFlush, Straight, SkipStraight:
-		topCard := hr.HighValues[0].String()
-		return fmt.Sprintf("%s-High %s", topCard, hr.Rank.String())
+	case RoyalFlush, StraightFlush, Straight, SkipStraight, FullHouse, Flush, OnePair:
+		return fmt.Sprintf("%s, %s", hr.Rank.String(), hr.CardsString())
 	case FourOfAKind:
 		quadRank := hr.HighValues[0].String()
-		return fmt.Sprintf("%s Four of a Kind", quadRank)
-	case FullHouse:
-		tripleRank := hr.HighValues[0].String()
-		pairRank := hr.HighValues[1].String()
-		return fmt.Sprintf("Full House, %ss full of %ss", tripleRank, pairRank)
-	case Flush:
-		topCard := hr.HighValues[0].String()
-		return fmt.Sprintf("%s-High Flush", topCard)
+		return fmt.Sprintf("%s Four of a Kind, %s", quadRank, hr.CardsString())
 	case ThreeOfAKind:
 		tripleRank := hr.HighValues[0].String()
-		return fmt.Sprintf("%s Three of a Kind", tripleRank)
+		return fmt.Sprintf("%s Three of a Kind, %s", tripleRank, hr.CardsString())
 	case TwoPair:
 		highPair := hr.HighValues[0].String()
 		lowPair := hr.HighValues[1].String()
-		return fmt.Sprintf("Two Pair, %ss and %ss", highPair, lowPair)
-	case OnePair:
-		pairRank := hr.HighValues[0].String()
-		return fmt.Sprintf("%s One Pair", pairRank)
+		return fmt.Sprintf("Two Pair, %ss and %ss, %s", highPair, lowPair, hr.CardsString())
 	case TriPair:
 		return fmt.Sprintf(
-			"Tri-Pair, %s-%s-%s",
-			hr.HighValues[0].String(), hr.HighValues[1].String(), hr.HighValues[2].String(),
+			"Tri-Pair, %s-%s-%s, %s",
+			hr.HighValues[0].String(), hr.HighValues[1].String(), hr.HighValues[2].String(), hr.CardsString(),
 		)
 	case HighCard:
 		topCard := hr.HighValues[0].String()
-		return fmt.Sprintf("%s-High", topCard)
+		return fmt.Sprintf("%s-High, %s", topCard, hr.CardsString())
 	default:
 		return "Unknown Hand"
 	}
+}
+
+// CardsString returns a string representation of the cards in the hand.
+func (hr *HandResult) CardsString() string {
+	if hr == nil || len(hr.Cards) == 0 {
+		return "No Cards"
+	}
+	cards := make([]string, len(hr.Cards))
+	for i, c := range hr.Cards {
+		cards[i] = c.Rank.String()
+		cards[i] += c.Suit.String() + " "
+	}
+	return util.JoinStrings(cards)
 }
 
 // handAnalysis is a helper struct to hold counts of ranks and suits.
@@ -162,7 +163,12 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 		highResult = &HandResult{Rank: SkipStraight, Cards: ssCards, HighValues: []Rank{ssCards[0].Rank}}
 	} else if straightCards, ok := findBestStraight(analysis); ok {
 		highResult = &HandResult{Rank: Straight, Cards: straightCards, HighValues: []Rank{straightCards[0].Rank}}
-	} else if tpCards, ok := findTriPair(analysis); ok {
+	} else if p1, p2, p3, ok := findTriPair(analysis); ok {
+		p1Cards := findCardsByRank(pool, p1, 2)
+		p2Cards := findCardsByRank(pool, p2, 2)
+		p3Cards := findCardsByRank(pool, p3, 2)
+		tpCards := append(p1Cards, p2Cards...)
+		tpCards = append(tpCards, p3Cards...)
 		highResult = &HandResult{Rank: TriPair, Cards: tpCards}
 	} else if tripleRank, ok := findBestNOfAKind(analysis.rankCounts, 3); ok {
 		kickers := findKickers(analysis.cards, []Rank{tripleRank}, 2)
@@ -307,7 +313,7 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
-func findTriPair(analysis *handAnalysis) ([]Card, bool) {
+func findTriPair(analysis *handAnalysis) (Rank, Rank, Rank, bool) {
 	pairRanks := []Rank{}
 	for rank, count := range analysis.rankCounts {
 		if count >= 2 {
@@ -316,13 +322,9 @@ func findTriPair(analysis *handAnalysis) ([]Card, bool) {
 	}
 	if len(pairRanks) >= 3 {
 		sort.Slice(pairRanks, func(i, j int) bool { return pairRanks[i] > pairRanks[j] })
-		cards := make([]Card, 0, 6)
-		cards = append(cards, findCardsByRank(analysis.cards, pairRanks[0], 2)...)
-		cards = append(cards, findCardsByRank(analysis.cards, pairRanks[1], 2)...)
-		cards = append(cards, findCardsByRank(analysis.cards, pairRanks[2], 2)...)
-		return cards, true
+		return pairRanks[0], pairRanks[1], pairRanks[2], true
 	}
-	return nil, false
+	return -1, -1, -1, false
 }
 
 func findBestFullHouse(rankCounts map[Rank]int) (Rank, Rank, bool) {

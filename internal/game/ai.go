@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var cpuThinkTime = 1 * time.Millisecond // Default thinking time for CPU actions
+var cpuThinkTime = 200 * time.Millisecond // Default thinking time for CPU actions
 
 // GetCPUAction is a dispatcher that calls the appropriate AI logic based on difficulty.
 func (g *Game) GetCPUAction(player *Player) PlayerAction {

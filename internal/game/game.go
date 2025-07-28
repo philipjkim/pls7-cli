@@ -1,6 +1,9 @@
 package game
 
-import "pls7-cli/pkg/poker"
+import (
+	"fmt"
+	"pls7-cli/pkg/poker"
+)
 
 // GamePhase defines the current phase of the game.
 //
@@ -56,4 +59,16 @@ func NewGame(playerNames []string, initialChips int, difficulty Difficulty) *Gam
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength
 	return g
+}
+
+// String returns a string representation of the game state.
+func (g *Game) String() string {
+	return fmt.Sprintf(
+		"[Game State]:\n"+
+			"- Phase: %s\n"+
+			"- Dealer Position: %d\n"+
+			"- Current Turn Position: %d\n"+
+			"- Pot: %d\n"+
+			"- Players %+v:\n",
+		g.Phase, g.DealerPos, g.CurrentTurnPos, g.Pot, g.Players)
 }

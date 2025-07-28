@@ -10,7 +10,17 @@ type MockActionProvider struct {
 	Action PlayerAction
 }
 
-func (m *MockActionProvider) GetAction(g *Game) PlayerAction {
+func (m *MockActionProvider) GetAction(g *Game, p *Player) PlayerAction {
+	switch m.Action.Type {
+	case ActionFold, ActionBet, ActionRaise:
+		return m.Action
+	case ActionCheck, ActionCall:
+		canCheck := p.CurrentBet == g.BetToCall
+		if canCheck {
+			return PlayerAction{Type: ActionCheck}
+		}
+		return PlayerAction{Type: ActionCall}
+	}
 	return m.Action
 }
 
@@ -42,8 +52,9 @@ func TestBettingRound_PlayerMustCallAllIn(t *testing.T) {
 
 	// --- This is the action we are testing ---
 	// 3. YOU must now call the 2000 all-in.
-	providerYOU := &MockActionProvider{Action: PlayerAction{Type: ActionCall}}
-	g.ExecuteBettingLoop(providerYOU, displayMiniGameState)
+	playerAP := &MockActionProvider{Action: PlayerAction{Type: ActionCall}}
+	cpuAP := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}} // CPU players won't act further.
+	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState)
 
 	// --- Assertions ---
 	// The betting loop should have terminated correctly.
@@ -90,8 +101,9 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 
 	// --- This is the action we are testing ---
 	// The betting loop should recognize that no further action is possible and return immediately.
-	providerYOU := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}} // This should not be called.
-	g.ExecuteBettingLoop(providerYOU, displayMiniGameState)
+	playerAP := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}} // This should not be called.
+	cpuAP := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}}    // CPU players won't act further.
+	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState)
 
 	// --- Assertions ---
 	// The main assertion is that the test completes without timing out.
@@ -101,6 +113,89 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 	}
 	if g.Pot != 8000 { // 5000 (YOU) + 1000 (CPU 1) + 2000 (CPU 2)
 		t.Errorf("Expected final pot to be 8000, but got %d", g.Pot)
+	}
+}
+
+// TestBettingRound_PreFlopNoRaiseEndsCorrectly tests the specific scenario where the action
+// folds/calls around to the Big Blind, who then checks, which should end the round.
+func TestBettingRound_PreFlopNoRaiseEndsCorrectly(t *testing.T) {
+	// Scenario: 6 players (4 active, 2 eliminated)
+	// Players in g.Players: [YOU, CPU 1, CPU 2, CPU 3, CPU 4, CPU 5]
+	// CPU 4 and CPU 5 were eliminated.
+
+	// D: CPU 3, SB: YOU, BB: CPU 1
+	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
+	g := NewGame(playerNames, 10000, DifficultyMedium)
+
+	// --- Setup Pre-Flop state ---
+	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
+	g.StartNewHand() // This will post blinds and deal cards
+	g.ExecuteBettingLoop(
+		&MockActionProvider{Action: PlayerAction{Type: ActionFold}},  // YOU will check/call
+		&MockActionProvider{Action: PlayerAction{Type: ActionCheck}}, // CPUs will check/call
+		displayMiniGameState,
+	)
+
+	// 1. CPU 2 calls.
+	// 2. CPU 3 (Dealer) calls.
+	// 3. YOU (SB) fold.
+	// 4. CPU 1 (BB) checks.
+	// The betting round should end here.
+	fmt.Printf("%+v\n", g)
+	if g.Pot != 3500 { // 500 (SB) + 1000 (BB) + 1000 (CPU 2) + 1000 (CPU 3)
+		t.Errorf("Expected pot to be 3500, but got %d", g.Pot)
+	}
+}
+
+type AggressorAndCallerActionProvider struct{}
+
+func (a *AggressorAndCallerActionProvider) GetAction(g *Game, p *Player) PlayerAction {
+	canCheck := p.CurrentBet == g.BetToCall
+	if p.Name == "CPU 3" { // Aggressor
+		if canCheck {
+			return PlayerAction{Type: ActionBet, Amount: 1000} // Aggressor bets
+		}
+		return PlayerAction{Type: ActionRaise, Amount: 2000} // Aggressor raises
+	} else {
+		if canCheck {
+			return PlayerAction{Type: ActionCheck}
+		}
+		return PlayerAction{Type: ActionCall}
+	}
+}
+
+// TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated tests the scenario where
+// the player to the left of the aggressor has been eliminated, which should end the betting
+// round correctly without infinite loops or errors.
+func TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated(t *testing.T) {
+	// Scenario: 4 players (3 active, 1 eliminated)
+	// Players in g.Players: [YOU, CPU 1, CPU 2, CPU 3]
+	// CPU 2 was eliminated.
+
+	// D: CPU 3, SB: YOU, BB: CPU 1
+	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
+	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g.Players[2].Status = PlayerStatusEliminated // CPU 2 is eliminated
+	g.Players[2].Chips = 0                       // CPU 2 has no chips
+
+	// CPU 1 should only check/call, but CPU 3 should bet/raise.
+
+	// --- Setup Pre-Flop state ---
+	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
+	g.StartNewHand() // This will post blinds and deal cards
+	g.ExecuteBettingLoop(
+		&MockActionProvider{Action: PlayerAction{Type: ActionFold}}, // YOU will check/call
+		&AggressorAndCallerActionProvider{},                         // CPU 1 will check/call, CPU 3 will bet/raise
+		displayMiniGameState,
+	)
+
+	// 1. CPU 3 raises to 2000.
+	// 3. YOU (SB) fold.
+	// 4. CPU 1 (BB) calls.
+	// The betting round should end here.
+	fmt.Printf("%+v\n", g)
+	if g.Pot != 4500 { // 500 (YOU, SB) + 2000 (CPU 1, BB) + 2000 (CPU 3, D)
+		t.Errorf("Expected pot to be 4500, but got %d", g.Pot)
 	}
 }
 

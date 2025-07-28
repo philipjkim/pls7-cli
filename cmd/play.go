@@ -17,8 +17,15 @@ var difficultyStr string // To hold the flag value
 // CLIActionProvider implements the ActionProvider interface using the CLI.
 type CLIActionProvider struct{}
 
-func (p *CLIActionProvider) GetAction(g *game.Game) game.PlayerAction {
+func (p *CLIActionProvider) GetAction(g *game.Game, _ *game.Player) game.PlayerAction {
 	return cli.PromptForAction(g)
+}
+
+// CPUActionProvider implements the ActionProvider interface for CPU players.
+type CPUActionProvider struct{}
+
+func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player) game.PlayerAction {
+	return g.GetCPUAction(pl)
 }
 
 // playCmd represents the play command
@@ -32,7 +39,8 @@ var playCmd = &cobra.Command{
 		fmt.Println("==================================================")
 		fmt.Printf("\nStarting the game with %s difficulty!\n", difficultyStr)
 
-		provider := &CLIActionProvider{}
+		playerActionProvider := &CLIActionProvider{}
+		cpuActionProvider := &CPUActionProvider{}
 
 		var difficulty game.Difficulty
 		switch strings.ToLower(difficultyStr) {
@@ -67,7 +75,7 @@ var playCmd = &cobra.Command{
 				switch g.Phase {
 				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
 					g.PrepareNewBettingRound()
-					g.ExecuteBettingLoop(provider, cli.DisplayGameState)
+					g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, cli.DisplayGameState)
 					g.Advance()
 				case game.PhaseShowdown, game.PhaseHandOver:
 					break
@@ -103,10 +111,10 @@ var playCmd = &cobra.Command{
 				break
 			}
 
-			fmt.Print("\nPress ENTER to start the next hand, or type 'quit' to exit > ")
+			fmt.Print("\nPress ENTER to start the next hand, or type 'q' to exit > ")
 			reader := bufio.NewReader(os.Stdin)
 			input, _ := reader.ReadString('\n')
-			if strings.TrimSpace(strings.ToLower(input)) == "quit" {
+			if strings.TrimSpace(strings.ToLower(input)) == "q" {
 				fmt.Println("Thanks for playing!")
 				break
 			}

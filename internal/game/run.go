@@ -220,10 +220,23 @@ func (g *Game) PrepareNewBettingRound() {
 	g.CurrentTurnPos = g.FindNextActivePlayer(g.DealerPos)
 }
 
+// FindPreviousActivePlayer finds the index of the previous player who is not eliminated.
+func (g *Game) FindPreviousActivePlayer(startPos int) int {
+	// TODO: Handle case where all players are eliminated.
+	pos := (startPos - 1 + len(g.Players)) % len(g.Players)
+	for {
+		if g.Players[pos].Status != PlayerStatusEliminated {
+			return pos
+		}
+		pos = (pos - 1 + len(g.Players)) % len(g.Players)
+	}
+}
+
 // ExecuteBettingLoop runs the core betting logic for a round.
 // It assumes the round has already been prepared.
 func (g *Game) ExecuteBettingLoop(
-	provider ActionProvider,
+	playerActionProvider ActionProvider,
+	cpuActionProvider ActionProvider,
 	displayCurrentStatus func(g *Game),
 ) {
 	if g.CountPlayersAbleToAct() < 2 {
@@ -248,19 +261,29 @@ func (g *Game) ExecuteBettingLoop(
 	for {
 		player := g.Players[g.CurrentTurnPos]
 
-		displayCurrentStatus(g) // Display the current game state
-
 		if player.Status == PlayerStatusPlaying {
+			displayCurrentStatus(g) // Display the current game state
+
 			var action PlayerAction
 			if player.IsCPU {
-				action = g.GetCPUAction(player)
+				action = cpuActionProvider.GetAction(g, player)
 			} else {
-				action = provider.GetAction(g)
+				action = playerActionProvider.GetAction(g, player)
 			}
 
 			wasAggressive := g.ProcessAction(player, action)
+			fmt.Printf(
+				"%s's action: %v, wasAggressive: %v, currentActionCloser: %v\n",
+				player.Name, action, wasAggressive, g.Players[actionCloserPos].Name,
+			)
 			if wasAggressive {
-				actionCloserPos = (g.CurrentTurnPos - 1 + numPlayers) % numPlayers
+				previousActionCloserPos := actionCloserPos
+				actionCloserPos = g.FindPreviousActivePlayer(g.CurrentTurnPos)
+				fmt.Printf(
+					"action closer changed from %v to %v\n",
+					g.Players[previousActionCloserPos].Name,
+					g.Players[actionCloserPos].Name,
+				)
 			}
 		}
 

@@ -1,6 +1,9 @@
 package game
 
-import "pls7-cli/pkg/poker"
+import (
+	"fmt"
+	"pls7-cli/pkg/poker"
+)
 
 // PlayerStatus defines the current state of a player in a hand.
 type PlayerStatus int
@@ -21,4 +24,12 @@ type Player struct {
 	Status         PlayerStatus
 	IsCPU          bool
 	LastActionDesc string // Describes the last action taken in the round
+}
+
+// String makes PlayerStatus implement the Stringer interface.
+func (p *Player) String() string {
+	return fmt.Sprintf(
+		"Player{Name: %s, Chips: %d, Status: %v, CurrentBet: %d, IsCPU: %t}",
+		p.Name, p.Chips, p.Status, p.CurrentBet, p.IsCPU,
+	)
 }
