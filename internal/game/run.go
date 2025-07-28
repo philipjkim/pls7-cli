@@ -74,18 +74,6 @@ func (g *Game) CountRemainingPlayers() int {
 	return count
 }
 
-// CountPlayersInHand counts players who have not folded in the current hand.
-// This is used to determine if a betting round should continue or if a hand should end early.
-func (g *Game) CountPlayersInHand() int {
-	count := 0
-	for _, p := range g.Players {
-		if p.Status != PlayerStatusFolded {
-			count++
-		}
-	}
-	return count
-}
-
 // CountNonFoldedPlayers counts players who have not folded in the current hand.
 // This includes players who are all-in and will see the showdown.
 func (g *Game) CountNonFoldedPlayers() int {
@@ -172,18 +160,6 @@ func (g *Game) postBet(player *Player, amount int) {
 	}
 }
 
-// PrepareNewBettingRound resets player bets for the new round.
-func (g *Game) PrepareNewBettingRound() {
-	if g.Phase == PhasePreFlop {
-		return // Pre-flop bets (blinds) are already posted.
-	}
-	g.BetToCall = 0
-	for _, p := range g.Players {
-		p.CurrentBet = 0
-	}
-	g.CurrentTurnPos = (g.DealerPos + 1) % len(g.Players)
-}
-
 // Advance moves the game to the next phase.
 func (g *Game) Advance() {
 	switch g.Phase {
@@ -211,22 +187,59 @@ func (g *Game) dealCommunityCards(n int) {
 	}
 }
 
-// RunInteractiveBettingRound handles the logic for a full betting round.
-// It now takes an ActionProvider to decouple from the CLI.
-func (g *Game) RunInteractiveBettingRound(provider ActionProvider) {
-	g.PrepareNewBettingRound()
+// isBettingActionRequired checks if there is any pending bet that needs to be called.
+// The round can be skipped if all non-folded players have the same amount bet.
+func (g *Game) isBettingActionRequired() bool {
+	// If less than two players can even act (have chips and haven't folded), no betting can occur.
+	if g.CountPlayersAbleToAct() < 2 {
+		// However, we must check if the single active player needs to call a previous all-in.
+		for _, p := range g.Players {
+			if p.Status == PlayerStatusPlaying && p.CurrentBet < g.BetToCall {
+				return true // This player must act.
+			}
+		}
+		return false
+	}
+	return true
+}
 
-	if g.CountPlayersInHand() < 2 {
+// PrepareNewBettingRound resets player bets and determines the starting player for a new round.
+func (g *Game) PrepareNewBettingRound() {
+	if g.Phase == PhasePreFlop {
+		// Blinds are already posted, no need to reset bets.
 		return
+	}
+	// For post-flop rounds, reset bets and start with the player after the dealer.
+	for _, p := range g.Players {
+		if p.Status != PlayerStatusEliminated {
+			p.CurrentBet = 0
+			p.LastActionDesc = ""
+		}
+	}
+	g.BetToCall = 0
+	g.CurrentTurnPos = g.FindNextActivePlayer(g.DealerPos)
+}
+
+// ExecuteBettingLoop runs the core betting logic for a round.
+// It assumes the round has already been prepared.
+func (g *Game) ExecuteBettingLoop(provider ActionProvider) {
+	if g.CountPlayersAbleToAct() < 2 {
+		// If only one player can act, check if they need to call a previous all-in.
+		player := g.Players[g.CurrentTurnPos]
+		if player.Status == PlayerStatusPlaying && player.CurrentBet < g.BetToCall {
+			// This single player must act.
+		} else {
+			return // Otherwise, no betting is possible, so skip the round.
+		}
 	}
 
 	numPlayers := len(g.Players)
 	actionCloserPos := 0
 
 	if g.Phase == PhasePreFlop {
-		actionCloserPos = (g.DealerPos + 2) % numPlayers
+		actionCloserPos = (g.DealerPos + 2) % numPlayers // BB acts last
 	} else {
-		actionCloserPos = g.DealerPos
+		actionCloserPos = g.DealerPos // Dealer acts last
 	}
 
 	for {
@@ -237,7 +250,7 @@ func (g *Game) RunInteractiveBettingRound(provider ActionProvider) {
 			if player.IsCPU {
 				action = g.GetCPUAction(player)
 			} else {
-				action = provider.GetAction(g) // Use the provider
+				action = provider.GetAction(g)
 			}
 
 			wasAggressive := g.ProcessAction(player, action)

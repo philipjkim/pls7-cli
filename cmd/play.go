@@ -54,7 +54,7 @@ var playCmd = &cobra.Command{
 
 			// Single Hand Loop
 			for {
-				if g.CountPlayersInHand() <= 1 {
+				if g.CountNonFoldedPlayers() <= 1 {
 					break
 				}
 
@@ -66,7 +66,9 @@ var playCmd = &cobra.Command{
 
 				switch g.Phase {
 				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
-					g.RunInteractiveBettingRound(provider)
+					g.PrepareNewBettingRound()
+					cli.DisplayGameState(g)
+					g.ExecuteBettingLoop(provider)
 					g.Advance()
 				case game.PhaseShowdown, game.PhaseHandOver:
 					break
@@ -78,7 +80,7 @@ var playCmd = &cobra.Command{
 			}
 
 			// Conclude the hand
-			if g.CountPlayersInHand() > 1 {
+			if g.CountNonFoldedPlayers() > 1 {
 				cli.DisplayGameState(g)
 				showdownResults(g)
 			} else {
