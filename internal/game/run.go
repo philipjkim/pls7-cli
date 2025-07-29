@@ -28,6 +28,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		player.LastActionDesc = desc
 		fmt.Printf("%s calls %s.\n", player.Name, util.FormatNumber(amountToCall))
 	case ActionBet:
+		g.LastRaiseAmount = action.Amount
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
 		desc := fmt.Sprintf("Bet %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
@@ -39,6 +40,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		return true
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
+		g.LastRaiseAmount = amountToPost
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
 		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
@@ -107,6 +109,7 @@ func (g *Game) StartNewHand() {
 	g.Deck.Shuffle()
 	g.CommunityCards = []poker.Card{}
 	g.Pot = 0
+	g.LastRaiseAmount = 0
 
 	g.DealerPos = g.FindNextActivePlayer(g.DealerPos)
 
@@ -218,6 +221,7 @@ func (g *Game) PrepareNewBettingRound() {
 		}
 	}
 	g.BetToCall = 0
+	g.LastRaiseAmount = 0
 	g.CurrentTurnPos = g.FindNextActivePlayer(g.DealerPos)
 }
 

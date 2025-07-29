@@ -8,16 +8,18 @@ func (g *Game) CalculateBettingLimits() (minRaiseTotal int, maxRaiseTotal int) {
 
 	// Minimum Raise calculation:
 	// A raise must be at least as large as the previous bet or raise.
-	// For simplicity, we'll define a min raise as doubling the current bet to call.
-	minRaiseTotal = g.BetToCall * 2
-	if g.BetToCall == 0 { // If no bet, min bet is the Big Blind
-		minRaiseTotal = BigBlindAmt
+	minRaiseIncrease := g.LastRaiseAmount
+	if minRaiseIncrease == 0 { // If no previous raise, min raise is the size of the bet to call
+		minRaiseIncrease = g.BetToCall
 	}
+	if g.BetToCall == 0 { // If no bet, min bet is the Big Blind
+		minRaiseIncrease = BigBlindAmt
+	}
+	minRaiseTotal = g.BetToCall + minRaiseIncrease
 
 	// Pot-Limit Raise calculation:
 	// The max raise is the size of the pot after the player has called.
 	// Pot size after calling = current pot + all bets on the table + the call amount.
-	// Our g.Pot already includes all bets, so:
 	potAfterCall := g.Pot + amountToCall
 	maxRaiseAmount := potAfterCall
 	maxRaiseTotal = g.BetToCall + maxRaiseAmount
@@ -28,8 +30,16 @@ func (g *Game) CalculateBettingLimits() (minRaiseTotal int, maxRaiseTotal int) {
 	}
 
 	// A player must have enough chips to make a minimum raise.
+	// If they don't, their max raise is their entire stack.
 	if minRaiseTotal > player.Chips+player.CurrentBet {
 		minRaiseTotal = player.Chips + player.CurrentBet
+		maxRaiseTotal = player.Chips + player.CurrentBet // Can't raise more than all-in
+	}
+
+	// Edge case: If a player's all-in is less than a min-raise, other players can only call or fold.
+	// If the max raise is less than the min raise (due to stack size), it means the player is going all-in for less than a full raise.
+	if maxRaiseTotal < minRaiseTotal {
+		minRaiseTotal = maxRaiseTotal
 	}
 
 	return minRaiseTotal, maxRaiseTotal

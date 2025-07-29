@@ -254,3 +254,102 @@ func TestActionCloserPosForPreFlop_WorksCorrectlyWithEliminatedPlayers(t *testin
 		t.Errorf("Expected action closer position to be %d, but got %d", expected, actual)
 	}
 }
+
+// TestCalculateBettingLimits tests the pot-limit calculations in various scenarios.
+func TestCalculateBettingLimits(t *testing.T) {
+	testCases := []struct {
+		name             string
+		pot              int
+		betToCall        int
+		playerChips      int
+		playerCurrentBet int
+		lastRaiseAmount  int
+		expectedMinRaise int
+		expectedMaxRaise int
+	}{
+		{
+			name:             "Pre-flop, first to act after blinds",
+			pot:              1500, // SB(500) + BB(1000)
+			betToCall:        1000, // Must call BB
+			playerChips:      10000,
+			playerCurrentBet: 0,
+			lastRaiseAmount:  1000, // BB is the last raise
+			expectedMinRaise: 2000, // Raise to 2 * BB
+			expectedMaxRaise: 3500, // Pot(1500) + Call(1000) = 2500. Raise by 2500 to a total of 3500
+		},
+		{
+			name:             "Post-flop, first to act",
+			pot:              3000,
+			betToCall:        0, // No bet yet
+			playerChips:      10000,
+			playerCurrentBet: 0,
+			lastRaiseAmount:  0,
+			expectedMinRaise: 1000, // Min bet is BB
+			expectedMaxRaise: 3000, // Bet the pot
+		},
+		{
+			name:             "Post-flop, facing a bet",
+			pot:              4000, // Pot was 3000, someone bet 1000
+			betToCall:        1000,
+			playerChips:      8000,
+			playerCurrentBet: 0,
+			lastRaiseAmount:  1000,
+			expectedMinRaise: 2000, // Raise to 2 * Bet
+			expectedMaxRaise: 6000, // Pot(4000) + Call(1000) = 5000. Raise by 5000 to a total of 6000
+		},
+		{
+			name:             "Player is all-in, max raise is their stack",
+			pot:              4000,
+			betToCall:        1000,
+			playerChips:      3000, // Not enough to make the max pot raise
+			playerCurrentBet: 0,
+			lastRaiseAmount:  1000,
+			expectedMinRaise: 2000,
+			expectedMaxRaise: 3000, // Limited by stack
+		},
+		{
+			name:             "Player doesn't have enough for min raise",
+			pot:              4000,
+			betToCall:        1000,
+			playerChips:      1500, // Not enough to make the min raise of 2000
+			playerCurrentBet: 0,
+			lastRaiseAmount:  1000,
+			expectedMinRaise: 1500, // Limited by stack
+			expectedMaxRaise: 1500,
+		},
+		{
+			name:             "Re-raising scenario",
+			pot:              10000, // Complex pot
+			betToCall:        3000,  // Original bet was 1000, someone raised to 3000
+			playerChips:      20000,
+			playerCurrentBet: 1000,  // Player already called the initial 1000
+			lastRaiseAmount:  2000,  // Last raise was 2000 (3000 - 1000)
+			expectedMinRaise: 5000,  // Min raise is the size of the last raise (2000), so 3000 + 2000 = 5000
+			expectedMaxRaise: 15000, // Pot(10000) + Call(2000) = 12000. Raise by 12000 to a total of 15000
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup game state for the test
+			g := &Game{
+				Pot:             tc.pot,
+				BetToCall:       tc.betToCall,
+				LastRaiseAmount: tc.lastRaiseAmount,
+				Players: []*Player{
+					{Name: "YOU", Chips: tc.playerChips, CurrentBet: tc.playerCurrentBet},
+				},
+				CurrentTurnPos: 0,
+			}
+
+			minRaise, maxRaise := g.CalculateBettingLimits()
+
+			if minRaise != tc.expectedMinRaise {
+				t.Errorf("Expected min raise to be %d, but got %d", tc.expectedMinRaise, minRaise)
+			}
+			if maxRaise != tc.expectedMaxRaise {
+				t.Errorf("Expected max raise to be %d, but got %d", tc.expectedMaxRaise, maxRaise)
+			}
+		})
+	}
+}
