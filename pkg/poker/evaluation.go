@@ -14,9 +14,9 @@ const (
 	HighCard HandRank = iota
 	OnePair
 	TwoPair
-	TriPair // PLS7 Special
-	ThreeOfAKind
+	ThreePair // PLS7 Special
 	Straight
+	ThreeOfAKind
 	SkipStraight // PLS7 Special
 	Flush
 	FullHouse
@@ -31,9 +31,9 @@ func (hr HandRank) String() string {
 		"High Card",
 		"One Pair",
 		"Two Pair",
-		"Tri-Pair",
-		"Three of a Kind",
+		"Three Pair",
 		"Straight",
+		"Three of a Kind",
 		"Skip Straight",
 		"Flush",
 		"Full House",
@@ -69,9 +69,9 @@ func (hr *HandResult) String() string {
 		highPair := hr.HighValues[0].String()
 		lowPair := hr.HighValues[1].String()
 		return fmt.Sprintf("Two Pair, %ss and %ss, %s", highPair, lowPair, hr.CardsString())
-	case TriPair:
+	case ThreePair:
 		return fmt.Sprintf(
-			"Tri-Pair, %s-%s-%s, %s",
+			"Three Pair, %s-%s-%s, %s",
 			hr.HighValues[0].String(), hr.HighValues[1].String(), hr.HighValues[2].String(), hr.CardsString(),
 		)
 	case HighCard:
@@ -163,13 +163,13 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 		highResult = &HandResult{Rank: SkipStraight, Cards: ssCards, HighValues: []Rank{ssCards[0].Rank}}
 	} else if straightCards, ok := findBestStraight(analysis); ok {
 		highResult = &HandResult{Rank: Straight, Cards: straightCards, HighValues: []Rank{straightCards[0].Rank}}
-	} else if p1, p2, p3, ok := findTriPair(analysis); ok {
+	} else if p1, p2, p3, ok := findThreePair(analysis); ok {
 		p1Cards := findCardsByRank(pool, p1, 2)
 		p2Cards := findCardsByRank(pool, p2, 2)
 		p3Cards := findCardsByRank(pool, p3, 2)
 		tpCards := append(p1Cards, p2Cards...)
 		tpCards = append(tpCards, p3Cards...)
-		highResult = &HandResult{Rank: TriPair, Cards: tpCards}
+		highResult = &HandResult{Rank: ThreePair, Cards: tpCards}
 	} else if tripleRank, ok := findBestNOfAKind(analysis.rankCounts, 3); ok {
 		kickers := findKickers(analysis.cards, []Rank{tripleRank}, 2)
 		tripleCards := findCardsByRank(pool, tripleRank, 3)
@@ -313,7 +313,7 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
-func findTriPair(analysis *handAnalysis) (Rank, Rank, Rank, bool) {
+func findThreePair(analysis *handAnalysis) (Rank, Rank, Rank, bool) {
 	pairRanks := []Rank{}
 	for rank, count := range analysis.rankCounts {
 		if count >= 2 {

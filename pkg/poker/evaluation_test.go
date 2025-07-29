@@ -38,7 +38,7 @@ func TestHighHands(t *testing.T) {
 		expectedRank HandRank
 	}{
 		// Special High Hands
-		{name: "Tri-Pair", cardString: "As Ac Ks Kc Qs Qc Js 9c", expectedRank: TriPair},
+		{name: "Three Pair", cardString: "As Ac Ks Kc Qs Qc Js 9c", expectedRank: ThreePair},
 		{name: "Skip Straight (A-Low)", cardString: "As 3c 5d 7h 9s Kd Qc Jc", expectedRank: SkipStraight},
 		{name: "Skip Straight (A-High)", cardString: "6s 8c Td Qh As 2c 3d 4h", expectedRank: SkipStraight},
 
