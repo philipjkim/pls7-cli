@@ -14,7 +14,6 @@ const (
 	HighCard HandRank = iota
 	OnePair
 	TwoPair
-	ThreePair // PLS7 Special
 	Straight
 	ThreeOfAKind
 	SkipStraight // PLS7 Special
@@ -31,7 +30,6 @@ func (hr HandRank) String() string {
 		"High Card",
 		"One Pair",
 		"Two Pair",
-		"Three Pair",
 		"Straight",
 		"Three of a Kind",
 		"Skip Straight",
@@ -69,11 +67,6 @@ func (hr *HandResult) String() string {
 		highPair := hr.HighValues[0].String()
 		lowPair := hr.HighValues[1].String()
 		return fmt.Sprintf("Two Pair, %ss and %ss, %s", highPair, lowPair, hr.CardsString())
-	case ThreePair:
-		return fmt.Sprintf(
-			"Three Pair, %s-%s-%s, %s",
-			hr.HighValues[0].String(), hr.HighValues[1].String(), hr.HighValues[2].String(), hr.CardsString(),
-		)
 	case HighCard:
 		topCard := hr.HighValues[0].String()
 		return fmt.Sprintf("%s-High, %s", topCard, hr.CardsString())
@@ -163,13 +156,6 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 		highResult = &HandResult{Rank: SkipStraight, Cards: ssCards, HighValues: []Rank{ssCards[0].Rank}}
 	} else if straightCards, ok := findBestStraight(analysis); ok {
 		highResult = &HandResult{Rank: Straight, Cards: straightCards, HighValues: []Rank{straightCards[0].Rank}}
-	} else if p1, p2, p3, ok := findThreePair(analysis); ok {
-		p1Cards := findCardsByRank(pool, p1, 2)
-		p2Cards := findCardsByRank(pool, p2, 2)
-		p3Cards := findCardsByRank(pool, p3, 2)
-		tpCards := append(p1Cards, p2Cards...)
-		tpCards = append(tpCards, p3Cards...)
-		highResult = &HandResult{Rank: ThreePair, Cards: tpCards}
 	} else if tripleRank, ok := findBestNOfAKind(analysis.rankCounts, 3); ok {
 		kickers := findKickers(analysis.cards, []Rank{tripleRank}, 2)
 		tripleCards := findCardsByRank(pool, tripleRank, 3)
@@ -311,20 +297,6 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 		}
 	}
 	return nil, false
-}
-
-func findThreePair(analysis *handAnalysis) (Rank, Rank, Rank, bool) {
-	pairRanks := []Rank{}
-	for rank, count := range analysis.rankCounts {
-		if count >= 2 {
-			pairRanks = append(pairRanks, rank)
-		}
-	}
-	if len(pairRanks) >= 3 {
-		sort.Slice(pairRanks, func(i, j int) bool { return pairRanks[i] > pairRanks[j] })
-		return pairRanks[0], pairRanks[1], pairRanks[2], true
-	}
-	return -1, -1, -1, false
 }
 
 func findBestFullHouse(rankCounts map[Rank]int) (Rank, Rank, bool) {
