@@ -4,7 +4,10 @@ A simple CLI for Pot Limit Sampyong 7 or Better (PLS7) Poker
 
 ## What is PLS7?
 
-https://philipjkim.github.io/posts/20250724-sampyeong-holdem-guide-v1-4/
+Pot Limit Sampyong 7 or Better (PLS7, or Sampyong Hi-Lo) is a variant of poker that combines elements of traditional poker with unique rules and gameplay mechanics. It is played with a standard deck of cards and involves betting, bluffing, and strategic decision-making.
+
+- [Guide - English](https://philipjkim.github.io/posts/20250729-pls7-english-guide/)
+- [Guide - Korean](https://philipjkim.github.io/posts/20250724-sampyeong-holdem-guide-v1-4/)
 
 ## Installation
 
