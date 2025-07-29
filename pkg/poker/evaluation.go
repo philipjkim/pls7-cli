@@ -14,8 +14,8 @@ const (
 	HighCard HandRank = iota
 	OnePair
 	TwoPair
-	Straight
 	ThreeOfAKind
+	Straight
 	SkipStraight // PLS7 Special
 	Flush
 	FullHouse
@@ -30,8 +30,8 @@ func (hr HandRank) String() string {
 		"High Card",
 		"One Pair",
 		"Two Pair",
-		"Straight",
 		"Three of a Kind",
+		"Straight",
 		"Skip Straight",
 		"Flush",
 		"Full House",
