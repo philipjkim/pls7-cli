@@ -78,6 +78,12 @@ go run main.go play
 go run main.go play --dev
 ```
 
+## Creating an Executable
+
+```bash
+go build -o pls7 main.go
+```
+
 ## Testing
 
 ```bash
