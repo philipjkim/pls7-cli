@@ -249,11 +249,9 @@ func (g *Game) ExecuteBettingLoop(
 		}
 	}
 
-	numPlayers := len(g.Players)
 	actionCloserPos := 0
-
 	if g.Phase == PhasePreFlop {
-		actionCloserPos = (g.DealerPos + 2) % numPlayers // BB acts last
+		actionCloserPos = actionCloserPosForPreFlop(g) // BB acts last
 	} else {
 		actionCloserPos = g.DealerPos // Dealer acts last
 	}
@@ -292,5 +290,17 @@ func (g *Game) ExecuteBettingLoop(
 		}
 
 		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
+	}
+}
+
+// actionCloserPosForPreFlop returns the position of the action closer in Pre-Flop phase.
+func actionCloserPosForPreFlop(g *Game) int {
+	// In Pre-Flop, the action closer is the Big Blind.
+	ac := (g.DealerPos + 2) % len(g.Players)
+	for {
+		if g.Players[ac].Status != PlayerStatusEliminated {
+			return ac
+		}
+		ac = (ac + 1) % len(g.Players) // Skip eliminated players
 	}
 }

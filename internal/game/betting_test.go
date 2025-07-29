@@ -199,10 +199,55 @@ func TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated(t *test
 	}
 }
 
+// TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer tests the scenario where all players fold except one,
+// and one player is eliminated. The betting round should end correctly without errors.
+func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
+	// Scenario: 6 players (5 active, 1 eliminated)
+	// Players in g.Players: [YOU, CPU 1, CPU 2, CPU 3, CPU 4, CPU 5]
+	// CPU 5 was eliminated.
+
+	// D: CPU 3, SB: CPU 4, BB: YOU
+	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
+	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g.Players[5].Status = PlayerStatusEliminated // CPU 5 is eliminated
+	g.Players[5].Chips = 0                       // CPU 5 has no chips
+
+	// --- Setup Pre-Flop state ---
+	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
+	g.StartNewHand() // This will post blinds and deal cards
+
+	// All players fold except YOU.
+	g.ExecuteBettingLoop(
+		&MockActionProvider{Action: PlayerAction{Type: ActionCheck}}, // YOU will check
+		&MockActionProvider{Action: PlayerAction{Type: ActionFold}},  // All active CPUs will fold
+		displayMiniGameState,
+	)
+
+	// The betting round should end here with pot being 1500 (500 from YOU, 1000 from CPU 4) without infinite loops.
+	fmt.Printf("%+v\n", g)
+	if g.Pot != 1500 {
+		t.Errorf("Expected pot to be 1500, but got %d", g.Pot)
+	}
+}
+
 func displayMiniGameState(g *Game) {
 	for _, p := range g.Players {
 		if p.Status == PlayerStatusPlaying {
 			fmt.Printf("%s's turn: Chips: %d, Current Bet: %d, Action: %v\n", p.Name, p.Chips, p.CurrentBet, p.LastActionDesc)
 		}
+	}
+}
+
+// TestActionCloserPosForPreFlop tests the action closer position for pre-flop betting rounds.
+func TestActionCloserPosForPreFlop_WorksCorrectlyWithEliminatedPlayers(t *testing.T) {
+	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
+	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g.Players[5].Status = PlayerStatusEliminated // CPU 5 is eliminated
+	g.Players[5].Chips = 0                       // CPU 5 has no chips
+	g.DealerPos = 3
+	expected := 0 // YOU is the action closer in pre-flop with CPU 5 eliminated
+	actual := actionCloserPosForPreFlop(g)
+	if expected != actual {
+		t.Errorf("Expected action closer position to be %d, but got %d", expected, actual)
 	}
 }

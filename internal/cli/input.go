@@ -12,55 +12,61 @@ import (
 
 // PromptForAction requests the player to choose an action during their turn.
 func PromptForAction(g *game.Game) game.PlayerAction {
-	player := g.Players[g.CurrentTurnPos]
-	canCheck := player.CurrentBet == g.BetToCall
-	amountToCall := g.BetToCall - player.CurrentBet
+	// for loop to keep prompting until a valid action is chosen
+	for {
+		player := g.Players[g.CurrentTurnPos]
+		canCheck := player.CurrentBet == g.BetToCall
+		amountToCall := g.BetToCall - player.CurrentBet
 
-	var prompt strings.Builder
-	prompt.WriteString("Choose your action: ")
+		var prompt strings.Builder
+		prompt.WriteString("Choose your action: ")
 
-	if canCheck {
-		prompt.WriteString("chec(k), (b)et, (f)old > ")
-	} else {
-		prompt.WriteString(fmt.Sprintf("(c)all %s, ", util.FormatNumber(amountToCall)))
-		// Only show raise option if the player has enough chips to make a valid raise.
-		minRaise, _ := g.CalculateBettingLimits()
-		if player.Chips > amountToCall && player.CurrentBet+player.Chips >= minRaise {
-			prompt.WriteString("(r)aise, ")
-		}
-		prompt.WriteString("(f)old > ")
-	}
-
-	fmt.Print(prompt.String())
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-
-	// 입력을 파싱하여 해당하는 액션을 반환합니다.
-	switch input {
-	case "f":
-		return game.PlayerAction{Type: game.ActionFold}
-	case "k":
 		if canCheck {
-			return game.PlayerAction{Type: game.ActionCheck}
-		}
-	case "c":
-		if !canCheck {
-			return game.PlayerAction{Type: game.ActionCall}
-		}
-	case "b":
-		if canCheck {
-			return promptForAmount(g, game.ActionBet)
-		}
-	case "r":
-		if !canCheck {
-			return promptForAmount(g, game.ActionRaise)
-		}
-	}
+			prompt.WriteString("chec(k), (b)et, (f)old > ")
+		} else {
+			// If amountToCall is negative, it means remaining players have bet all-in with less than the current bet.
+			// So the player does not need to act anything, call.
+			if amountToCall < 0 {
+				return game.PlayerAction{Type: game.ActionCall}
+			}
 
-	// 잘못된 액션 처리
-	fmt.Println("Invalid action. Folding.")
-	return game.PlayerAction{Type: game.ActionFold}
+			prompt.WriteString(fmt.Sprintf("(c)all %s, ", util.FormatNumber(amountToCall)))
+			// Only show raise option if the player has enough chips to make a valid raise.
+			minRaise, _ := g.CalculateBettingLimits()
+			if player.Chips > amountToCall && player.CurrentBet+player.Chips >= minRaise {
+				prompt.WriteString("(r)aise, ")
+			}
+			prompt.WriteString("(f)old > ")
+		}
+
+		fmt.Print(prompt.String())
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		switch input {
+		case "f":
+			return game.PlayerAction{Type: game.ActionFold}
+		case "k":
+			if canCheck {
+				return game.PlayerAction{Type: game.ActionCheck}
+			}
+		case "c":
+			if !canCheck {
+				return game.PlayerAction{Type: game.ActionCall}
+			}
+		case "b":
+			if canCheck {
+				return promptForAmount(g, game.ActionBet)
+			}
+		case "r":
+			if !canCheck {
+				return promptForAmount(g, game.ActionRaise)
+			}
+		}
+
+		fmt.Println("Invalid action.")
+	}
 }
 
 // promptForAmount는 베팅/레이즈 금액을 요청합니다.
