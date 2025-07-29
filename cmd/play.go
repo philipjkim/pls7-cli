@@ -12,7 +12,10 @@ import (
 	"strings"
 )
 
-var difficultyStr string // To hold the flag value
+var (
+	difficultyStr string // To hold the flag value
+	devMode       bool   // To hold the --dev flag value
+)
 
 // CLIActionProvider implements the ActionProvider interface using the CLI.
 type CLIActionProvider struct{}
@@ -34,6 +37,8 @@ var playCmd = &cobra.Command{
 	Short: "Starts a new game of PLS7",
 	Long:  `Starts a new game of PLS7 with 1 player and 5 CPUs.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		util.InitLogger(devMode)
+
 		fmt.Println("==================================================")
 		fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
 		fmt.Println("==================================================")
@@ -174,4 +179,5 @@ func showdownResults(g *game.Game) {
 func init() {
 	rootCmd.AddCommand(playCmd)
 	playCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
+	playCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 }

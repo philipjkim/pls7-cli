@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 )
@@ -270,14 +271,14 @@ func (g *Game) ExecuteBettingLoop(
 			}
 
 			wasAggressive := g.ProcessAction(player, action)
-			fmt.Printf(
+			logrus.Debugf(
 				"%s's action: %v, wasAggressive: %v, currentActionCloser: %v\n",
 				player.Name, action, wasAggressive, g.Players[actionCloserPos].Name,
 			)
 			if wasAggressive {
 				previousActionCloserPos := actionCloserPos
 				actionCloserPos = g.FindPreviousActivePlayer(g.CurrentTurnPos)
-				fmt.Printf(
+				logrus.Debugf(
 					"action closer changed from %v to %v\n",
 					g.Players[previousActionCloserPos].Name,
 					g.Players[actionCloserPos].Name,
