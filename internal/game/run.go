@@ -238,7 +238,8 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 func (g *Game) ExecuteBettingLoop(
 	playerActionProvider ActionProvider,
 	cpuActionProvider ActionProvider,
-	displayCurrentStatus func(g *Game),
+	displayCurrentStatus func(g *Game, isDevMode bool),
+	isDevMode bool,
 ) {
 	if g.CountPlayersAbleToAct() < 2 {
 		// If only one player can act, check if they need to call a previous all-in.
@@ -261,7 +262,7 @@ func (g *Game) ExecuteBettingLoop(
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == PlayerStatusPlaying {
-			displayCurrentStatus(g) // Display the current game state
+			displayCurrentStatus(g, isDevMode) // Display the current game state
 
 			var action PlayerAction
 			if player.IsCPU {

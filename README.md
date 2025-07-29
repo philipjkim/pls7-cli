@@ -71,7 +71,11 @@ That's it! You are now ready to run the application.
 ## Running the App
 
 ```bash
+# standard
 go run main.go play
+
+# for debugging (not clearing previous output)
+go run main.go play --dev
 ```
 
 ## Testing

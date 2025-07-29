@@ -8,7 +8,11 @@ import (
 )
 
 // DisplayGameState prints the current state of the game board and players.
-func DisplayGameState(g *game.Game) {
+func DisplayGameState(g *game.Game, isDevMode bool) {
+	if !isDevMode {
+		clearScreen()
+	}
+
 	phaseName := strings.ToUpper(g.Phase.String())
 	fmt.Printf("\n\n--- HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
 		g.HandCount, phaseName, util.FormatNumber(g.Pot), util.FormatNumber(game.SmallBlindAmt), util.FormatNumber(game.BigBlindAmt))

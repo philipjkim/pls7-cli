@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-// MockActionProvider provides a fixed action for testing purposes.
-type MockActionProvider struct {
+// SimpleActionProvider provides a fixed action for testing purposes.
+type SimpleActionProvider struct {
 	Action PlayerAction
 }
 
-func (m *MockActionProvider) GetAction(g *Game, p *Player) PlayerAction {
+func (m *SimpleActionProvider) GetAction(g *Game, p *Player) PlayerAction {
 	switch m.Action.Type {
 	case ActionFold, ActionBet, ActionRaise:
 		return m.Action
@@ -52,9 +52,9 @@ func TestBettingRound_PlayerMustCallAllIn(t *testing.T) {
 
 	// --- This is the action we are testing ---
 	// 3. YOU must now call the 2000 all-in.
-	playerAP := &MockActionProvider{Action: PlayerAction{Type: ActionCall}}
-	cpuAP := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}} // CPU players won't act further.
-	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState)
+	playerAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}}
+	cpuAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}} // CPU players won't act further.
+	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState, true)
 
 	// --- Assertions ---
 	// The betting loop should have terminated correctly.
@@ -101,9 +101,9 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 
 	// --- This is the action we are testing ---
 	// The betting loop should recognize that no further action is possible and return immediately.
-	playerAP := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}} // This should not be called.
-	cpuAP := &MockActionProvider{Action: PlayerAction{Type: ActionCheck}}    // CPU players won't act further.
-	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState)
+	playerAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}} // This should not be called.
+	cpuAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}}    // CPU players won't act further.
+	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState, true)
 
 	// --- Assertions ---
 	// The main assertion is that the test completes without timing out.
@@ -131,9 +131,10 @@ func TestBettingRound_PreFlopNoRaiseEndsCorrectly(t *testing.T) {
 	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
 	g.StartNewHand() // This will post blinds and deal cards
 	g.ExecuteBettingLoop(
-		&MockActionProvider{Action: PlayerAction{Type: ActionFold}},  // YOU will check/call
-		&MockActionProvider{Action: PlayerAction{Type: ActionCheck}}, // CPUs will check/call
+		&SimpleActionProvider{Action: PlayerAction{Type: ActionFold}},  // YOU will check/call
+		&SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}}, // CPUs will check/call
 		displayMiniGameState,
+		true,
 	)
 
 	// 1. CPU 2 calls.
@@ -184,9 +185,10 @@ func TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated(t *test
 	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
 	g.StartNewHand() // This will post blinds and deal cards
 	g.ExecuteBettingLoop(
-		&MockActionProvider{Action: PlayerAction{Type: ActionFold}}, // YOU will check/call
-		&AggressorAndCallerActionProvider{},                         // CPU 1 will check/call, CPU 3 will bet/raise
+		&SimpleActionProvider{Action: PlayerAction{Type: ActionFold}}, // YOU will check/call
+		&AggressorAndCallerActionProvider{},                           // CPU 1 will check/call, CPU 3 will bet/raise
 		displayMiniGameState,
+		true,
 	)
 
 	// 1. CPU 3 raises to 2000.
@@ -218,9 +220,10 @@ func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
 
 	// All players fold except YOU.
 	g.ExecuteBettingLoop(
-		&MockActionProvider{Action: PlayerAction{Type: ActionCheck}}, // YOU will check
-		&MockActionProvider{Action: PlayerAction{Type: ActionFold}},  // All active CPUs will fold
+		&SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}}, // YOU will check
+		&SimpleActionProvider{Action: PlayerAction{Type: ActionFold}},  // All active CPUs will fold
 		displayMiniGameState,
+		true,
 	)
 
 	// The betting round should end here with pot being 1500 (500 from YOU, 1000 from CPU 4) without infinite loops.
@@ -230,7 +233,7 @@ func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
 	}
 }
 
-func displayMiniGameState(g *Game) {
+func displayMiniGameState(g *Game, _ bool) {
 	for _, p := range g.Players {
 		if p.Status == PlayerStatusPlaying {
 			fmt.Printf("%s's turn: Chips: %d, Current Bet: %d, Action: %v\n", p.Name, p.Chips, p.CurrentBet, p.LastActionDesc)
