@@ -40,6 +40,7 @@ type Game struct {
 	// handEvaluator is a function field to allow mocking in tests.
 	handEvaluator func(g *Game, player *Player) float64
 	DevMode       bool // Flag to indicate if the game is in development mode
+	LowlessMode   bool // Flag to indicate if the game is in lowless mode
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -51,7 +52,7 @@ func (g *Game) CPUThinkTime() time.Duration {
 }
 
 // NewGame initializes a new game with players and difficulty.
-func NewGame(playerNames []string, initialChips int, difficulty Difficulty, isDev bool) *Game {
+func NewGame(playerNames []string, initialChips int, difficulty Difficulty, isDev bool, isLowless bool) *Game {
 	players := make([]*Player, len(playerNames))
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
@@ -63,10 +64,11 @@ func NewGame(playerNames []string, initialChips int, difficulty Difficulty, isDe
 	}
 
 	g := &Game{
-		Players:    players,
-		DealerPos:  -1,
-		Difficulty: difficulty,
-		DevMode:    isDev,
+		Players:     players,
+		DealerPos:   -1,
+		Difficulty:  difficulty,
+		DevMode:     isDev,
+		LowlessMode: isLowless,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength

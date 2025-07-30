@@ -24,13 +24,17 @@ func (m *SimpleActionProvider) GetAction(g *Game, p *Player) PlayerAction {
 	return m.Action
 }
 
+func newGameForBettingTests(playerNames []string, initialChips int) *Game {
+	return NewGame(playerNames, initialChips, DifficultyMedium, true, false)
+}
+
 // TestBettingRound_PlayerMustCallAllIn tests a realistic multi-street all-in scenario.
 func TestBettingRound_PlayerMustCallAllIn(t *testing.T) {
 	// Scenario: 3 players, 3000 chips each. After pre-flop, pot is 3000.
 	// On the flop, CPU 1 folds, CPU 2 bets all-in for 2000. Action is on YOU.
 	// YOU must call the 2000 all-in. The round should then terminate.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2"}
-	g := NewGame(playerNames, 3000, DifficultyMedium, true)
+	g := newGameForBettingTests(playerNames, 3000)
 
 	// --- Manually set the game state to be on the Flop, after pre-flop betting ---
 	g.Phase = PhaseFlop
@@ -77,7 +81,7 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 	// Since both opponents are all-in and have fewer chips, there is no more action.
 	// The betting round should terminate immediately without asking YOU to act again.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true)
+	g := newGameForBettingTests(playerNames, 10000)
 
 	// --- Manually set the game state to be on the Flop ---
 	g.Phase = PhaseFlop
@@ -125,7 +129,7 @@ func TestBettingRound_PreFlopNoRaiseEndsCorrectly(t *testing.T) {
 
 	// D: CPU 3, SB: YOU, BB: CPU 1
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true)
+	g := newGameForBettingTests(playerNames, 10000)
 
 	// --- Setup Pre-Flop state ---
 	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
@@ -174,7 +178,7 @@ func TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated(t *test
 
 	// D: CPU 3, SB: YOU, BB: CPU 1
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true)
+	g := newGameForBettingTests(playerNames, 10000)
 	g.Players[2].Status = PlayerStatusEliminated // CPU 2 is eliminated
 	g.Players[2].Chips = 0                       // CPU 2 has no chips
 
@@ -208,7 +212,7 @@ func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
 
 	// D: CPU 3, SB: CPU 4, BB: YOU
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true)
+	g := newGameForBettingTests(playerNames, 10000)
 	g.Players[5].Status = PlayerStatusEliminated // CPU 5 is eliminated
 	g.Players[5].Chips = 0                       // CPU 5 has no chips
 
@@ -241,7 +245,7 @@ func displayMiniGameState(g *Game) {
 // TestActionCloserPosForPreFlop tests the action closer position for pre-flop betting rounds.
 func TestActionCloserPosForPreFlop_WorksCorrectlyWithEliminatedPlayers(t *testing.T) {
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true)
+	g := newGameForBettingTests(playerNames, 10000)
 	g.Players[5].Status = PlayerStatusEliminated // CPU 5 is eliminated
 	g.Players[5].Chips = 0                       // CPU 5 has no chips
 	g.DealerPos = 3
@@ -356,7 +360,7 @@ func TestBettingLoop_AllInScenarios(t *testing.T) {
 	// Sub-test 1: One player goes all-in and is called by another.
 	t.Run("Single All-In and Call", func(t *testing.T) {
 		playerNames := []string{"YOU", "CPU 1"}
-		g := NewGame(playerNames, 10000, DifficultyMedium, true)
+		g := newGameForBettingTests(playerNames, 10000)
 		g.StartNewHand() // YOU is SB, CPU 1 is BB
 
 		// YOU goes all-in
@@ -380,11 +384,11 @@ func TestBettingLoop_AllInScenarios(t *testing.T) {
 	// Sub-test 2: Multiple all-ins creating a main pot and a side pot.
 	t.Run("Multiple All-Ins with Side Pot", func(t *testing.T) {
 		playerNames := []string{"ShortStack", "MidStack", "BigStack"}
-		g := NewGame(playerNames, 0, DifficultyMedium, true) // Chips will be set manually
-		g.Players[0].Chips = 2000                            // ShortStack
-		g.Players[1].Chips = 5000                            // MidStack
-		g.Players[2].Chips = 10000                           // BigStack
-		g.StartNewHand()                                     // ShortStack is SB, MidStack is BB
+		g := newGameForBettingTests(playerNames, 0)
+		g.Players[0].Chips = 2000  // ShortStack
+		g.Players[1].Chips = 5000  // MidStack
+		g.Players[2].Chips = 10000 // BigStack
+		g.StartNewHand()           // ShortStack is SB, MidStack is BB
 
 		// Action: BigStack raises to 10,000 (all-in), ShortStack calls, MidStack calls.
 		actionProviders := map[string]ActionProvider{

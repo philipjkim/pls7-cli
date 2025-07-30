@@ -60,7 +60,7 @@ var playCmd = &cobra.Command{
 
 		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 		initialChips := game.BigBlindAmt * 300 // 300BB
-		g := game.NewGame(playerNames, initialChips, difficulty, devMode)
+		g := game.NewGame(playerNames, initialChips, difficulty, devMode, lowlessMode)
 
 		// Main Game Loop (multi-hand)
 		for {

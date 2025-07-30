@@ -99,7 +99,7 @@
 * **목표**: `--lowless` 옵션을 통해 하이 족보만으로 게임을 진행하는 모드를 구현.
 * **주요 작업**:
   1.  `cmd/play.go`에 `--lowless` Cobra 플래그 추가. (✅)
-  2.  `game.Game` 구조체에 `LowlessMode` 필드 추가 및 초기화.
+  2.  `game.Game` 구조체에 `LowlessMode` 필드 추가 및 초기화. (✅)
   3.  `game.EvaluateHand` 함수 호출 시 `LowlessMode` 값 전달.
   4.  `game.DistributePot` 함수에서 `LowlessMode`에 따라 로우 핸드 판정 및 분배 로직 스킵.
   5.  `cli.DisplayGameState` 함수에서 `LowlessMode`에 따라 로우 핸드 정보 표시 스킵.
