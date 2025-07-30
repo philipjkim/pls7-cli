@@ -15,6 +15,7 @@ import (
 var (
 	difficultyStr string // To hold the flag value
 	devMode       bool   // To hold the --dev flag value
+	lowlessMode   bool   // To hold the --lowless flag value
 )
 
 // CLIActionProvider implements the ActionProvider interface using the CLI.
@@ -180,4 +181,5 @@ func init() {
 	rootCmd.AddCommand(playCmd)
 	playCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	playCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
+	playCmd.Flags().BoolVar(&lowlessMode, "lowless", false, "Enable lowless mode (play with high hand only).")
 }
