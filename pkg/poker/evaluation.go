@@ -109,9 +109,9 @@ func (ha *handAnalysis) String() string {
 	}
 	suitStr := "Suit Counts: "
 	for suit, count := range ha.suitCounts {
-		suitStr += fmt.Sprintf("%s(%d) ", suit.String(), count)
+		suitStr += fmt.Sprintf("%s (%d) ", suit.String(), count)
 	}
-	return fmt.Sprintf("%s\n%s\nCards: %v", rankStr, suitStr, ha.cards)
+	return fmt.Sprintf("%s, %s, Cards: %v", rankStr, suitStr, ha.cards)
 }
 
 // newHandAnalysis creates an analysis object from an 8-card pool.

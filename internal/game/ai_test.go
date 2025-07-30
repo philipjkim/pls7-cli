@@ -105,12 +105,12 @@ func TestCPUActionWithRandomness(t *testing.T) {
 	}{
 		// Seed 12345's first float is approx 0.515 (> 0.25 and > 0.20)
 		{
-			name:           "Easy AI - Folds on high random number",
+			name:           "Easy AI - Raises on high random number",
 			seed:           12345,
 			difficulty:     DifficultyEasy,
 			betToCall:      1000,
 			playerBet:      0,
-			expectedAction: ActionFold,
+			expectedAction: ActionRaise,
 		},
 		{
 			name:           "Hard AI - No Bluff on high random number",

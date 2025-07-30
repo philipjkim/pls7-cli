@@ -28,12 +28,27 @@ func (g *Game) getEasyAction(player *Player, r *rand.Rand) PlayerAction {
 
 	time.Sleep(CPUThinkTime)
 
-	callProbability := 0.25
 	if !canCheck {
-		if r.Float64() < callProbability {
-			return PlayerAction{Type: ActionCall}
+		switch g.Phase {
+		case PhasePreFlop:
+			if r.Float64() < 0.8 {
+				return PlayerAction{Type: ActionCall}
+			}
+			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
+		case PhaseFlop, PhaseTurn:
+			prob := r.Float64()
+			if prob < 0.3 {
+				return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
+			}
+			if prob < 0.7 {
+				return PlayerAction{Type: ActionCall}
+			}
+			return PlayerAction{Type: ActionFold}
+		case PhaseRiver:
+			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
+		default:
+			panic("unhandled default case")
 		}
-		return PlayerAction{Type: ActionFold}
 	}
 	return PlayerAction{Type: ActionCheck}
 }

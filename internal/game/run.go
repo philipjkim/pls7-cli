@@ -63,6 +63,17 @@ func (g *Game) CleanupHand() {
 			fmt.Printf("%s has been eliminated!\n", p.Name)
 		}
 	}
+
+	// Quit the game if only one player remains, noting who won the game.
+	if g.CountRemainingPlayers() <= 1 {
+		for _, p := range g.Players {
+			if p.Status != PlayerStatusEliminated {
+				fmt.Printf("%s wins the game!\n", p.Name)
+				break
+			}
+		}
+		return
+	}
 }
 
 // CountRemainingPlayers counts players who have not been eliminated from the entire game.

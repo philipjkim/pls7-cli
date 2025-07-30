@@ -15,6 +15,22 @@ const (
 	PlayerStatusEliminated                     // Out of chips and out of the game
 )
 
+// String makes PlayerStatus implement the Stringer interface.
+func (s PlayerStatus) String() string {
+	switch s {
+	case PlayerStatusPlaying:
+		return "Playing"
+	case PlayerStatusFolded:
+		return "Folded"
+	case PlayerStatusAllIn:
+		return "All In"
+	case PlayerStatusEliminated:
+		return "Eliminated"
+	default:
+		return "Unknown"
+	}
+}
+
 // Player represents a single player in the game.
 type Player struct {
 	Name           string
