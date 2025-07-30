@@ -2,6 +2,7 @@ package poker
 
 import (
 	"fmt"
+	"pls7-cli/internal/util"
 	"strings"
 	"testing"
 )
@@ -32,6 +33,8 @@ func cardsFromStrings(s string) []Card {
 }
 
 func TestHighHands(t *testing.T) {
+	util.InitLogger(true)
+
 	testCases := []struct {
 		name         string
 		cardString   string
@@ -52,6 +55,10 @@ func TestHighHands(t *testing.T) {
 		{name: "Two Pair", cardString: "As Ac Ks Kc Qs Jd 7c 2h", expectedRank: TwoPair},
 		{name: "One Pair", cardString: "As Ac Ks Qc Jd 6c 2h 3d", expectedRank: OnePair},
 		{name: "High Card", cardString: "As Ks Qs Jc 9d 2h 3c 4d", expectedRank: HighCard},
+
+		// New: Skip Straight Flush
+		{name: "Skip Straight Flush (A-Low)", cardString: "As 3s 5s 7s 9s Kd Qc Jc", expectedRank: SkipStraightFlush},
+		{name: "Skip Straight Flush (K-High)", cardString: "Ks Js 9s 7s 5s Ad Qc Th", expectedRank: SkipStraightFlush},
 
 		// Ranking & Tie-Breakers
 		{name: "Flush vs Straight", cardString: "As Ks Qs Js 2s 4c 5d 6h", expectedRank: Flush},

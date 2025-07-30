@@ -2,6 +2,7 @@ package poker
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"pls7-cli/internal/util"
 	"sort"
 )
@@ -21,7 +22,8 @@ const (
 	FullHouse
 	FourOfAKind
 	StraightFlush
-	RoyalFlush
+	SkipStraightFlush // New rank, 2nd highest
+	RoyalFlush        // Highest rank
 )
 
 // String makes HandRank implement the Stringer interface for easy printing.
@@ -37,6 +39,7 @@ func (hr HandRank) String() string {
 		"Full House",
 		"Four of a Kind",
 		"Straight Flush",
+		"Skip Straight Flush",
 		"Royal Flush",
 	}[hr]
 }
@@ -55,7 +58,7 @@ func (hr *HandResult) String() string {
 	}
 
 	switch hr.Rank {
-	case RoyalFlush, StraightFlush, Straight, SkipStraight, FullHouse, Flush, OnePair:
+	case RoyalFlush, SkipStraightFlush, StraightFlush, Straight, SkipStraight, FullHouse, Flush, OnePair:
 		return fmt.Sprintf("%s, %s", hr.Rank.String(), hr.CardsString())
 	case FourOfAKind:
 		quadRank := hr.HighValues[0].String()
@@ -95,6 +98,22 @@ type handAnalysis struct {
 	cards      []Card // Original 8 cards, sorted by rank descending
 }
 
+// String makes handAnalysis implement the Stringer interface for debugging.
+func (ha *handAnalysis) String() string {
+	if ha == nil {
+		return "N/A"
+	}
+	rankStr := "Rank Counts: "
+	for rank, count := range ha.rankCounts {
+		rankStr += fmt.Sprintf("%s(%d) ", rank.String(), count)
+	}
+	suitStr := "Suit Counts: "
+	for suit, count := range ha.suitCounts {
+		suitStr += fmt.Sprintf("%s(%d) ", suit.String(), count)
+	}
+	return fmt.Sprintf("%s\n%s\nCards: %v", rankStr, suitStr, ha.cards)
+}
+
 // newHandAnalysis creates an analysis object from an 8-card pool.
 func newHandAnalysis(pool []Card) *handAnalysis {
 	analysis := &handAnalysis{
@@ -124,14 +143,14 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	analysis := newHandAnalysis(pool)
 
 	// --- High Hand Evaluation ---
-	// This part remains the same. We find the best high hand first.
-	// (The code is shortened for brevity, but it's the same as the previous step)
 	if sfCards, ok := findStraightFlush(analysis); ok {
 		rank := StraightFlush
 		if sfCards[0].Rank == Ace {
 			rank = RoyalFlush
 		}
 		highResult = &HandResult{Rank: rank, Cards: sfCards, HighValues: []Rank{sfCards[0].Rank}}
+	} else if ssfCards, ok := findSkipStraightFlush(analysis); ok {
+		highResult = &HandResult{Rank: SkipStraightFlush, Cards: ssfCards, HighValues: []Rank{ssfCards[0].Rank}}
 	} else if quadRank, ok := findBestNOfAKind(analysis.rankCounts, 4); ok {
 		kickers := findKickers(analysis.cards, []Rank{quadRank}, 1)
 		quadCards := findCardsByRank(pool, quadRank, 4)
@@ -199,6 +218,25 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 	}
 
 	return highResult, lowResult
+}
+
+// findSkipStraightFlush finds a Skip Straight Flush from the pool.
+func findSkipStraightFlush(analysis *handAnalysis) ([]Card, bool) {
+	for suit, count := range analysis.suitCounts {
+		if count >= 5 {
+			flushCards := make([]Card, 0, count)
+			for _, card := range analysis.cards {
+				if card.Suit == suit {
+					flushCards = append(flushCards, card)
+				}
+			}
+			flushAnalysis := newHandAnalysis(flushCards)
+			if ssfCards, ok := findSkipStraight(flushAnalysis); ok {
+				return ssfCards, true
+			}
+		}
+	}
+	return nil, false
 }
 
 // --- New Helper Function for Low Hand ---
@@ -277,25 +315,63 @@ func findStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 }
 
 func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
-	uniqueRanks := make([]Rank, 0, len(analysis.rankCounts))
-	for rank := range analysis.rankCounts {
-		uniqueRanks = append(uniqueRanks, rank)
-	}
-	sort.Slice(uniqueRanks, func(i, j int) bool { return uniqueRanks[i] > uniqueRanks[j] })
-	for i := 0; i <= len(uniqueRanks)-5; i++ {
-		isSkipStraight := true
-		for j := 0; j < 4; j++ {
-			if uniqueRanks[i+j] != uniqueRanks[i+j+1]+2 {
-				isSkipStraight = false
-				break
+	logrus.Debugf("findSkipStraight: Analyzing handAnalysis: %+v", analysis)
+
+	uniqueRanksWithAceAsFourteen := make([]Rank, 0)
+	seenRanks := make(map[Rank]bool)
+	hasAce := false
+
+	for _, card := range analysis.cards {
+		if !seenRanks[card.Rank] {
+			uniqueRanksWithAceAsFourteen = append(uniqueRanksWithAceAsFourteen, card.Rank)
+			seenRanks[card.Rank] = true
+			if card.Rank == Ace {
+				hasAce = true
 			}
 		}
-		if isSkipStraight {
-			topRank := uniqueRanks[i]
-			ranks := []Rank{topRank, topRank - 2, topRank - 4, topRank - 6, topRank - 8}
-			return findCardsForStraight(analysis.cards, ranks), true
+	}
+	sort.Slice(uniqueRanksWithAceAsFourteen, func(i, j int) bool { return uniqueRanksWithAceAsFourteen[i] > uniqueRanksWithAceAsFourteen[j] })
+	listOfUniqueRanks := [][]Rank{uniqueRanksWithAceAsFourteen}
+
+	// If Ace is present, create a second list treating Ace as 1 (14 in PLS7)
+	if hasAce {
+		logrus.Debugf("findSkipStraight: Ace found, creating alternative rank list treating Ace as 1.")
+		uniqueRanksWithAceAsOne := make([]Rank, 0)
+		uniqueRanksWithAceAsOne = append(uniqueRanksWithAceAsOne, uniqueRanksWithAceAsFourteen[1:]...) // Copy all except Ace
+		uniqueRanksWithAceAsOne = append(uniqueRanksWithAceAsOne, Rank(1))                             // Append Ace as 1
+		listOfUniqueRanks = append(listOfUniqueRanks, uniqueRanksWithAceAsOne)
+	}
+	logrus.Debugf("findSkipStraight: listOfUniqueRanks: %+v", listOfUniqueRanks)
+
+	for _, uniqueRanks := range listOfUniqueRanks {
+		for i := 0; i <= len(uniqueRanks)-5; i++ {
+			isSkipStraight := true
+			logrus.Debugf("findSkipStraight: Outer loop i: %d, current uniqueRanks[i]: %v", i, uniqueRanks[i])
+			for j := 0; j < 4; j++ {
+				currentRank := uniqueRanks[i+j]
+				nextExpectedRank := uniqueRanks[i+j+1] + 2
+				logrus.Debugf(
+					"  Inner loop j: %d, currentRank: %v, uniqueRanks[i+j+1]: %v, nextExpectedRank: %v",
+					j, currentRank, uniqueRanks[i+j+1], nextExpectedRank,
+				)
+				if currentRank != nextExpectedRank {
+					isSkipStraight = false
+					logrus.Debugf(
+						"    isSkipStraight set to false. currentRank (%v) != nextExpectedRank (%v)",
+						currentRank, nextExpectedRank,
+					)
+					break
+				}
+			}
+			if isSkipStraight {
+				topRank := uniqueRanks[i]
+				ranks := []Rank{topRank, topRank - 2, topRank - 4, topRank - 6, topRank - 8}
+				logrus.Debugf("findSkipStraight: Found Skip Straight! topRank: %v, ranks: %v", topRank, ranks)
+				return findCardsForStraight(analysis.cards, ranks), true
+			}
 		}
 	}
+	logrus.Debugf("findSkipStraight: No Skip Straight found.")
 	return nil, false
 }
 
