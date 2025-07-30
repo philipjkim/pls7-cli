@@ -21,6 +21,7 @@ type Player struct {
 	Hand           []poker.Card
 	Chips          int
 	CurrentBet     int
+	TotalBetInHand int // New field to track total chips contributed to the pot in the current hand
 	Status         PlayerStatus
 	IsCPU          bool
 	LastActionDesc string // Describes the last action taken in the round

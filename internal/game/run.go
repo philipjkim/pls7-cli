@@ -117,6 +117,7 @@ func (g *Game) StartNewHand() {
 		if p.Status != PlayerStatusEliminated {
 			p.Hand = []poker.Card{}
 			p.CurrentBet = 0
+			p.TotalBetInHand = 0 // Reset total bet in hand
 			p.Status = PlayerStatusPlaying
 			p.LastActionDesc = "" // Reset action description
 		}
@@ -158,6 +159,7 @@ func (g *Game) postBet(player *Player, amount int) {
 	}
 	player.Chips -= amount
 	player.CurrentBet += amount
+	player.TotalBetInHand += amount // Update total bet in hand
 	g.Pot += amount
 	if player.Chips == 0 {
 		player.Status = PlayerStatusAllIn

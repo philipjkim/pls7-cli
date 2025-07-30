@@ -353,3 +353,68 @@ func TestCalculateBettingLimits(t *testing.T) {
 		})
 	}
 }
+
+// TestBettingLoop_AllInScenarios tests various all-in scenarios to ensure the betting loop and pot are handled correctly.
+func TestBettingLoop_AllInScenarios(t *testing.T) {
+	// Sub-test 1: One player goes all-in and is called by another.
+	t.Run("Single All-In and Call", func(t *testing.T) {
+		playerNames := []string{"YOU", "CPU 1"}
+		g := NewGame(playerNames, 10000, DifficultyMedium)
+		g.StartNewHand() // YOU is SB, CPU 1 is BB
+
+		// YOU goes all-in
+		playerActionProvider := &SimpleActionProvider{Action: PlayerAction{Type: ActionRaise, Amount: 10000}}
+		// CPU 1 calls
+		cpuActionProvider := &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}}
+
+		g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, displayMiniGameState, true)
+
+		if g.Players[0].Status != PlayerStatusAllIn {
+			t.Errorf("Expected YOU to be all-in, but status is %v", g.Players[0].Status)
+		}
+		if g.Players[1].Status != PlayerStatusAllIn {
+			t.Errorf("Expected CPU 1 to be all-in, but status is %v", g.Players[1].Status)
+		}
+		if g.Pot != 20000 {
+			t.Errorf("Expected final pot to be 20000, but got %d", g.Pot)
+		}
+	})
+
+	// Sub-test 2: Multiple all-ins creating a main pot and a side pot.
+	t.Run("Multiple All-Ins with Side Pot", func(t *testing.T) {
+		playerNames := []string{"ShortStack", "MidStack", "BigStack"}
+		g := NewGame(playerNames, 0, DifficultyMedium) // Chips will be set manually
+		g.Players[0].Chips = 2000                      // ShortStack
+		g.Players[1].Chips = 5000                      // MidStack
+		g.Players[2].Chips = 10000                     // BigStack
+		g.StartNewHand()                               // ShortStack is SB, MidStack is BB
+
+		// Action: BigStack raises to 10000 (all-in), ShortStack calls, MidStack calls.
+		actionProviders := map[string]ActionProvider{
+			"BigStack":   &SimpleActionProvider{Action: PlayerAction{Type: ActionRaise, Amount: 10000}},
+			"ShortStack": &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}},
+			"MidStack":   &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}},
+		}
+		provider := &MultiActionProvider{Providers: actionProviders}
+
+		g.ExecuteBettingLoop(provider, provider, displayMiniGameState, true)
+
+		// This is a simplified check. A full side-pot implementation is needed in pot.go
+		if g.Pot != 17000 { // 2000*3 (main) + 3000*2 (side) = 12000 is wrong. Correct is 2000+5000+10000
+			t.Errorf("Expected final pot to be 17000, but got %d", g.Pot)
+		}
+	})
+}
+
+// MultiActionProvider is a helper for tests with multiple players taking different actions.
+type MultiActionProvider struct {
+	Providers map[string]ActionProvider
+}
+
+func (m *MultiActionProvider) GetAction(g *Game, p *Player) PlayerAction {
+	if provider, ok := m.Providers[p.Name]; ok {
+		return provider.GetAction(g, p)
+	}
+	// Default action if no specific provider is found for the player
+	return PlayerAction{Type: ActionFold}
+}

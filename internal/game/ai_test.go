@@ -3,35 +3,8 @@ package game
 import (
 	"math/rand"
 	"pls7-cli/pkg/poker"
-	"strings"
 	"testing"
 )
-
-// cardsFromStrings is a helper function copied from poker_test for convenience.
-func cardsFromStrings(s string) []poker.Card {
-	// FIX: Handle empty string input to prevent panic.
-	if s == "" {
-		return []poker.Card{}
-	}
-
-	parts := strings.Split(s, " ")
-	cards := make([]poker.Card, len(parts))
-
-	rankMap := map[rune]poker.Rank{
-		'2': poker.Two, '3': poker.Three, '4': poker.Four, '5': poker.Five, '6': poker.Six, '7': poker.Seven,
-		'8': poker.Eight, '9': poker.Nine, 'T': poker.Ten, 'J': poker.Jack, 'Q': poker.Queen, 'K': poker.King, 'A': poker.Ace,
-	}
-	suitMap := map[rune]poker.Suit{
-		's': poker.Spade, 'h': poker.Heart, 'd': poker.Diamond, 'c': poker.Club,
-	}
-
-	for i, part := range parts {
-		rank := rankMap[rune(part[0])]
-		suit := suitMap[rune(part[1])]
-		cards[i] = poker.Card{Rank: rank, Suit: suit}
-	}
-	return cards
-}
 
 func TestEvaluateHandStrength(t *testing.T) {
 	testCases := []struct {
