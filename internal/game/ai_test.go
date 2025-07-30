@@ -77,6 +77,7 @@ func TestEvaluateHandStrength(t *testing.T) {
 			g := &Game{
 				Phase:          tc.phase,
 				CommunityCards: cardsFromStrings(tc.communityCardsStr),
+				DevMode:        true,
 			}
 			player := &Player{
 				Hand: cardsFromStrings(tc.holeCardsStr),
@@ -152,6 +153,7 @@ func TestCPUActionWithRandomness(t *testing.T) {
 				Difficulty: tc.difficulty,
 				BetToCall:  tc.betToCall,
 				Phase:      tc.phase,
+				DevMode:    true,
 			}
 			// Initialize the default evaluator, which we might override.
 			g.handEvaluator = evaluateHandStrength

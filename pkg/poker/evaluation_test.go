@@ -41,8 +41,12 @@ func TestHighHands(t *testing.T) {
 		expectedRank HandRank
 	}{
 		// Special High Hands
-		{name: "Skip Straight (A-Low)", cardString: "As 3c 5d 7h 9s Kd Qc Jc", expectedRank: SkipStraight},
-		{name: "Skip Straight (A-High)", cardString: "6s 8c Td Qh As 2c 3d 4h", expectedRank: SkipStraight},
+		{name: "Skip Straight (A-3-5-7-9)", cardString: "As 9c 7s 6d 5s 5c 3s", expectedRank: SkipStraight},
+		{name: "Skip Straight (2-4-6-8-T)", cardString: "2s 4c 6d 8h Ts 3c 5d", expectedRank: SkipStraight},
+		{name: "Skip Straight (3-5-7-9-J)", cardString: "3s 5c 7d 9h Js 2c 4d", expectedRank: SkipStraight},
+		{name: "Skip Straight (4-6-8-T-Q)", cardString: "4s 6c 8d Th Qs 2c 3d", expectedRank: SkipStraight},
+		{name: "Skip Straight (5-7-9-J-K)", cardString: "5s 7c 9d Jh Ks 2c 3d", expectedRank: SkipStraight},
+		{name: "Skip Straight (6-8-T-Q-A)", cardString: "6s 8c Td Qh As 2c 3d", expectedRank: SkipStraight},
 
 		// Standard High Hands
 		{name: "Royal Flush", cardString: "As Ks Qs Js Ts 2c 3d 4h", expectedRank: RoyalFlush},

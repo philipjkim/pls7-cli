@@ -1,7 +1,5 @@
 package game
 
-import "time"
-
 // Game settings constants
 const (
 	SmallBlindAmt = 500
@@ -16,6 +14,3 @@ const (
 	DifficultyMedium
 	DifficultyHard
 )
-
-// CPUThinkTime is the default thinking time for CPU actions
-var CPUThinkTime = 500 * time.Millisecond

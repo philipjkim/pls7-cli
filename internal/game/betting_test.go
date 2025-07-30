@@ -30,7 +30,7 @@ func TestBettingRound_PlayerMustCallAllIn(t *testing.T) {
 	// On the flop, CPU 1 folds, CPU 2 bets all-in for 2000. Action is on YOU.
 	// YOU must call the 2000 all-in. The round should then terminate.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2"}
-	g := NewGame(playerNames, 3000, DifficultyMedium)
+	g := NewGame(playerNames, 3000, DifficultyMedium, true)
 
 	// --- Manually set the game state to be on the Flop, after pre-flop betting ---
 	g.Phase = PhaseFlop
@@ -54,7 +54,7 @@ func TestBettingRound_PlayerMustCallAllIn(t *testing.T) {
 	// 3. YOU must now call the 2000 all-in.
 	playerAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}}
 	cpuAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}} // CPU players won't act further.
-	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState, true)
+	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState)
 
 	// --- Assertions ---
 	// The betting loop should have terminated correctly.
@@ -77,7 +77,7 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 	// Since both opponents are all-in and have fewer chips, there is no more action.
 	// The betting round should terminate immediately without asking YOU to act again.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2"}
-	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g := NewGame(playerNames, 10000, DifficultyMedium, true)
 
 	// --- Manually set the game state to be on the Flop ---
 	g.Phase = PhaseFlop
@@ -103,7 +103,7 @@ func TestBettingRound_SkipsWhenNoFurtherActionPossible(t *testing.T) {
 	// The betting loop should recognize that no further action is possible and return immediately.
 	playerAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}} // This should not be called.
 	cpuAP := &SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}}    // CPU players won't act further.
-	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState, true)
+	g.ExecuteBettingLoop(playerAP, cpuAP, displayMiniGameState)
 
 	// --- Assertions ---
 	// The main assertion is that the test completes without timing out.
@@ -125,7 +125,7 @@ func TestBettingRound_PreFlopNoRaiseEndsCorrectly(t *testing.T) {
 
 	// D: CPU 3, SB: YOU, BB: CPU 1
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g := NewGame(playerNames, 10000, DifficultyMedium, true)
 
 	// --- Setup Pre-Flop state ---
 	g.DealerPos = 2  // CPU 2 was the dealer, and the dealer should be changed to CPU 3 after StartNewHand
@@ -134,7 +134,6 @@ func TestBettingRound_PreFlopNoRaiseEndsCorrectly(t *testing.T) {
 		&SimpleActionProvider{Action: PlayerAction{Type: ActionFold}},  // YOU will check/call
 		&SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}}, // CPUs will check/call
 		displayMiniGameState,
-		true,
 	)
 
 	// 1. CPU 2 calls.
@@ -175,7 +174,7 @@ func TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated(t *test
 
 	// D: CPU 3, SB: YOU, BB: CPU 1
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g := NewGame(playerNames, 10000, DifficultyMedium, true)
 	g.Players[2].Status = PlayerStatusEliminated // CPU 2 is eliminated
 	g.Players[2].Chips = 0                       // CPU 2 has no chips
 
@@ -188,7 +187,6 @@ func TestBettingRound_RoundEndsCorrectlyWhenLeftOfAggressorHasEliminated(t *test
 		&SimpleActionProvider{Action: PlayerAction{Type: ActionFold}}, // YOU will check/call
 		&AggressorAndCallerActionProvider{},                           // CPU 1 will check/call, CPU 3 will bet/raise
 		displayMiniGameState,
-		true,
 	)
 
 	// 1. CPU 3 raises to 2000.
@@ -210,7 +208,7 @@ func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
 
 	// D: CPU 3, SB: CPU 4, BB: YOU
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g := NewGame(playerNames, 10000, DifficultyMedium, true)
 	g.Players[5].Status = PlayerStatusEliminated // CPU 5 is eliminated
 	g.Players[5].Chips = 0                       // CPU 5 has no chips
 
@@ -223,7 +221,6 @@ func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
 		&SimpleActionProvider{Action: PlayerAction{Type: ActionCheck}}, // YOU will check
 		&SimpleActionProvider{Action: PlayerAction{Type: ActionFold}},  // All active CPUs will fold
 		displayMiniGameState,
-		true,
 	)
 
 	// The betting round should end here with pot being 1500 (500 from YOU, 1000 from CPU 4) without infinite loops.
@@ -233,7 +230,7 @@ func TestBettingRound_HandlesAllFoldWithOneEliminatedPlayer(t *testing.T) {
 	}
 }
 
-func displayMiniGameState(g *Game, _ bool) {
+func displayMiniGameState(g *Game) {
 	for _, p := range g.Players {
 		if p.Status == PlayerStatusPlaying {
 			fmt.Printf("%s's turn: Chips: %d, Current Bet: %d, Action: %v\n", p.Name, p.Chips, p.CurrentBet, p.LastActionDesc)
@@ -244,7 +241,7 @@ func displayMiniGameState(g *Game, _ bool) {
 // TestActionCloserPosForPreFlop tests the action closer position for pre-flop betting rounds.
 func TestActionCloserPosForPreFlop_WorksCorrectlyWithEliminatedPlayers(t *testing.T) {
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-	g := NewGame(playerNames, 10000, DifficultyMedium)
+	g := NewGame(playerNames, 10000, DifficultyMedium, true)
 	g.Players[5].Status = PlayerStatusEliminated // CPU 5 is eliminated
 	g.Players[5].Chips = 0                       // CPU 5 has no chips
 	g.DealerPos = 3
@@ -320,12 +317,12 @@ func TestCalculateBettingLimits(t *testing.T) {
 		{
 			name:             "Re-raising scenario",
 			pot:              10000, // Complex pot
-			betToCall:        3000,  // Original bet was 1000, someone raised to 3000
+			betToCall:        3000,  // The Original bet was 1000, someone raised to 3000
 			playerChips:      20000,
 			playerCurrentBet: 1000,  // Player already called the initial 1000
-			lastRaiseAmount:  2000,  // Last raise was 2000 (3000 - 1000)
+			lastRaiseAmount:  2000,  // The Last raise was 2000 (3000-1000)
 			expectedMinRaise: 5000,  // Min raise is the size of the last raise (2000), so 3000 + 2000 = 5000
-			expectedMaxRaise: 15000, // Pot(10000) + Call(2000) = 12000. Raise by 12000 to a total of 15000
+			expectedMaxRaise: 15000, // Pot(10000) + Call(2000) = 12000. Raise by 12,000 to a total of 15,000
 		},
 	}
 
@@ -359,7 +356,7 @@ func TestBettingLoop_AllInScenarios(t *testing.T) {
 	// Sub-test 1: One player goes all-in and is called by another.
 	t.Run("Single All-In and Call", func(t *testing.T) {
 		playerNames := []string{"YOU", "CPU 1"}
-		g := NewGame(playerNames, 10000, DifficultyMedium)
+		g := NewGame(playerNames, 10000, DifficultyMedium, true)
 		g.StartNewHand() // YOU is SB, CPU 1 is BB
 
 		// YOU goes all-in
@@ -367,7 +364,7 @@ func TestBettingLoop_AllInScenarios(t *testing.T) {
 		// CPU 1 calls
 		cpuActionProvider := &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}}
 
-		g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, displayMiniGameState, true)
+		g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, displayMiniGameState)
 
 		if g.Players[0].Status != PlayerStatusAllIn {
 			t.Errorf("Expected YOU to be all-in, but status is %v", g.Players[0].Status)
@@ -383,13 +380,13 @@ func TestBettingLoop_AllInScenarios(t *testing.T) {
 	// Sub-test 2: Multiple all-ins creating a main pot and a side pot.
 	t.Run("Multiple All-Ins with Side Pot", func(t *testing.T) {
 		playerNames := []string{"ShortStack", "MidStack", "BigStack"}
-		g := NewGame(playerNames, 0, DifficultyMedium) // Chips will be set manually
-		g.Players[0].Chips = 2000                      // ShortStack
-		g.Players[1].Chips = 5000                      // MidStack
-		g.Players[2].Chips = 10000                     // BigStack
-		g.StartNewHand()                               // ShortStack is SB, MidStack is BB
+		g := NewGame(playerNames, 0, DifficultyMedium, true) // Chips will be set manually
+		g.Players[0].Chips = 2000                            // ShortStack
+		g.Players[1].Chips = 5000                            // MidStack
+		g.Players[2].Chips = 10000                           // BigStack
+		g.StartNewHand()                                     // ShortStack is SB, MidStack is BB
 
-		// Action: BigStack raises to 10000 (all-in), ShortStack calls, MidStack calls.
+		// Action: BigStack raises to 10,000 (all-in), ShortStack calls, MidStack calls.
 		actionProviders := map[string]ActionProvider{
 			"BigStack":   &SimpleActionProvider{Action: PlayerAction{Type: ActionRaise, Amount: 10000}},
 			"ShortStack": &SimpleActionProvider{Action: PlayerAction{Type: ActionCall}},
@@ -397,10 +394,10 @@ func TestBettingLoop_AllInScenarios(t *testing.T) {
 		}
 		provider := &MultiActionProvider{Providers: actionProviders}
 
-		g.ExecuteBettingLoop(provider, provider, displayMiniGameState, true)
+		g.ExecuteBettingLoop(provider, provider, displayMiniGameState)
 
 		// This is a simplified check. A full side-pot implementation is needed in pot.go
-		if g.Pot != 17000 { // 2000*3 (main) + 3000*2 (side) = 12000 is wrong. Correct is 2000+5000+10000
+		if g.Pot != 17000 { // 2000*3 (main) + 3000*2 (side) = 12,000 is wrong. Correct is 2000+5000+10,000
 			t.Errorf("Expected final pot to be 17000, but got %d", g.Pot)
 		}
 	})

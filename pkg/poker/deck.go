@@ -40,3 +40,15 @@ func (d *Deck) Deal() (Card, error) {
 	d.Cards = d.Cards[:len(d.Cards)-1]
 	return card, nil
 }
+
+// DealForDebug removes and returns the specific card from the deck.
+// This is used for testing purposes to ensure specific cards can be dealt.
+func (d *Deck) DealForDebug(card Card) (Card, error) {
+	for i, c := range d.Cards {
+		if c == card {
+			d.Cards = append(d.Cards[:i], d.Cards[i+1:]...)
+			return c, nil
+		}
+	}
+	return Card{}, fmt.Errorf("card %s not found in deck", card)
+}

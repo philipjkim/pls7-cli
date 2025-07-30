@@ -199,6 +199,13 @@ func EvaluateHand(holeCards []Card, communityCards []Card) (highResult *HandResu
 			HighValues: []Rank{pairRank, kickers[0].Rank, kickers[1].Rank, kickers[2].Rank},
 		}
 	} else {
+		if len(analysis.cards) < 5 {
+			logrus.Warnf(
+				"Not enough cards to evaluate a high hand: %d cards available - holeCards: %+v, communityCards: %+v",
+				len(analysis.cards), holeCards, communityCards,
+			)
+			return nil, nil // Not enough cards for a valid hand
+		}
 		highResult = &HandResult{
 			Rank:  HighCard,
 			Cards: analysis.cards[:5],
@@ -317,57 +324,70 @@ func findStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	logrus.Debugf("findSkipStraight: Analyzing handAnalysis: %+v", analysis)
 
-	uniqueRanksWithAceAsFourteen := make([]Rank, 0)
+	uniqueRanksAceHigh := make([]Rank, 0)
 	seenRanks := make(map[Rank]bool)
 	hasAce := false
 
 	for _, card := range analysis.cards {
 		if !seenRanks[card.Rank] {
-			uniqueRanksWithAceAsFourteen = append(uniqueRanksWithAceAsFourteen, card.Rank)
+			uniqueRanksAceHigh = append(uniqueRanksAceHigh, card.Rank)
 			seenRanks[card.Rank] = true
 			if card.Rank == Ace {
 				hasAce = true
 			}
 		}
 	}
-	sort.Slice(uniqueRanksWithAceAsFourteen, func(i, j int) bool { return uniqueRanksWithAceAsFourteen[i] > uniqueRanksWithAceAsFourteen[j] })
-	listOfUniqueRanks := [][]Rank{uniqueRanksWithAceAsFourteen}
+	sort.Slice(uniqueRanksAceHigh, func(i, j int) bool { return uniqueRanksAceHigh[i] > uniqueRanksAceHigh[j] })
+	listOfUniqueRanks := [][]Rank{uniqueRanksAceHigh}
 
 	// If Ace is present, create a second list treating Ace as 1 (14 in PLS7)
 	if hasAce {
 		logrus.Debugf("findSkipStraight: Ace found, creating alternative rank list treating Ace as 1.")
-		uniqueRanksWithAceAsOne := make([]Rank, 0)
-		uniqueRanksWithAceAsOne = append(uniqueRanksWithAceAsOne, uniqueRanksWithAceAsFourteen[1:]...) // Copy all except Ace
-		uniqueRanksWithAceAsOne = append(uniqueRanksWithAceAsOne, Rank(1))                             // Append Ace as 1
-		listOfUniqueRanks = append(listOfUniqueRanks, uniqueRanksWithAceAsOne)
+		uniqueRanksAceLow := make([]Rank, 0)
+		uniqueRanksAceLow = append(uniqueRanksAceLow, uniqueRanksAceHigh[1:]...) // Copy all except Ace
+		uniqueRanksAceLow = append(uniqueRanksAceLow, uniqueRanksAceHigh[0])     // Add Ace at the end
+		listOfUniqueRanks = append(listOfUniqueRanks, uniqueRanksAceLow)
 	}
 	logrus.Debugf("findSkipStraight: listOfUniqueRanks: %+v", listOfUniqueRanks)
 
 	for _, uniqueRanks := range listOfUniqueRanks {
+		// In Skip Straight, the highest rank must be at least 9
+		if uniqueRanks[0] < 9 {
+			logrus.Debugf(
+				"findSkipStraight: Skipping analysis for uniqueRanks starting with %v, as it is less than 9.",
+				uniqueRanks[0],
+			)
+			continue // Skip analysis if the highest rank is less than 9
+		}
 		for i := 0; i <= len(uniqueRanks)-5; i++ {
+			smallest := uniqueRanks[i] - 8 // The smallest rank in a Skip Straight is 8 ranks below the top rank
+			if smallest < Two {
+				smallest = Ace // If the smallest rank is less than Two, treat it as Ace
+				logrus.Debugf("findSkipStraight: Adjusting smallest rank to Ace as it is less than Two.")
+			}
+			possibleSkipStraight := []Rank{
+				uniqueRanks[i],
+				uniqueRanks[i] - 2,
+				uniqueRanks[i] - 4,
+				uniqueRanks[i] - 6,
+				smallest,
+			}
+			logrus.Debugf("findSkipStraight: Checking possible Skip Straight: %v", possibleSkipStraight)
 			isSkipStraight := true
-			logrus.Debugf("findSkipStraight: Outer loop i: %d, current uniqueRanks[i]: %v", i, uniqueRanks[i])
-			for j := 0; j < 4; j++ {
-				currentRank := uniqueRanks[i+j]
-				nextExpectedRank := uniqueRanks[i+j+1] + 2
-				logrus.Debugf(
-					"  Inner loop j: %d, currentRank: %v, uniqueRanks[i+j+1]: %v, nextExpectedRank: %v",
-					j, currentRank, uniqueRanks[i+j+1], nextExpectedRank,
-				)
-				if currentRank != nextExpectedRank {
+			for _, c := range possibleSkipStraight {
+				if !containsRank(uniqueRanks, c) {
 					isSkipStraight = false
 					logrus.Debugf(
-						"    isSkipStraight set to false. currentRank (%v) != nextExpectedRank (%v)",
-						currentRank, nextExpectedRank,
+						"findSkipStraight: Rank %v not found in uniqueRanks: %v, setting isSkipStraight to false.",
+						c, uniqueRanks,
 					)
 					break
 				}
 			}
 			if isSkipStraight {
 				topRank := uniqueRanks[i]
-				ranks := []Rank{topRank, topRank - 2, topRank - 4, topRank - 6, topRank - 8}
-				logrus.Debugf("findSkipStraight: Found Skip Straight! topRank: %v, ranks: %v", topRank, ranks)
-				return findCardsForStraight(analysis.cards, ranks), true
+				logrus.Debugf("findSkipStraight: Found Skip Straight! topRank: %v, ranks: %v", topRank, possibleSkipStraight)
+				return findCardsForStraight(analysis.cards, possibleSkipStraight), true
 			}
 		}
 	}

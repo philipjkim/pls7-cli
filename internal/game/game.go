@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"pls7-cli/pkg/poker"
+	"time"
 )
 
 // GamePhase defines the current phase of the game.
@@ -38,10 +39,19 @@ type Game struct {
 	Difficulty      Difficulty // To store the selected AI difficulty
 	// handEvaluator is a function field to allow mocking in tests.
 	handEvaluator func(g *Game, player *Player) float64
+	DevMode       bool // Flag to indicate if the game is in development mode
+}
+
+// CPUThinkTime returns the delay for CPU actions based on the development mode.
+func (g *Game) CPUThinkTime() time.Duration {
+	if g.DevMode {
+		return 0 // No delay in dev mode
+	}
+	return 500 * time.Millisecond // Default delay for CPU thinking
 }
 
 // NewGame initializes a new game with players and difficulty.
-func NewGame(playerNames []string, initialChips int, difficulty Difficulty) *Game {
+func NewGame(playerNames []string, initialChips int, difficulty Difficulty, isDev bool) *Game {
 	players := make([]*Player, len(playerNames))
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
@@ -56,6 +66,7 @@ func NewGame(playerNames []string, initialChips int, difficulty Difficulty) *Gam
 		Players:    players,
 		DealerPos:  -1,
 		Difficulty: difficulty,
+		DevMode:    isDev,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength

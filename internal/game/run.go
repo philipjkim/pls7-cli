@@ -142,11 +142,30 @@ func (g *Game) StartNewHand() {
 	g.BetToCall = BigBlindAmt
 	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
-	for i := 0; i < 3; i++ {
-		for pos, p := range g.Players {
-			if p.Status == PlayerStatusPlaying {
-				card, _ := g.Deck.Deal()
-				g.Players[pos].Hand = append(g.Players[pos].Hand, card)
+	if g.DevMode {
+		// Deal [As, 3s, 5s] to the first player in dev mode to test Skip Straight with Ace.
+		you := g.Players[0]
+		if you.Status == PlayerStatusPlaying {
+			firstCard, _ := g.Deck.DealForDebug(poker.Card{Rank: poker.Ace, Suit: poker.Spade})
+			secondCard, _ := g.Deck.DealForDebug(poker.Card{Rank: poker.Three, Suit: poker.Spade})
+			thirdCard, _ := g.Deck.DealForDebug(poker.Card{Rank: poker.Five, Suit: poker.Spade})
+			you.Hand = []poker.Card{firstCard, secondCard, thirdCard}
+		}
+		for i := 1; i < len(g.Players); i++ {
+			for j := 0; j < 3; j++ {
+				if g.Players[i].Status == PlayerStatusPlaying {
+					card, _ := g.Deck.Deal()
+					g.Players[i].Hand = append(g.Players[i].Hand, card)
+				}
+			}
+		}
+	} else {
+		for i := 0; i < 3; i++ {
+			for pos, p := range g.Players {
+				if p.Status == PlayerStatusPlaying {
+					card, _ := g.Deck.Deal()
+					g.Players[pos].Hand = append(g.Players[pos].Hand, card)
+				}
 			}
 		}
 	}
@@ -255,9 +274,26 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 func (g *Game) ExecuteBettingLoop(
 	playerActionProvider ActionProvider,
 	cpuActionProvider ActionProvider,
-	displayCurrentStatus func(g *Game, isDevMode bool),
-	isDevMode bool,
+	displayCurrentStatus func(g *Game),
 ) {
+	// If only one player remains in the hand, award them the pot immediately.
+	if g.CountNonFoldedPlayers() == 1 {
+		// Find the last remaining player
+		var lastPlayer *Player
+		for _, p := range g.Players {
+			if p.Status != PlayerStatusFolded && p.Status != PlayerStatusEliminated {
+				lastPlayer = p
+				break
+			}
+		}
+		if lastPlayer != nil {
+			logrus.Debugf("Only one player (%s) remains in the hand. Awarding pot.", lastPlayer.Name)
+			// Award the pot to this player. This will also reset g.Pot to 0.
+			g.AwardPotToLastPlayer()
+		}
+		return // End the betting loop
+	}
+
 	if g.CountPlayersAbleToAct() < 2 {
 		// If only one player can act, check if they need to call a previous all-in.
 		player := g.Players[g.CurrentTurnPos]
@@ -279,7 +315,7 @@ func (g *Game) ExecuteBettingLoop(
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == PlayerStatusPlaying {
-			displayCurrentStatus(g, isDevMode) // Display the current game state
+			displayCurrentStatus(g) // Display the current game state
 
 			var action PlayerAction
 			if player.IsCPU {

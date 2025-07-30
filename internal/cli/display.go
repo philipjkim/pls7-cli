@@ -10,8 +10,8 @@ import (
 )
 
 // DisplayGameState prints the current state of the game board and players.
-func DisplayGameState(g *game.Game, isDevMode bool) {
-	if !isDevMode {
+func DisplayGameState(g *game.Game) {
+	if !g.DevMode {
 		clearScreen()
 	}
 
@@ -52,7 +52,7 @@ func DisplayGameState(g *game.Game, isDevMode bool) {
 		}
 
 		handInfo := ""
-		if !p.IsCPU || isDevMode {
+		if !p.IsCPU || g.DevMode {
 			var handStrings []string
 			for _, c := range p.Hand {
 				handStrings = append(handStrings, c.String())

@@ -59,7 +59,7 @@ var playCmd = &cobra.Command{
 
 		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 		initialChips := game.BigBlindAmt * 300 // 300BB
-		g := game.NewGame(playerNames, initialChips, difficulty)
+		g := game.NewGame(playerNames, initialChips, difficulty, devMode)
 
 		// Main Game Loop (multi-hand)
 		for {
@@ -80,7 +80,7 @@ var playCmd = &cobra.Command{
 				switch g.Phase {
 				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
 					g.PrepareNewBettingRound()
-					g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, cli.DisplayGameState, devMode)
+					g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, cli.DisplayGameState)
 					g.Advance()
 				case game.PhaseShowdown, game.PhaseHandOver:
 					break
@@ -93,7 +93,7 @@ var playCmd = &cobra.Command{
 
 			// Conclude the hand
 			if g.CountNonFoldedPlayers() > 1 {
-				cli.DisplayGameState(g, devMode)
+				cli.DisplayGameState(g)
 				showdownResults(g)
 			} else {
 				fmt.Println("\n--- POT DISTRIBUTION ---")

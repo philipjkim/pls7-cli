@@ -21,7 +21,7 @@ func (s Suit) String() string {
 type Rank int
 
 const (
-	Two Rank = iota + 2
+	Two Rank = iota + 2 // Start from 2 to match poker rules
 	Three
 	Four
 	Five
