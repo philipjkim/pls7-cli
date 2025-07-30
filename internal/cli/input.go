@@ -69,27 +69,28 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 	}
 }
 
-// promptForAmount는 베팅/레이즈 금액을 요청합니다.
+// promptForAmount requests the betting/raising amount.
 func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction {
-	minBet, maxBet := g.CalculateBettingLimits()
-	actionName := "bet"
-	if actionType == game.ActionRaise {
-		actionName = "raise to"
+	for {
+		minBet, maxBet := g.CalculateBettingLimits()
+		actionName := "bet"
+		if actionType == game.ActionRaise {
+			actionName = "raise to"
+		}
+
+		fmt.Printf(
+			"Enter amount to %s (min: %s, max: %s): ",
+			actionName, util.FormatNumber(minBet), util.FormatNumber(maxBet),
+		)
+
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		amount, err := strconv.Atoi(strings.TrimSpace(input))
+
+		if err != nil || amount < minBet || amount > maxBet {
+			fmt.Println("Invalid amount. Please try again.")
+		} else {
+			return game.PlayerAction{Type: actionType, Amount: amount}
+		}
 	}
-
-	fmt.Printf(
-		"Enter amount to %s (min: %s, max: %s): ",
-		actionName, util.FormatNumber(minBet), util.FormatNumber(maxBet),
-	)
-
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	amount, err := strconv.Atoi(strings.TrimSpace(input))
-
-	if err != nil || amount < minBet || amount > maxBet {
-		fmt.Println("Invalid amount. Folding.")
-		return game.PlayerAction{Type: game.ActionFold}
-	}
-
-	return game.PlayerAction{Type: actionType, Amount: amount}
 }
