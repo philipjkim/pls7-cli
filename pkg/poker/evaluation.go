@@ -549,3 +549,23 @@ func findKickers(sortedPool []Card, excludeRanks []Rank, n int) []Card {
 	}
 	return kickers
 }
+
+// compareHandResults is a helper function to compare two hand results.
+// It returns 1 if h1 is better, -1 if h2 is better, and 0 if they are equal.
+func compareHandResults(h1, h2 *HandResult) int {
+	if h1.Rank > h2.Rank {
+		return 1
+	}
+	if h1.Rank < h2.Rank {
+		return -1
+	}
+	for i := 0; i < len(h1.HighValues); i++ {
+		if h1.HighValues[i] > h2.HighValues[i] {
+			return 1
+		}
+		if h1.HighValues[i] < h2.HighValues[i] {
+			return -1
+		}
+	}
+	return 0
+}

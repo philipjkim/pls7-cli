@@ -102,7 +102,19 @@
   2.  `game.Game` 구조체에 `LowlessMode` 필드 추가 및 초기화. (✅)
   3.  `game.EvaluateHand` 함수 호출 시 `LowlessMode` 값 전달. (✅)
   4.  `game.DistributePot` 함수에서 `LowlessMode`에 따라 로우 핸드 판정 및 분배 로직 스킵. (✅)
-  5.  `cli.DisplayGameState` 함수에서 `LowlessMode`에 따라 로우 핸드 정보 표시 스킵.
-  6.  `ai.go`의 AI 로직에서 `LowlessMode`에 따라 로우 핸드 관련 판단 로직 조정 (필요시).
-  7.  `evaluation_test.go`에 `LowlessMode` 관련 테스트 케이스 추가.
+  5.  `cli.DisplayGameState` 함수에서 `LowlessMode`에 따라 로우 핸드 정보 표시 스킵. (✅)
+  6.  `ai.go`의 AI 로직에서 `LowlessMode`에 따라 로우 핸드 관련 판단 로직 조정 (필요시). (✅)
+  7.  `evaluation_test.go`에 `LowlessMode` 관련 테스트 케이스 추가. (✅)
+* **완료여부**: ✅
+
+---
+
+### **11단계: Pot Odds & Equity 계산 기능 구현 (TDD)**
+
+*   **목표**: 개발 모드에서 플레이어에게 Pot Odds, Equity, Outs 등 유용한 정보를 표시하여 더 나은 의사결정을 돕는다.
+* **주요 작업**:
+  1.  `pkg/poker/`에 아웃츠(Outs) 계산 로직 및 테스트 추가.
+  2.  `pkg/poker/`에 Equity 및 Pot Odds 계산 로직 및 테스트 추가.
+  3.  `internal/cli/display.go`에 계산된 정보 표시 로직 추가 (`--dev` 모드, 플레이어 한정).
+  4.  전체 기능 테스트 및 리팩토링.
 * **완료여부**: ⏳ (시작 전)

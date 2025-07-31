@@ -62,7 +62,7 @@ func DisplayGameState(g *game.Game) {
 			if g.Phase > game.PhasePreFlop {
 				highRank, lowRank := poker.EvaluateHand(p.Hand, g.CommunityCards, g.LowlessMode)
 				rankInfo := fmt.Sprintf(" | High: %s", highRank.String())
-				if lowRank != nil {
+				if !g.LowlessMode && lowRank != nil {
 					rankInfo += fmt.Sprintf(", Low: %s", lowRank.String())
 				}
 				handInfo += rankInfo

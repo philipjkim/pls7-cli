@@ -93,20 +93,23 @@ func TestLowHands(t *testing.T) {
 	testCases := []struct {
 		name           string
 		cardString     string
+		lowlessMode    bool   // New flag for testing
 		expectLowHand  bool   // Does a low hand exist?
 		expectedValues string // Expected the best low hand, e.g., "7 6 4 2 A"
 	}{
-		{name: "Nut Low (A-5)", cardString: "As 2c 3d 4h 5s 8s 9s Ts", expectLowHand: true, expectedValues: "5 4 3 2 A"},
-		{name: "7-High Low", cardString: "As 2c 4d 6h 7s 8s 9s Ts", expectLowHand: true, expectedValues: "7 6 4 2 A"},
-		{name: "No Low (Not enough cards)", cardString: "As 2c 3d 4h 8s 9s Ts Js", expectLowHand: false},
-		{name: "No Low (Pair exists)", cardString: "As Ac 2d 3h 4s 8s 9s Ts", expectLowHand: false},
-		{name: "High/Low Combo (Straight Flush and Low)", cardString: "As 2s 3s 4s 5s 8c 9d Th", expectLowHand: true, expectedValues: "5 4 3 2 A"},
+		{name: "Nut Low (A-5)", cardString: "As 2c 3d 4h 5s 8s 9s Ts", lowlessMode: false, expectLowHand: true, expectedValues: "5 4 3 2 A"},
+		{name: "7-High Low", cardString: "As 2c 4d 6h 7s 8s 9s Ts", lowlessMode: false, expectLowHand: true, expectedValues: "7 6 4 2 A"},
+		{name: "No Low (Not enough cards)", cardString: "As 2c 3d 4h 8s 9s Ts Js", lowlessMode: false, expectLowHand: false},
+		{name: "No Low (Pair exists)", cardString: "As Ac 2d 3h 4s 8s 9s Ts", lowlessMode: false, expectLowHand: false},
+		{name: "High/Low Combo (Straight Flush and Low)", cardString: "As 2s 3s 4s 5s 8c 9d Th", lowlessMode: false, expectLowHand: true, expectedValues: "5 4 3 2 A"},
+		// New test case for lowless mode
+		{name: "Lowless Mode - No Low Hand Expected", cardString: "As 2c 3d 4h 5s 8s 9s Ts", lowlessMode: true, expectLowHand: false},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := cardsFromStrings(tc.cardString)
-			_, lowHand := EvaluateHand(pool[:3], pool[3:], false)
+			_, lowHand := EvaluateHand(pool[:3], pool[3:], tc.lowlessMode) // Use the flag from the test case
 
 			if !tc.expectLowHand {
 				if lowHand != nil {
