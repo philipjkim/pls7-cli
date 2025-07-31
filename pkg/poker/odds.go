@@ -3,10 +3,10 @@ package poker
 import "github.com/sirupsen/logrus"
 
 // CalculateOuts calculates the number of cards that can improve the player's hand.
-func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) int {
+func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []Card {
 	currentHand, _ := EvaluateHand(holeCards, communityCards, lowlessMode)
 	if currentHand == nil {
-		return 0
+		return []Card{}
 	}
 
 	outcomes := make(map[Card]bool)
@@ -36,7 +36,12 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) in
 		}
 	}
 
-	return len(outcomes)
+	var result []Card
+	for card := range outcomes {
+		result = append(result, card)
+	}
+
+	return result
 }
 
 func hasFlushDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {

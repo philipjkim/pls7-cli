@@ -2,6 +2,7 @@ package poker
 
 import (
 	"pls7-cli/internal/util"
+	"sort"
 	"testing"
 )
 
@@ -12,37 +13,98 @@ func TestCalculateOuts(t *testing.T) {
 		holeCards      []Card
 		communityCards []Card
 		lowlessMode    bool
-		expectedOuts   int
+		expectedOuts   []Card
 	}{
 		{
 			name:           "Open-ended Straight Draw",
-			holeCards:      cardsFromStrings("8s 7s"),
+			holeCards:      cardsFromStrings("8s 7s Kc"),
 			communityCards: cardsFromStrings("6c 5h 2d"),
 			lowlessMode:    true,
-			expectedOuts:   8, // 4 nines, 4 fours
+			expectedOuts:   cardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
+		},
+		{
+			name:           "OESD with Ace high",
+			holeCards:      cardsFromStrings("As Kh Qs"),
+			communityCards: cardsFromStrings("Jh 5c 2d"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("Ts Th Td Tc"),
+		},
+		{
+			name:           "OESD with Ace low",
+			holeCards:      cardsFromStrings("4s 3d 2h"),
+			communityCards: cardsFromStrings("As Qc Tc"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("5s 5h 5d 5c"),
+		},
+		{
+			name:           "Gutshot 8654",
+			holeCards:      cardsFromStrings("8s 6s 5c"),
+			communityCards: cardsFromStrings("Ad Qh 4h"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("7s 7h 7d 7c"),
+		},
+		{
+			name:           "Gutshot with Ace high",
+			holeCards:      cardsFromStrings("As Qd Jc"),
+			communityCards: cardsFromStrings("Th 7c 6d"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("Ks Kh Kd Kc"),
+		},
+		{
+			name:           "Gutshot with Ace low",
+			holeCards:      cardsFromStrings("4h 3c As"),
+			communityCards: cardsFromStrings("Jh 8c 5d"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("2s 2h 2d 2c"),
 		},
 		{
 			name:           "Flush-only Draw",
-			holeCards:      cardsFromStrings("As Js"),
+			holeCards:      cardsFromStrings("As Js 5h"),
 			communityCards: cardsFromStrings("8s 7s 2d"),
 			lowlessMode:    true,
-			expectedOuts:   9, // 9 remaining spades
+			expectedOuts:   cardsFromStrings("Ks Qs Ts 9s 6s 5s 4s 3s 2s"),
 		},
 		{
 			name:           "Straight or Flush Draw",
-			holeCards:      cardsFromStrings("8s 7s"),
+			holeCards:      cardsFromStrings("8s 7s Kc"),
 			communityCards: cardsFromStrings("6s 5s 2d"),
 			lowlessMode:    true,
-			expectedOuts:   15, // 9 spades for flush, 6 non-spade cards for straight (4s, 4h, 4d, 9s, 9h, 9d)
+			expectedOuts:   cardsFromStrings("As Ks Qs Js Ts 9s 4s 3s 2s 9h 9d 9c 4h 4d 4c"),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			outs := CalculateOuts(tc.holeCards, tc.communityCards, tc.lowlessMode)
-			if outs != tc.expectedOuts {
-				t.Errorf("Expected %d outs, but got %d", tc.expectedOuts, outs)
+			if !cardSlicesEqual(outs, tc.expectedOuts) {
+				t.Errorf("Expected outs %v, but got %v", tc.expectedOuts, outs)
 			}
 		})
 	}
+}
+
+func cardSlicesEqual(a, b []Card) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	sort.Slice(a, func(i, j int) bool {
+		if a[i].Suit != a[j].Suit {
+			return a[i].Suit < a[j].Suit
+		}
+		return a[i].Rank < a[j].Rank
+	})
+	sort.Slice(b, func(i, j int) bool {
+		if b[i].Suit != b[j].Suit {
+			return b[i].Suit < b[j].Suit
+		}
+		return b[i].Rank < b[j].Rank
+	})
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
 }
