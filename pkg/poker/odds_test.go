@@ -71,6 +71,13 @@ func TestCalculateOuts(t *testing.T) {
 			lowlessMode:    true,
 			expectedOuts:   cardsFromStrings("As Ks Qs Js Ts 9s 4s 3s 2s 9h 9d 9c 4h 4d 4c"),
 		},
+		{
+			name:           "Triple Draw with Pocket Pair",
+			holeCards:      cardsFromStrings("8s 8h 6c"),
+			communityCards: cardsFromStrings("As Js 2d"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("8d 8c"),
+		},
 	}
 
 	for _, tc := range testCases {
