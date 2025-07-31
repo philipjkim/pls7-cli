@@ -77,7 +77,7 @@ func TestHighHands(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := cardsFromStrings(tc.cardString)
-			highHand, _ := EvaluateHand(pool[:3], pool[3:])
+			highHand, _ := EvaluateHand(pool[:3], pool[3:], false) // false for lowless mode
 
 			if highHand == nil {
 				t.Fatalf("Expected rank %v, but got nil", tc.expectedRank)
@@ -106,7 +106,7 @@ func TestLowHands(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := cardsFromStrings(tc.cardString)
-			_, lowHand := EvaluateHand(pool[:3], pool[3:])
+			_, lowHand := EvaluateHand(pool[:3], pool[3:], false)
 
 			if !tc.expectLowHand {
 				if lowHand != nil {
@@ -253,8 +253,8 @@ func TestLowHandComparison(t *testing.T) {
 			pool1 := cardsFromStrings(tc.hand1Str)
 			pool2 := cardsFromStrings(tc.hand2Str)
 
-			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:])
-			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:])
+			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:], false)
+			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:], false)
 
 			if lowHand1 == nil || lowHand2 == nil {
 				t.Fatal("Both hands should qualify for a low hand in this test")

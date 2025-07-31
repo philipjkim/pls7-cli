@@ -94,8 +94,8 @@ func (g *Game) DistributePot() []DistributionResult {
 	// Distribute each pot
 	for _, pot := range pots {
 		logrus.Debugf("Distributing PotTier: Amount: %d, MaxBet: %d, Eligible Players: %v", pot.Amount, pot.MaxBet, getPlayerNames(pot.Players))
-		highWinners, bestHighHand := findBestHighHand(pot.Players, g.CommunityCards)
-		lowWinners, bestLowHand := findBestLowHand(pot.Players, g.CommunityCards)
+		highWinners, bestHighHand := findBestHighHand(pot.Players, g.CommunityCards, g.LowlessMode)
+		lowWinners, bestLowHand := findBestLowHand(pot.Players, g.CommunityCards, g.LowlessMode)
 
 		if len(lowWinners) > 0 {
 			// Split pot for high and low
@@ -167,9 +167,9 @@ func (g *Game) getShowdownPlayers() []*Player {
 	return active
 }
 
-func findBestHighHand(players []*Player, communityCards []poker.Card) (winners []*Player, bestHand *poker.HandResult) {
+func findBestHighHand(players []*Player, communityCards []poker.Card, isLowLess bool) (winners []*Player, bestHand *poker.HandResult) {
 	for _, p := range players {
-		highHand, _ := poker.EvaluateHand(p.Hand, communityCards)
+		highHand, _ := poker.EvaluateHand(p.Hand, communityCards, isLowLess)
 		if bestHand == nil || compareHandResults(highHand, bestHand) == 1 {
 			bestHand = highHand
 			winners = []*Player{p}
@@ -180,9 +180,9 @@ func findBestHighHand(players []*Player, communityCards []poker.Card) (winners [
 	return
 }
 
-func findBestLowHand(players []*Player, communityCards []poker.Card) (winners []*Player, bestHand *poker.HandResult) {
+func findBestLowHand(players []*Player, communityCards []poker.Card, isLowLess bool) (winners []*Player, bestHand *poker.HandResult) {
 	for _, p := range players {
-		_, lowHand := poker.EvaluateHand(p.Hand, communityCards)
+		_, lowHand := poker.EvaluateHand(p.Hand, communityCards, isLowLess)
 		if lowHand == nil {
 			continue
 		}

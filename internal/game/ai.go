@@ -116,7 +116,7 @@ func (g *Game) getHardAction(player *Player, r *rand.Rand) PlayerAction {
 func evaluateHandStrength(g *Game, player *Player) float64 {
 	// Post-Flop Evaluation (based on the current best hand)
 	if g.Phase > PhasePreFlop {
-		highHand, _ := poker.EvaluateHand(player.Hand, g.CommunityCards)
+		highHand, _ := poker.EvaluateHand(player.Hand, g.CommunityCards, g.LowlessMode)
 		return float64(highHand.Rank)
 	}
 
