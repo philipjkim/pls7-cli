@@ -209,14 +209,10 @@ func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Car
 	// If handRank is Trips, we can draw a full house by adding any of non-pocket pair ranks
 	if handRank.Rank == ThreeOfAKind {
 		outs := make([]Card, 0)
-		for rank, count := range uniqueRankCounts {
+		for rank := range uniqueRankCounts {
 			if rank == handRank.HighValues[0] {
 				// Skip the rank already made into trips
 				continue
-			}
-			if count >= 2 {
-				logrus.Warnf("hasFullHouseDraw: Rank %v already has 2+ cards in pool, cannot draw full house", rank)
-				return false, []Card{}
 			}
 			for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
 				outCard := Card{Rank: rank, Suit: suit}
@@ -236,10 +232,6 @@ func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Car
 	if handRank.Rank == TwoPair {
 		outs := make([]Card, 0)
 		for rank, count := range uniqueRankCounts {
-			if count >= 3 {
-				logrus.Warnf("hasFullHouseDraw: Rank %v already has 3+ cards in pool, cannot draw full house", rank)
-				return false, []Card{}
-			}
 			if count < 2 {
 				// non-pair ranks cannot be used to draw a full house, it only makes three pairs (which is just two pair)
 				continue
