@@ -28,28 +28,26 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []
 		seenCards[c] = true
 	}
 
-	// Find outs for flush
-	hasFlush, flushOuts := hasFlushDraw(holeCards, communityCards, seenCards)
-	if hasFlush {
-		for _, out := range flushOuts {
+	if currentHand.Rank >= FourOfAKind {
+		logrus.Debugf("CalculateOuts: Current hand is already better than Four of a Kind: %v", currentHand)
+		return []Card{} // No outs if we already have a better hand
+	}
+
+	// Find outs for four of a kind draw
+	hasFourOfAKind, fourOfAKindOuts := hasFourOfAKindDraw(holeCards, communityCards, seenCards)
+	if hasFourOfAKind {
+		for _, out := range fourOfAKindOuts {
 			outcomes[out] = true
 		}
 	}
 
-	// Find outs for straight
-	hasStraightDraw, straightOuts := hasStraightDraw(holeCards, communityCards, seenCards)
-	if hasStraightDraw {
-		for _, out := range straightOuts {
-			outcomes[out] = true
+	if currentHand.Rank >= FullHouse {
+		logrus.Debugf("CalculateOuts: Current hand is already better than Full House: %v", currentHand)
+		outs := make([]Card, 0)
+		for card := range outcomes {
+			outs = append(outs, card)
 		}
-	}
-
-	// Find outs for trips draw
-	hasThreeOfAKind, tripsOuts := hasThreeOfAKindDraw(holeCards, communityCards, seenCards)
-	if hasThreeOfAKind {
-		for _, out := range tripsOuts {
-			outcomes[out] = true
-		}
+		return outs
 	}
 
 	// Find outs for full house draw
@@ -60,10 +58,53 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []
 		}
 	}
 
-	// Find outs for four of a kind draw
-	hasFourOfAKind, fourOfAKindOuts := hasFourOfAKindDraw(holeCards, communityCards, seenCards)
-	if hasFourOfAKind {
-		for _, out := range fourOfAKindOuts {
+	if currentHand.Rank >= Flush {
+		logrus.Debugf("CalculateOuts: Current hand is already better than Flush: %v", currentHand)
+		outs := make([]Card, 0)
+		for card := range outcomes {
+			outs = append(outs, card)
+		}
+		return outs
+	}
+
+	// Find outs for flush
+	hasFlush, flushOuts := hasFlushDraw(holeCards, communityCards, seenCards)
+	if hasFlush {
+		for _, out := range flushOuts {
+			outcomes[out] = true
+		}
+	}
+
+	if currentHand.Rank >= Straight {
+		logrus.Debugf("CalculateOuts: Current hand is already better than Straight: %v", currentHand)
+		outs := make([]Card, 0)
+		for card := range outcomes {
+			outs = append(outs, card)
+		}
+		return outs
+	}
+
+	// Find outs for straight
+	hasStraightDraw, straightOuts := hasStraightDraw(holeCards, communityCards, seenCards)
+	if hasStraightDraw {
+		for _, out := range straightOuts {
+			outcomes[out] = true
+		}
+	}
+
+	if currentHand.Rank >= ThreeOfAKind {
+		logrus.Debugf("CalculateOuts: Current hand is already better than Three of a Kind: %v", currentHand)
+		outs := make([]Card, 0)
+		for card := range outcomes {
+			outs = append(outs, card)
+		}
+		return outs
+	}
+
+	// Find outs for trips draw
+	hasThreeOfAKind, tripsOuts := hasThreeOfAKindDraw(holeCards, communityCards, seenCards)
+	if hasThreeOfAKind {
+		for _, out := range tripsOuts {
 			outcomes[out] = true
 		}
 	}
@@ -179,14 +220,6 @@ func hasThreeOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[
 }
 
 func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
-	ppFound, _ := findPocketPair(holeCards)
-
-	// If we don't have a pocket pair, we can't have a full house draw
-	if !ppFound {
-		logrus.Debugf("hasFullHouseDraw: No pocket pair found in hole cards: %v", holeCards)
-		return false, []Card{}
-	}
-
 	// Check if we already have a full house made
 	handRank, _ := EvaluateHand(holeCards, communityCards, false)
 	if handRank.Rank == FullHouse {
@@ -258,16 +291,9 @@ func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Car
 	return false, []Card{}
 }
 
-// hasFourOfAKindDraw checks if the player has a four of a kind draw (requirement: trips made by pocket pair).
+// hasFourOfAKindDraw checks if the player has a four of a kind draw.
+// Note that this does not require a pocket pair, but rather checks if the player has trips made.
 func hasFourOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
-	ppFound, ppRank := findPocketPair(holeCards)
-
-	// If we don't have a pocket pair, we can't have a four of a kind draw
-	if !ppFound {
-		logrus.Debugf("hasFourOfAKindDraw: No pocket pair found in hole cards: %v", holeCards)
-		return false, []Card{}
-	}
-
 	handRank, _ := EvaluateHand(holeCards, communityCards, false)
 	if handRank.Rank != ThreeOfAKind {
 		logrus.Debugf("hasFourOfAKindDraw: Current hand is not trips, cannot draw four of a kind: %v", handRank)
@@ -276,7 +302,7 @@ func hasFourOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[C
 
 	outs := make([]Card, 0)
 	for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
-		outCard := Card{Rank: ppRank, Suit: suit}
+		outCard := Card{Rank: handRank.HighValues[0], Suit: suit}
 		if !seenCards[outCard] {
 			logrus.Debugf("hasFourOfAKindDraw: Found four of a kind draw out: %v", outCard)
 			outs = append(outs, outCard)

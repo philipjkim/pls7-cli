@@ -57,5 +57,5 @@ type Card struct {
 
 // String makes Card implement the Stringer interface.
 func (c Card) String() string {
-	return fmt.Sprintf("[ %s%s ]", c.Rank.String(), c.Suit.String())
+	return fmt.Sprintf("%s%s ", c.Rank.String(), c.Suit.String())
 }

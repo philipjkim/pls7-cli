@@ -41,6 +41,7 @@ type Game struct {
 	handEvaluator func(g *Game, player *Player) float64
 	DevMode       bool // Flag to indicate if the game is in development mode
 	LowlessMode   bool // Flag to indicate if the game is in lowless mode
+	ShowsOuts     bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -52,7 +53,14 @@ func (g *Game) CPUThinkTime() time.Duration {
 }
 
 // NewGame initializes a new game with players and difficulty.
-func NewGame(playerNames []string, initialChips int, difficulty Difficulty, isDev bool, isLowless bool) *Game {
+func NewGame(
+	playerNames []string,
+	initialChips int,
+	difficulty Difficulty,
+	isDev bool,
+	isLowless bool,
+	showsOuts bool,
+) *Game {
 	players := make([]*Player, len(playerNames))
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
@@ -69,6 +77,7 @@ func NewGame(playerNames []string, initialChips int, difficulty Difficulty, isDe
 		Difficulty:  difficulty,
 		DevMode:     isDev,
 		LowlessMode: isLowless,
+		ShowsOuts:   showsOuts,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength

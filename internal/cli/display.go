@@ -83,9 +83,26 @@ func DisplayGameState(g *game.Game) {
 
 		line := fmt.Sprintf("%s%-7s: Chips: %-9s%s %s %s", indicator, p.Name, util.FormatNumber(p.Chips), actionInfo, status, handInfo)
 		output += fmt.Sprintln(strings.TrimSpace(line))
+
+		// Display outs for the player in dev mode
+		if p.Name == "YOU" && (g.DevMode || g.ShowsOuts) && p.Status != game.PlayerStatusFolded && g.Phase < game.PhaseRiver {
+			outs := poker.CalculateOuts(p.Hand, g.CommunityCards, g.LowlessMode)
+			if len(outs) > 0 {
+				output += fmt.Sprintf("  Outs: %s\n", formatOuts(outs))
+			}
+		}
 	}
 	output += fmt.Sprintln("-------------------------------------------------")
 	fmt.Print(output)
+}
+
+// formatOuts formats the outs cards for display.
+func formatOuts(outs []poker.Card) string {
+	var outStrings []string
+	for _, c := range outs {
+		outStrings = append(outStrings, c.String())
+	}
+	return strings.Join(outStrings, ", ")
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)

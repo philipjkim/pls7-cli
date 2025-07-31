@@ -100,18 +100,18 @@ func TestCalculateOuts(t *testing.T) {
 			expectedOuts:   cardsFromStrings("Ah Ad Ac 6s 6h 6d 5s 5h 5c 8c"),
 		},
 		{
-			name:           "Full House Non-Draw from Two Pair because no pocket pair",
+			name:           "Full House Draw from Two Pair without pocket pair",
 			holeCards:      cardsFromStrings("As 8h 6c"),
 			communityCards: cardsFromStrings("Ac 8s 5d"),
 			lowlessMode:    true,
-			expectedOuts:   []Card{},
+			expectedOuts:   cardsFromStrings("Ad Ah 8d 8c"),
 		},
 		{
-			name:           "Full House Non-Draw and Quad Non-Draw from Trips because no pocket pair",
+			name:           "Full House and Quad Draw from Trips without pocket pair",
 			holeCards:      cardsFromStrings("As 8h 6c"),
 			communityCards: cardsFromStrings("Ah Ad 5d"),
 			lowlessMode:    true,
-			expectedOuts:   []Card{},
+			expectedOuts:   cardsFromStrings("Ac 6s 6h 6d 5s 5h 5c 8s 8d 8c"),
 		},
 	}
 

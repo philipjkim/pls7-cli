@@ -13,7 +13,7 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	// Scenario: 4 players. CPU 1 is eliminated. YOU and CPU 3 fold.
 	// The winner must be CPU 2, not the eliminated CPU 1.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true, false)
+	g := NewGame(playerNames, 10000, DifficultyMedium, true, false, false)
 
 	// Setup the game state
 	g.Pot = 1500
@@ -72,7 +72,7 @@ func TestDistributePot_SidePots(t *testing.T) {
 	// BigStack (10000) has the worst hand.
 	// No low hands qualify.
 	playerNames := []string{"ShortStack", "MidStack", "BigStack"}
-	g := NewGame(playerNames, 0, DifficultyMedium, true, false)
+	g := NewGame(playerNames, 0, DifficultyMedium, true, false, false)
 
 	// Setup player states
 	g.Players[0].Chips = 0

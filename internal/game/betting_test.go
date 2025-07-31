@@ -25,7 +25,7 @@ func (m *SimpleActionProvider) GetAction(g *Game, p *Player) PlayerAction {
 }
 
 func newGameForBettingTests(playerNames []string, initialChips int) *Game {
-	return NewGame(playerNames, initialChips, DifficultyMedium, true, false)
+	return NewGame(playerNames, initialChips, DifficultyMedium, true, false, false)
 }
 
 // TestBettingRound_PlayerMustCallAllIn tests a realistic multi-street all-in scenario.

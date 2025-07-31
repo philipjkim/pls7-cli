@@ -16,6 +16,7 @@ var (
 	difficultyStr string // To hold the flag value
 	devMode       bool   // To hold the --dev flag value
 	lowlessMode   bool   // To hold the --lowless flag value
+	showOuts      bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
 )
 
 // CLIActionProvider implements the ActionProvider interface using the CLI.
@@ -60,7 +61,7 @@ var playCmd = &cobra.Command{
 
 		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 		initialChips := game.BigBlindAmt * 300 // 300BB
-		g := game.NewGame(playerNames, initialChips, difficulty, devMode, lowlessMode)
+		g := game.NewGame(playerNames, initialChips, difficulty, devMode, lowlessMode, showOuts)
 
 		// Main Game Loop (multi-hand)
 		for {
@@ -182,4 +183,5 @@ func init() {
 	playCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	playCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 	playCmd.Flags().BoolVar(&lowlessMode, "lowless", false, "Enable lowless mode (play with high hand only).")
+	playCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found.")
 }
