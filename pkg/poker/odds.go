@@ -45,9 +45,25 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []
 	}
 
 	// Find outs for trips draw
-	hasTrips, tripsOuts := hasTripsDraw(holeCards, communityCards, seenCards)
-	if hasTrips {
+	hasThreeOfAKind, tripsOuts := hasThreeOfAKindDraw(holeCards, communityCards, seenCards)
+	if hasThreeOfAKind {
 		for _, out := range tripsOuts {
+			outcomes[out] = true
+		}
+	}
+
+	// Find outs for full house draw
+	hasFullHouse, fullHouseOuts := hasFullHouseDraw(holeCards, communityCards, seenCards)
+	if hasFullHouse {
+		for _, out := range fullHouseOuts {
+			outcomes[out] = true
+		}
+	}
+
+	// Find outs for four of a kind draw
+	hasFourOfAKind, fourOfAKindOuts := hasFourOfAKindDraw(holeCards, communityCards, seenCards)
+	if hasFourOfAKind {
+		for _, out := range fourOfAKindOuts {
 			outcomes[out] = true
 		}
 	}
@@ -128,8 +144,160 @@ func hasStraightDraw(holeCards []Card, communityCards []Card, seenCards map[Card
 	return len(outs) > 0, outs
 }
 
-// hasTripsDraw checks if the player has a trips draw (requirement: two of three hole cards of the same rank).
-func hasTripsDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+// hasThreeOfAKindDraw checks if the player has a trips draw (requirement: two of three hole cards of the same rank).
+func hasThreeOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	ppFound, ppRank := findPocketPair(holeCards)
+
+	// If we don't have a pocket pair, we can't have a trips draw
+	if !ppFound {
+		logrus.Debugf("hasThreeOfAKindDraw: No pocket pair found in hole cards: %v", holeCards)
+		return false, []Card{}
+	}
+
+	// Check if we already have trips made in the community cards
+	for _, c := range communityCards {
+		if c.Rank == ppRank {
+			logrus.Debugf("hasThreeOfAKindDraw: Found a community card with rank %v, trips made already", c.Rank)
+			return false, []Card{}
+		}
+	}
+
+	pool := append(holeCards, communityCards...)
+	outs := make([]Card, 0)
+	for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
+		outCard := Card{Rank: ppRank, Suit: suit}
+		if !seenCards[outCard] {
+			outs = append(outs, outCard)
+			logrus.Debugf(
+				"hasThreeOfAKindDraw: Found trips draw out: %v, current outs: %v, pool: %v",
+				outCard, outs, pool,
+			)
+		}
+	}
+
+	return len(outs) > 0, outs
+}
+
+func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	ppFound, _ := findPocketPair(holeCards)
+
+	// If we don't have a pocket pair, we can't have a full house draw
+	if !ppFound {
+		logrus.Debugf("hasFullHouseDraw: No pocket pair found in hole cards: %v", holeCards)
+		return false, []Card{}
+	}
+
+	// Check if we already have a full house made
+	handRank, _ := EvaluateHand(holeCards, communityCards, false)
+	if handRank.Rank == FullHouse {
+		logrus.Debugf("hasFullHouseDraw: Already have a full house: %v, holeCards: %v, communityCards: %v",
+			handRank, holeCards, communityCards)
+		return false, []Card{}
+	}
+
+	// holeCards + communityCards should one of the following HandRanks to draw a full house:
+	// - Trips (3 of a kind)
+	// - Two Pair (2 pairs)
+
+	pool := append(holeCards, communityCards...)
+	uniqueRankCounts := make(map[Rank]int, 0)
+	for _, c := range pool {
+		uniqueRankCounts[c.Rank] += 1
+	}
+	logrus.Debugf("hasFullHouseDraw: Unique rank counts in pool: %+v", uniqueRankCounts)
+
+	// If handRank is Trips, we can draw a full house by adding any of non-pocket pair ranks
+	if handRank.Rank == ThreeOfAKind {
+		outs := make([]Card, 0)
+		for rank, count := range uniqueRankCounts {
+			if rank == handRank.HighValues[0] {
+				// Skip the rank already made into trips
+				continue
+			}
+			if count >= 2 {
+				logrus.Warnf("hasFullHouseDraw: Rank %v already has 2+ cards in pool, cannot draw full house", rank)
+				return false, []Card{}
+			}
+			for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
+				outCard := Card{Rank: rank, Suit: suit}
+				if !seenCards[outCard] {
+					outs = append(outs, outCard)
+					logrus.Debugf(
+						"hasFullHouseDraw: Found full house draw out: %v, current outs: %v, pool: %v",
+						outCard, outs, pool,
+					)
+				}
+			}
+		}
+		return len(outs) > 0, outs
+	}
+
+	// If handRank is Two Pair, we can draw a full house by adding any of pair-made ranks
+	if handRank.Rank == TwoPair {
+		outs := make([]Card, 0)
+		for rank, count := range uniqueRankCounts {
+			if count >= 3 {
+				logrus.Warnf("hasFullHouseDraw: Rank %v already has 3+ cards in pool, cannot draw full house", rank)
+				return false, []Card{}
+			}
+			if count < 2 {
+				// non-pair ranks cannot be used to draw a full house, it only makes three pairs (which is just two pair)
+				continue
+			}
+			for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
+				outCard := Card{Rank: rank, Suit: suit}
+				if !seenCards[outCard] {
+					outs = append(outs, outCard)
+					logrus.Debugf(
+						"hasFullHouseDraw: Found full house draw out: %v, current outs: %v, pool: %v",
+						outCard, outs, pool,
+					)
+				}
+			}
+		}
+		return len(outs) > 0, outs
+	}
+
+	logrus.Debugf(
+		"hasFullHouseDraw: current hand rank is not suitable for full house draw: %v, "+
+			"holeCards: %v, communityCards: %v, handRank: %v",
+		handRank, holeCards, communityCards, handRank.Rank,
+	)
+	return false, []Card{}
+}
+
+// hasFourOfAKindDraw checks if the player has a four of a kind draw (requirement: trips made by pocket pair).
+func hasFourOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	ppFound, ppRank := findPocketPair(holeCards)
+
+	// If we don't have a pocket pair, we can't have a four of a kind draw
+	if !ppFound {
+		logrus.Debugf("hasFourOfAKindDraw: No pocket pair found in hole cards: %v", holeCards)
+		return false, []Card{}
+	}
+
+	handRank, _ := EvaluateHand(holeCards, communityCards, false)
+	if handRank.Rank != ThreeOfAKind {
+		logrus.Debugf("hasFourOfAKindDraw: Current hand is not trips, cannot draw four of a kind: %v", handRank)
+		return false, []Card{}
+	}
+
+	outs := make([]Card, 0)
+	for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
+		outCard := Card{Rank: ppRank, Suit: suit}
+		if !seenCards[outCard] {
+			logrus.Debugf("hasFourOfAKindDraw: Found four of a kind draw out: %v", outCard)
+			outs = append(outs, outCard)
+		}
+	}
+	return len(outs) > 0, outs
+}
+
+// findPocketPair checks if the player has a pocket pair in their hole cards.
+//
+// Returns true if a pocket pair is found, along with the rank of the pocket pair.
+// If no pocket pair is found, returns false and Rank(0).
+func findPocketPair(holeCards []Card) (bool, Rank) {
 	// Check if we have a pocket pair in the hole cards
 	pocketPairRank := 0
 	holeRankCounts := make(map[Rank]int, 0)
@@ -141,32 +309,6 @@ func hasTripsDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bo
 		}
 	}
 
-	// If we don't have a pocket pair, we can't have a trips draw
-	if pocketPairRank == 0 {
-		logrus.Debugf("hasTripsDraw: No pocket pair found in hole cards: %v", holeCards)
-		return false, []Card{}
-	}
-
-	// Check if we already have trips made in the community cards
-	for _, c := range communityCards {
-		if c.Rank == Rank(pocketPairRank) {
-			logrus.Debugf("hasTripsDraw: Found a community card with rank %v, trips made already", c.Rank)
-			return false, []Card{}
-		}
-	}
-
-	pool := append(holeCards, communityCards...)
-	outs := make([]Card, 0)
-	for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
-		outCard := Card{Rank: Rank(pocketPairRank), Suit: suit}
-		if !seenCards[outCard] {
-			outs = append(outs, outCard)
-			logrus.Debugf(
-				"hasTripsDraw: Found trips draw out: %v, current outs: %v, pool: %v",
-				outCard, outs, pool,
-			)
-		}
-	}
-
-	return len(outs) > 0, outs
+	logrus.Debugf("findPocketPair: Hole cards: %v, Pocket pair rank: %d", holeCards, pocketPairRank)
+	return pocketPairRank != 0, Rank(pocketPairRank)
 }

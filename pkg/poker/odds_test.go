@@ -78,6 +78,41 @@ func TestCalculateOuts(t *testing.T) {
 			lowlessMode:    true,
 			expectedOuts:   cardsFromStrings("8d 8c"),
 		},
+		{
+			name:           "Non-Draw for Triple because board is paired, not pocket pair",
+			holeCards:      cardsFromStrings("8s 6d 5c"),
+			communityCards: cardsFromStrings("As Jh Jd"),
+			lowlessMode:    true,
+			expectedOuts:   []Card{},
+		},
+		{
+			name:           "Full House Draw from Two Pair with Pocket Pair",
+			holeCards:      cardsFromStrings("8s 8h 6c"),
+			communityCards: cardsFromStrings("As Ah 5d"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("Ad Ac 8d 8c"),
+		},
+		{
+			name:           "Full House and Quad Draw from Trips with Pocket Pair",
+			holeCards:      cardsFromStrings("8s 8h 6c"),
+			communityCards: cardsFromStrings("As 8d 5d"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("Ah Ad Ac 6s 6h 6d 5s 5h 5c 8c"),
+		},
+		{
+			name:           "Full House Non-Draw from Two Pair because no pocket pair",
+			holeCards:      cardsFromStrings("As 8h 6c"),
+			communityCards: cardsFromStrings("Ac 8s 5d"),
+			lowlessMode:    true,
+			expectedOuts:   []Card{},
+		},
+		{
+			name:           "Full House Non-Draw and Quad Non-Draw from Trips because no pocket pair",
+			holeCards:      cardsFromStrings("As 8h 6c"),
+			communityCards: cardsFromStrings("Ah Ad 5d"),
+			lowlessMode:    true,
+			expectedOuts:   []Card{},
+		},
 	}
 
 	for _, tc := range testCases {
