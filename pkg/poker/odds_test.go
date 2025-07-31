@@ -1,10 +1,12 @@
 package poker
 
 import (
+	"pls7-cli/internal/util"
 	"testing"
 )
 
 func TestCalculateOuts(t *testing.T) {
+	util.InitLogger(true)
 	testCases := []struct {
 		name           string
 		holeCards      []Card
@@ -20,14 +22,14 @@ func TestCalculateOuts(t *testing.T) {
 			expectedOuts:   8, // 4 nines, 4 fours
 		},
 		{
-			name:           "Flush Draw",
-			holeCards:      cardsFromStrings("As Ks"),
-			communityCards: cardsFromStrings("Qs Js 2s"),
+			name:           "Flush-only Draw",
+			holeCards:      cardsFromStrings("As Js"),
+			communityCards: cardsFromStrings("8s 7s 2d"),
 			lowlessMode:    true,
 			expectedOuts:   9, // 9 remaining spades
 		},
 		{
-			name:           "Straight Flush Draw",
+			name:           "Straight or Flush Draw",
 			holeCards:      cardsFromStrings("8s 7s"),
 			communityCards: cardsFromStrings("6s 5s 2d"),
 			lowlessMode:    true,
