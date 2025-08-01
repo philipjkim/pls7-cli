@@ -6,6 +6,7 @@ import (
 	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
+	"sort"
 	"strings"
 )
 
@@ -89,6 +90,12 @@ func DisplayGameState(g *game.Game) {
 		if g.CanShowOuts(p) {
 			outs := poker.CalculateOuts(p.Hand, g.CommunityCards, g.LowlessMode)
 			if len(outs) > 0 {
+				sort.Slice(outs, func(i, j int) bool {
+					if outs[i].Suit != outs[j].Suit {
+						return outs[i].Suit < outs[j].Suit
+					}
+					return outs[i].Rank < outs[j].Rank
+				})
 				output += fmt.Sprintf("  Outs: %s\n", formatOuts(outs))
 			}
 		}
