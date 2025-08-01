@@ -107,3 +107,11 @@ func (g *Game) String() string {
 		dealerName, turnPlayerName, g.CommunityCards, g.Players,
 	)
 }
+
+// CanShowOuts checks if the outs can be shown for a player based on the game state.
+func (g *Game) CanShowOuts(p *Player) bool {
+	humanPlayerInPlay := p.Name == "YOU" && p.Status != PlayerStatusFolded
+	availablePhase := g.Phase == PhaseFlop || g.Phase == PhaseTurn
+	optionEnabled := g.DevMode || g.ShowsOuts
+	return humanPlayerInPlay && optionEnabled && availablePhase
+}

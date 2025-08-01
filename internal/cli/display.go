@@ -27,6 +27,7 @@ func DisplayGameState(g *game.Game) {
 	}
 	output += fmt.Sprintf("Board: %s\n\n", strings.Join(communityCardStrings, " "))
 
+	totalChips := g.Pot
 	output += fmt.Sprintln("Players:")
 	for i, p := range g.Players {
 		// --- NEW: Skip eliminated players from the display ---
@@ -85,13 +86,32 @@ func DisplayGameState(g *game.Game) {
 		output += fmt.Sprintln(strings.TrimSpace(line))
 
 		// Display outs for the player in dev mode
-		if p.Name == "YOU" && (g.DevMode || g.ShowsOuts) && p.Status != game.PlayerStatusFolded && g.Phase < game.PhaseRiver {
+		if g.CanShowOuts(p) {
 			outs := poker.CalculateOuts(p.Hand, g.CommunityCards, g.LowlessMode)
 			if len(outs) > 0 {
 				output += fmt.Sprintf("  Outs: %s\n", formatOuts(outs))
 			}
 		}
+
+		// Calculate total chips for the game
+		if p.Status != game.PlayerStatusEliminated {
+			totalChips += p.Chips
+		}
 	}
+
+	if totalChips != game.BigBlindAmt*300*len(g.Players) {
+		logrus.Warnf(
+			"Total chips mismatch: expected %s, got %s",
+			util.FormatNumber(game.BigBlindAmt*300*len(g.Players)),
+			util.FormatNumber(totalChips),
+		)
+	} else {
+		logrus.Debugf(
+			"Total chips match expected value: %s",
+			util.FormatNumber(game.BigBlindAmt*300*len(g.Players)),
+		)
+	}
+
 	output += fmt.Sprintln("-------------------------------------------------")
 	fmt.Print(output)
 }
