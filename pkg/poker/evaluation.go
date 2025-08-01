@@ -362,10 +362,12 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 			continue // Skip analysis if the highest rank is less than 9
 		}
 		for i := 0; i <= len(uniqueRanks)-5; i++ {
+			biggest := uniqueRanks[i]      // The biggest rank in a Skip Straight
 			smallest := uniqueRanks[i] - 8 // The smallest rank in a Skip Straight is 8 ranks below the top rank
-			if smallest < Two {
-				smallest = Ace // If the smallest rank is less than Two, treat it as Ace
-				logrus.Debugf("findSkipStraight: Adjusting smallest rank to Ace as it is less than Two.")
+			// Only biggest is an odd number, smallest less than Two can be treated as Ace
+			if smallest < Two && biggest%2 == 1 {
+				smallest = Ace
+				logrus.Debugf("findSkipStraight: Adjusting smallest rank to Ace as it is less than Two and biggest is an odd number.")
 			}
 			possibleSkipStraight := []Rank{
 				uniqueRanks[i],

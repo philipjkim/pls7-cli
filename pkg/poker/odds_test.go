@@ -39,14 +39,14 @@ func TestCalculateOuts(t *testing.T) {
 		{
 			name:           "Gutshot 8654",
 			holeCards:      cardsFromStrings("8s 6s 5c"),
-			communityCards: cardsFromStrings("Ad Qh 4h"),
+			communityCards: cardsFromStrings("Ad Kh 4h"),
 			lowlessMode:    true,
 			expectedOuts:   cardsFromStrings("7s 7h 7d 7c"),
 		},
 		{
 			name:           "Gutshot with Ace high",
 			holeCards:      cardsFromStrings("As Qd Jc"),
-			communityCards: cardsFromStrings("Th 7c 6d"),
+			communityCards: cardsFromStrings("Th 7c 3d"),
 			lowlessMode:    true,
 			expectedOuts:   cardsFromStrings("Ks Kh Kd Kc"),
 		},
@@ -112,6 +112,20 @@ func TestCalculateOuts(t *testing.T) {
 			communityCards: cardsFromStrings("Ah Ad 5d"),
 			lowlessMode:    true,
 			expectedOuts:   cardsFromStrings("Ac 6s 6h 6d 5s 5h 5c 8s 8d 8c"),
+		},
+		{
+			name:           "Skip Straight Draw (Gutshot)",
+			holeCards:      cardsFromStrings("8s 6s 3c"),
+			communityCards: cardsFromStrings("Ad Qh 4h"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("Ts Th Td Tc"),
+		},
+		{
+			name:           "Skip Straight Draw (Open-ended)",
+			holeCards:      cardsFromStrings("3s 5s 7c"),
+			communityCards: cardsFromStrings("9d Qh Qh"),
+			lowlessMode:    true,
+			expectedOuts:   cardsFromStrings("As Ah Ad Ac Js Jh Jd Jc"),
 		},
 	}
 

@@ -75,6 +75,23 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []
 		}
 	}
 
+	if currentHand.Rank > SkipStraight {
+		logrus.Debugf("CalculateOuts: Current hand is already better than Skip Straight: %v", currentHand)
+		outs := make([]Card, 0)
+		for card := range outcomes {
+			outs = append(outs, card)
+		}
+		return outs
+	}
+
+	// Find outs for skip straight draw
+	hasSkipStraight, skipStraightOuts := hasSkipStraightDraw(holeCards, communityCards, seenCards)
+	if hasSkipStraight {
+		for _, out := range skipStraightOuts {
+			outcomes[out] = true
+		}
+	}
+
 	if currentHand.Rank >= Straight {
 		logrus.Debugf("CalculateOuts: Current hand is already better than Straight: %v", currentHand)
 		outs := make([]Card, 0)
@@ -182,6 +199,46 @@ func hasStraightDraw(holeCards []Card, communityCards []Card, seenCards map[Card
 	}
 
 	logrus.Debugf("hasStraightDraw: Final outs for straight draw: %v", outs)
+	return len(outs) > 0, outs
+}
+
+func hasSkipStraightDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	pool := append(holeCards, communityCards...)
+	uniqueRanks := make(map[Rank]bool)
+	for _, c := range pool {
+		uniqueRanks[c.Rank] = true
+	}
+	logrus.Debugf("hasSkipStraightDraw: Unique ranks in pool: %+v", uniqueRanks)
+
+	var outs []Card
+	for r := Rank(2); r <= Ace; r++ {
+		if !uniqueRanks[r] {
+			// Check if adding this rank would complete a skip straight
+			empPool := append(pool, Card{Rank: r, Suit: Spade}) // Suit doesn't matter for skip straight check
+			analysis := newHandAnalysis(empPool)
+			if skipStraightCards, ok := findSkipStraight(analysis); ok {
+				// Check if the skip straight was completed by the card we added
+				found := false
+				for _, sc := range skipStraightCards {
+					if sc.Rank == r {
+						found = true
+						break
+					}
+				}
+				if found {
+					for s := Suit(0); s <= Club; s++ {
+						outCard := Card{Rank: r, Suit: s}
+						if !seenCards[outCard] {
+							outs = append(outs, outCard)
+							logrus.Debugf("hasSkipStraightDraw: Found skip straight draw out: %v, current outs: %v", outCard, outs)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	logrus.Debugf("hasSkipStraightDraw: Final outs for skip straight draw: %v", outs)
 	return len(outs) > 0, outs
 }
 
