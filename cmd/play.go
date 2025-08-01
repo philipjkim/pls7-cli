@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 	"pls7-cli/internal/cli"
@@ -170,6 +171,8 @@ func showdownResults(g *game.Game) {
 
 		fmt.Printf("- %-7s: %v -> %s%s\n", player.Name, player.Hand, handDesc, winnerStatus)
 	}
+
+	logrus.Debugf("distributionResults: %+v", distributionResults)
 
 	fmt.Println("\n--- POT DISTRIBUTION ---")
 	for _, result := range distributionResults {
