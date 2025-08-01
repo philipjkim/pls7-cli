@@ -54,42 +54,68 @@ func (g *Game) DistributePot() []DistributionResult {
 		return results
 	}
 
-	// Sort players by their total bet in hand to determine pot tiers
-	sort.Slice(showdownPlayers, func(i, j int) bool {
-		return showdownPlayers[i].TotalBetInHand < showdownPlayers[j].TotalBetInHand
-	})
+	// Create a list of all players who contributed to the pot
+	allContributors := []*Player{}
+	for _, p := range g.Players {
+		if p.TotalBetInHand > 0 {
+			allContributors = append(allContributors, p)
+		}
+	}
+
+	// Create a set of unique bet amounts from all contributors
+	betTiers := make(map[int]bool)
+	for _, p := range allContributors {
+		betTiers[p.TotalBetInHand] = true
+	}
+
+	// Create a sorted list of the bet tiers
+	sortedTiers := []int{}
+	for bet := range betTiers {
+		sortedTiers = append(sortedTiers, bet)
+	}
+	sort.Ints(sortedTiers)
 
 	var pots []PotTier
-
-	remainingPot := g.Pot
 	lastBet := 0
 
-	logrus.Debugf("DistributePot: Initial Pot: %d, Showdown Players: %+v", g.Pot, showdownPlayers)
+	logrus.Debugf("DistributePot: Initial Pot: %d, All Contributors: %v, Bet Tiers: %v", g.Pot, getPlayerNames(allContributors), sortedTiers)
 
-	for i, p := range showdownPlayers {
-		betAmount := p.TotalBetInHand
-		contribution := betAmount - lastBet
-
-		logrus.Debugf("Player %s (TotalBetInHand: %d): betAmount: %d, lastBet: %d, contribution: %d", p.Name, p.TotalBetInHand, betAmount, lastBet, contribution)
-
-		if contribution > 0 {
-			// Create a new pot tier
-			currentPotAmount := 0
-			for j := i; j < len(showdownPlayers); j++ {
-				currentPotAmount += contribution
-			}
-
-			pots = append(pots, PotTier{
-				Amount:  currentPotAmount,
-				Players: showdownPlayers[i:], // Players eligible for this pot
-				MaxBet:  betAmount,
-			})
-			remainingPot -= currentPotAmount
-			logrus.Debugf("  New PotTier created: Amount: %d, MaxBet: %d, Players: %v", currentPotAmount, betAmount, getPlayerNames(showdownPlayers[i:]))
+	for _, tierBet := range sortedTiers {
+		contribution := tierBet - lastBet
+		if contribution <= 0 {
+			continue
 		}
-		lastBet = betAmount
-		logrus.Debugf("  After processing player %s: pots: %+v, remainingPot: %d, lastBet: %d", p.Name, pots, remainingPot, lastBet)
+
+		// Count players who are part of this tier
+		numPlayersInTier := 0
+		for _, p := range allContributors {
+			if p.TotalBetInHand >= tierBet {
+				numPlayersInTier++
+			}
+		}
+		tierAmount := contribution * numPlayersInTier
+
+		// Find showdown players eligible for this tier
+		eligiblePlayers := []*Player{}
+		for _, sp := range showdownPlayers {
+			if sp.TotalBetInHand >= tierBet {
+				eligiblePlayers = append(eligiblePlayers, sp)
+			}
+		}
+
+		if tierAmount > 0 && len(eligiblePlayers) > 0 {
+			pots = append(pots, PotTier{
+				Amount:  tierAmount,
+				Players: eligiblePlayers,
+				MaxBet:  tierBet,
+			})
+			logrus.Debugf("  New PotTier created: Amount: %d, MaxBet: %d, Players: %v", tierAmount, tierBet, getPlayerNames(eligiblePlayers))
+		}
+		lastBet = tierBet
 	}
+
+	winnerChipMap := make(map[string]int)
+	winnerHandDescMap := make(map[string]string)
 
 	// Distribute each pot
 	for _, pot := range pots {
@@ -117,38 +143,39 @@ func (g *Game) DistributePot() []DistributionResult {
 
 			for _, winner := range lowWinners {
 				winner.Chips += lowShare
-				results = append(results, DistributionResult{
-					PlayerName: winner.Name,
-					AmountWon:  lowShare,
-					HandDesc:   lowHandDesc,
-				})
+				winnerChipMap[winner.Name] += lowShare
+				winnerHandDescMap[winner.Name] = lowHandDesc
 				logrus.Debugf("    %s wins %d from low pot", winner.Name, lowShare)
 			}
 
 			// Distribute High Pot
 			highShare := highPot / len(highWinners)
+			highHandDesc := fmt.Sprintf("High: %s", bestHighHand.String())
 			for _, winner := range highWinners {
 				winner.Chips += highShare
-				results = append(results, DistributionResult{
-					PlayerName: winner.Name,
-					AmountWon:  highShare,
-					HandDesc:   fmt.Sprintf("High: %s", bestHighHand.String()),
-				})
+				winnerChipMap[winner.Name] += highShare
+				winnerHandDescMap[winner.Name] = highHandDesc
 				logrus.Debugf("    %s wins %d from high pot", winner.Name, highShare)
 			}
 		} else {
 			// High hand scoops the entire pot
 			highShare := pot.Amount / len(highWinners)
+			highHandDesc := fmt.Sprintf("High: %s (Scoop)", bestHighHand.String())
 			for _, winner := range highWinners {
 				winner.Chips += highShare
-				results = append(results, DistributionResult{
-					PlayerName: winner.Name,
-					AmountWon:  highShare,
-					HandDesc:   fmt.Sprintf("High: %s (Scoop)", bestHighHand.String()),
-				})
+				winnerChipMap[winner.Name] += highShare
+				winnerHandDescMap[winner.Name] = highHandDesc
 				logrus.Debugf("    %s scoops %d from pot", winner.Name, highShare)
 			}
 		}
+	}
+
+	for name, amount := range winnerChipMap {
+		results = append(results, DistributionResult{
+			PlayerName: name,
+			AmountWon:  amount,
+			HandDesc:   winnerHandDescMap[name],
+		})
 	}
 
 	g.Pot = 0

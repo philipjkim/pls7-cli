@@ -117,3 +117,55 @@ func TestDistributePot_SidePots(t *testing.T) {
 		t.Errorf("Expected BigStack to get back 5000, but got %d", g.Players[2].Chips)
 	}
 }
+
+// TestDistributePot_FoldedPlayerBetNotLost tests that a folded player's contribution to the pot
+// is not lost during distribution.
+func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
+	util.InitLogger(true)
+
+	// Scenario: 3 players. Player C bets 1000 and folds. Player A and B go to showdown with 3000 each.
+	// The total pot should be 7000. Player A has the winning hand.
+	playerNames := []string{"Player A", "Player B", "Player C"}
+	g := NewGame(playerNames, 10000, DifficultyMedium, true, false, false)
+
+	// Setup player states
+	g.Players[0].Chips = 7000
+	g.Players[0].TotalBetInHand = 3000
+	g.Players[0].Status = PlayerStatusPlaying              // Showdown
+	g.Players[0].Hand = cardsFromStrings("As Ac Ad Ah Ks") // Four of a Kind (Winner)
+
+	g.Players[1].Chips = 7000
+	g.Players[1].TotalBetInHand = 3000
+	g.Players[1].Status = PlayerStatusPlaying              // Showdown
+	g.Players[1].Hand = cardsFromStrings("Qs Qc Qd Qh Js") // Four of a Kind (Loser)
+
+	g.Players[2].Chips = 9000
+	g.Players[2].TotalBetInHand = 1000
+	g.Players[2].Status = PlayerStatusFolded // Folded
+
+	// Total pot is the sum of all bets
+	g.Pot = 3000 + 3000 + 1000
+
+	// Action: Distribute the pot
+	results := g.DistributePot()
+
+	// --- Assertions ---
+	// Expected distribution:
+	// Player A should win the entire pot of 7000.
+	// The current buggy implementation will only distribute 6000.
+
+	if len(results) != 1 {
+		t.Fatalf("Expected 1 distribution result, but got %d", len(results))
+	}
+
+	// Check chip distribution
+	if g.Players[0].Chips != 14000 { // Initial 7000 + Pot 7000
+		t.Errorf("Expected Player A to have 14000 chips, but got %d", g.Players[0].Chips)
+	}
+	if g.Players[1].Chips != 7000 {
+		t.Errorf("Expected Player B to have 7000 chips, but got %d", g.Players[1].Chips)
+	}
+	if g.Pot != 0 {
+		t.Errorf("Expected pot to be 0 after distribution, but got %d", g.Pot)
+	}
+}
