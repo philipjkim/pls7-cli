@@ -324,7 +324,7 @@ func findStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 }
 
 func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
-	logrus.Debugf("findSkipStraight: Analyzing handAnalysis: %+v", analysis)
+	logrus.Tracef("findSkipStraight: Analyzing handAnalysis: %+v", analysis)
 
 	uniqueRanksAceHigh := make([]Rank, 0)
 	seenRanks := make(map[Rank]bool)
@@ -344,18 +344,18 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 
 	// If Ace is present, create a second list treating Ace as 1 (14 in PLS7)
 	if hasAce {
-		logrus.Debugf("findSkipStraight: Ace found, creating alternative rank list treating Ace as 1.")
+		logrus.Tracef("findSkipStraight: Ace found, creating alternative rank list treating Ace as 1.")
 		uniqueRanksAceLow := make([]Rank, 0)
 		uniqueRanksAceLow = append(uniqueRanksAceLow, uniqueRanksAceHigh[1:]...) // Copy all except Ace
 		uniqueRanksAceLow = append(uniqueRanksAceLow, uniqueRanksAceHigh[0])     // Add Ace at the end
 		listOfUniqueRanks = append(listOfUniqueRanks, uniqueRanksAceLow)
 	}
-	logrus.Debugf("findSkipStraight: listOfUniqueRanks: %+v", listOfUniqueRanks)
+	logrus.Tracef("findSkipStraight: listOfUniqueRanks: %+v", listOfUniqueRanks)
 
 	for _, uniqueRanks := range listOfUniqueRanks {
 		// In Skip Straight, the highest rank must be at least 9
 		if uniqueRanks[0] < 9 {
-			logrus.Debugf(
+			logrus.Tracef(
 				"findSkipStraight: Skipping analysis for uniqueRanks starting with %v, as it is less than 9.",
 				uniqueRanks[0],
 			)
@@ -367,7 +367,7 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 			// Only biggest is an odd number, smallest less than Two can be treated as Ace
 			if smallest < Two && biggest%2 == 1 {
 				smallest = Ace
-				logrus.Debugf("findSkipStraight: Adjusting smallest rank to Ace as it is less than Two and biggest is an odd number.")
+				logrus.Tracef("findSkipStraight: Adjusting smallest rank to Ace as it is less than Two and biggest is an odd number.")
 			}
 			possibleSkipStraight := []Rank{
 				uniqueRanks[i],
@@ -376,12 +376,12 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 				uniqueRanks[i] - 6,
 				smallest,
 			}
-			logrus.Debugf("findSkipStraight: Checking possible Skip Straight: %v", possibleSkipStraight)
+			logrus.Tracef("findSkipStraight: Checking possible Skip Straight: %v", possibleSkipStraight)
 			isSkipStraight := true
 			for _, c := range possibleSkipStraight {
 				if !containsRank(uniqueRanks, c) {
 					isSkipStraight = false
-					logrus.Debugf(
+					logrus.Tracef(
 						"findSkipStraight: Rank %v not found in uniqueRanks: %v, setting isSkipStraight to false.",
 						c, uniqueRanks,
 					)
@@ -390,12 +390,12 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 			}
 			if isSkipStraight {
 				topRank := uniqueRanks[i]
-				logrus.Debugf("findSkipStraight: Found Skip Straight! topRank: %v, ranks: %v", topRank, possibleSkipStraight)
+				logrus.Tracef("findSkipStraight: Found Skip Straight! topRank: %v, ranks: %v", topRank, possibleSkipStraight)
 				return findCardsForStraight(analysis.cards, possibleSkipStraight), true
 			}
 		}
 	}
-	logrus.Debugf("findSkipStraight: No Skip Straight found.")
+	logrus.Tracef("findSkipStraight: No Skip Straight found.")
 	return nil, false
 }
 

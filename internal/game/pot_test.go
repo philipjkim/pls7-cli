@@ -2,8 +2,6 @@ package game
 
 import (
 	"pls7-cli/internal/util"
-	"pls7-cli/pkg/poker"
-	"strings"
 	"testing"
 )
 
@@ -37,28 +35,6 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	if g.Players[2].Chips != 11500 { // 10000 initial + 1500 pot
 		t.Errorf("Expected CPU 2's chips to be 11500, but got %d", g.Players[2].Chips)
 	}
-}
-
-// cardsFromStrings is a helper function to make creating cards in tests easier.
-func cardsFromStrings(s string) []poker.Card {
-	if s == "" {
-		return []poker.Card{}
-	}
-	parts := strings.Split(s, " ")
-	cards := make([]poker.Card, len(parts))
-	rankMap := map[rune]poker.Rank{
-		'2': poker.Two, '3': poker.Three, '4': poker.Four, '5': poker.Five, '6': poker.Six, '7': poker.Seven,
-		'8': poker.Eight, '9': poker.Nine, 'T': poker.Ten, 'J': poker.Jack, 'Q': poker.Queen, 'K': poker.King, 'A': poker.Ace,
-	}
-	suitMap := map[rune]poker.Suit{
-		's': poker.Spade, 'h': poker.Heart, 'd': poker.Diamond, 'c': poker.Club,
-	}
-	for i, part := range parts {
-		rank := rankMap[rune(part[0])]
-		suit := suitMap[rune(part[1])]
-		cards[i] = poker.Card{Rank: rank, Suit: suit}
-	}
-	return cards
 }
 
 // TestDistributePot_SidePots tests the pot distribution logic with multiple all-in players,

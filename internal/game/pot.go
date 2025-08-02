@@ -57,7 +57,7 @@ func (g *Game) DistributePot() []DistributionResult {
 	// Create a list of all players who contributed to the pot
 	allContributors := []*Player{}
 	for _, p := range g.Players {
-		if p.TotalBetInHand > 0 {
+		if p.Status != PlayerStatusEliminated && p.TotalBetInHand > 0 {
 			allContributors = append(allContributors, p)
 		}
 	}
