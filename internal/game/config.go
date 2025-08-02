@@ -14,3 +14,6 @@ const (
 	DifficultyMedium
 	DifficultyHard
 )
+
+// PlayerHoleCardsForDebug is YOU (human player) hole cards for debugging purposes.
+const PlayerHoleCardsForDebug = "As Ah Ad"

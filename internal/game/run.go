@@ -146,9 +146,10 @@ func (g *Game) StartNewHand() {
 		// Deal [As, Qs, Ts] to the first player in dev mode to test Skip Straight with high Ace.
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {
-			firstCard, _ := g.Deck.DealForDebug(poker.Card{Rank: poker.Ace, Suit: poker.Spade})
-			secondCard, _ := g.Deck.DealForDebug(poker.Card{Rank: poker.Queen, Suit: poker.Spade})
-			thirdCard, _ := g.Deck.DealForDebug(poker.Card{Rank: poker.Ten, Suit: poker.Spade})
+			playerHoleCards := cardsFromStrings(PlayerHoleCardsForDebug)
+			firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
+			secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
+			thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])
 			you.Hand = []poker.Card{firstCard, secondCard, thirdCard}
 		}
 		for i := 1; i < len(g.Players); i++ {
