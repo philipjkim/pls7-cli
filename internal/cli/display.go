@@ -96,7 +96,7 @@ func DisplayGameState(g *game.Game) {
 					}
 					return outsInfo.AllOuts[i].Rank < outsInfo.AllOuts[j].Rank
 				})
-				output += fmt.Sprintf("  Outs: %s\n", formatOuts(outsInfo.AllOuts))
+				output += formatOuts(outsInfo)
 			}
 		}
 
@@ -124,12 +124,29 @@ func DisplayGameState(g *game.Game) {
 }
 
 // formatOuts formats the outs cards for display.
-func formatOuts(outs []poker.Card) string {
-	var outStrings []string
-	for _, c := range outs {
+func formatOuts(outsInfo *poker.OutsInfo) string {
+	result := "\tAll Outs: "
+	outStrings := make([]string, 0, len(outsInfo.AllOuts))
+	for _, c := range outsInfo.AllOuts {
 		outStrings = append(outStrings, c.String())
 	}
-	return strings.Join(outStrings, ", ")
+	result += strings.Join(outStrings, ", ")
+
+	if outsInfo.OutsPerHandRank != nil {
+		result += "\n\tOuts by Hand Rank:\n"
+		for rank, outs := range outsInfo.OutsPerHandRank {
+			if len(outs) == 0 {
+				continue
+			}
+			result += fmt.Sprintf("\t\t%s: ", rank.String())
+			outRankStrings := make([]string, 0, len(outs))
+			for _, c := range outs {
+				outRankStrings = append(outRankStrings, c.String())
+			}
+			result += strings.Join(outRankStrings, ", ") + "\n"
+		}
+	}
+	return result
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)
