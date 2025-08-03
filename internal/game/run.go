@@ -142,7 +142,7 @@ func (g *Game) StartNewHand() {
 	g.BetToCall = BigBlindAmt
 	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
-	if g.DevMode {
+	if g.DevMode || g.ShowsOuts {
 		// Deal [As, Qs, Ts] to the first player in dev mode to test Skip Straight with high Ace.
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {

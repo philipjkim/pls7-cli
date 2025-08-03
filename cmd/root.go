@@ -98,7 +98,7 @@ func runGame(cmd *cobra.Command, args []string) {
 			results := g.AwardPotToLastPlayer()
 			for _, result := range results {
 				fmt.Printf(
-					"%s wins %s chips with %s",
+					"%s wins %s chips with %s\n",
 					result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
 				)
 			}
@@ -203,5 +203,5 @@ func init() {
 	rootCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	rootCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 	rootCmd.Flags().BoolVar(&lowlessMode, "lowless", false, "Enable lowless mode (play with high hand only).")
-	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found.")
+	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found (temporarily draws fixed good hole cards).")
 }

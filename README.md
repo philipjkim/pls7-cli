@@ -71,11 +71,28 @@ That's it! You are now ready to run the application.
 ## Running the App
 
 ```bash
+# Show help message
+go run main.go -h
+Starts a new game of PLS7 with 1 player and 5 CPUs.
+
+Usage:
+  pls7 [flags]
+
+Flags:
+      --dev                 Enable development mode for verbose logging.
+  -d, --difficulty string   Set AI difficulty (easy, medium, hard) (default "medium")
+  -h, --help                help for pls7
+      --lowless             Enable lowless mode (play with high hand only).
+      --outs                Shows outs for players if found.
+
 # standard
-go run main.go play
+go run main.go
 
 # for debugging (not clearing previous output)
-go run main.go play --dev
+go run main.go --dev
+
+# for high-only (no low hand game)
+go run main.go --lowless
 ```
 
 ## Creating an Executable
