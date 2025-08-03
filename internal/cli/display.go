@@ -88,15 +88,15 @@ func DisplayGameState(g *game.Game) {
 
 		// Display outs for the player in dev mode
 		if g.CanShowOuts(p) {
-			outs := poker.CalculateOuts(p.Hand, g.CommunityCards, g.LowlessMode)
-			if len(outs) > 0 {
-				sort.Slice(outs, func(i, j int) bool {
-					if outs[i].Suit != outs[j].Suit {
-						return outs[i].Suit < outs[j].Suit
+			hasOuts, outsInfo := poker.CalculateOuts(p.Hand, g.CommunityCards, g.LowlessMode)
+			if hasOuts {
+				sort.Slice(outsInfo.AllOuts, func(i, j int) bool {
+					if outsInfo.AllOuts[i].Suit != outsInfo.AllOuts[j].Suit {
+						return outsInfo.AllOuts[i].Suit < outsInfo.AllOuts[j].Suit
 					}
-					return outs[i].Rank < outs[j].Rank
+					return outsInfo.AllOuts[i].Rank < outsInfo.AllOuts[j].Rank
 				})
-				output += fmt.Sprintf("  Outs: %s\n", formatOuts(outs))
+				output += fmt.Sprintf("  Outs: %s\n", formatOuts(outsInfo.AllOuts))
 			}
 		}
 

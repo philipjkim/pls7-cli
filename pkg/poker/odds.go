@@ -2,6 +2,12 @@ package poker
 
 import "github.com/sirupsen/logrus"
 
+// OutsInfo stores the detailed results of an outs calculation.
+type OutsInfo struct {
+	AllOuts         []Card
+	OutsPerHandRank map[HandRank][]Card
+}
+
 // CalculateOuts calculates the number of cards that can improve the player's hand.
 // We define "outs" as the cards that can complete the following draws:
 //
@@ -11,13 +17,18 @@ import "github.com/sirupsen/logrus"
 // - Full House Draw: trips or two pair made (only if trips or two pair made by pocket pair)
 // - Quad Draw: 3 cards of the same rank (only if trips made by pocket pair)
 // - Skip Straight Draw: 4 cards in skip-sequence (including gutshot, e.g. 2-4-8-T, 3-5-7-9)
-func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []Card {
+func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (bool, *OutsInfo) {
 	currentHand, _ := EvaluateHand(holeCards, communityCards, lowlessMode)
 	if currentHand == nil {
-		return []Card{}
+		return false, &OutsInfo{
+			OutsPerHandRank: make(map[HandRank][]Card),
+		}
 	}
 
-	outcomes := make(map[Card]bool)
+	outsInfo := &OutsInfo{
+		OutsPerHandRank: make(map[HandRank][]Card),
+	}
+	allOutsMap := make(map[Card]bool)
 
 	// Remove known cards from the deck
 	seenCards := make(map[Card]bool)
@@ -28,110 +39,141 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) []
 		seenCards[c] = true
 	}
 
-	if currentHand.Rank >= FourOfAKind {
-		logrus.Debugf("CalculateOuts: Current hand is already better than Four of a Kind: %v", currentHand)
-		return []Card{} // No outs if we already have a better hand
-	}
+	// The order of checks is from highest rank to lowest rank.
+	// We check for all possible draws for hands that are better than the current hand.
 
-	// Find outs for four of a kind draw
-	hasFourOfAKind, fourOfAKindOuts := hasFourOfAKindDraw(holeCards, communityCards, seenCards)
-	if hasFourOfAKind {
-		for _, out := range fourOfAKindOuts {
-			outcomes[out] = true
+	// --- Straight Flush ---
+	if currentHand.Rank < StraightFlush {
+		if hasDraw, outs := hasStraightFlushDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[StraightFlush] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
 		}
 	}
 
-	if currentHand.Rank >= FullHouse {
-		logrus.Debugf("CalculateOuts: Current hand is already better than Full House: %v", currentHand)
-		outs := make([]Card, 0)
-		for card := range outcomes {
-			outs = append(outs, card)
-		}
-		return outs
-	}
-
-	// Find outs for full house draw
-	hasFullHouse, fullHouseOuts := hasFullHouseDraw(holeCards, communityCards, seenCards)
-	if hasFullHouse {
-		for _, out := range fullHouseOuts {
-			outcomes[out] = true
+	// --- Four of a Kind ---
+	if currentHand.Rank < FourOfAKind {
+		if hasDraw, outs := hasFourOfAKindDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[FourOfAKind] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
 		}
 	}
 
-	if currentHand.Rank >= Flush {
-		logrus.Debugf("CalculateOuts: Current hand is already better than Flush: %v", currentHand)
-		outs := make([]Card, 0)
-		for card := range outcomes {
-			outs = append(outs, card)
-		}
-		return outs
-	}
-
-	// Find outs for flush
-	hasFlush, flushOuts := hasFlushDraw(holeCards, communityCards, seenCards)
-	if hasFlush {
-		for _, out := range flushOuts {
-			outcomes[out] = true
+	// --- Full House ---
+	if currentHand.Rank < FullHouse {
+		if hasDraw, outs := hasFullHouseDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[FullHouse] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
 		}
 	}
 
-	if currentHand.Rank > SkipStraight {
-		logrus.Debugf("CalculateOuts: Current hand is already better than Skip Straight: %v", currentHand)
-		outs := make([]Card, 0)
-		for card := range outcomes {
-			outs = append(outs, card)
-		}
-		return outs
-	}
-
-	// Find outs for skip straight draw
-	hasSkipStraight, skipStraightOuts := hasSkipStraightDraw(holeCards, communityCards, seenCards)
-	if hasSkipStraight {
-		for _, out := range skipStraightOuts {
-			outcomes[out] = true
+	// --- Flush ---
+	if currentHand.Rank < Flush {
+		if hasDraw, outs := hasFlushDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[Flush] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
 		}
 	}
 
-	if currentHand.Rank >= Straight {
-		logrus.Debugf("CalculateOuts: Current hand is already better than Straight: %v", currentHand)
-		outs := make([]Card, 0)
-		for card := range outcomes {
-			outs = append(outs, card)
-		}
-		return outs
-	}
-
-	// Find outs for straight
-	hasStraightDraw, straightOuts := hasStraightDraw(holeCards, communityCards, seenCards)
-	if hasStraightDraw {
-		for _, out := range straightOuts {
-			outcomes[out] = true
+	// --- Skip Straight ---
+	if currentHand.Rank < SkipStraight {
+		if hasDraw, outs := hasSkipStraightDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[SkipStraight] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
 		}
 	}
 
-	if currentHand.Rank >= ThreeOfAKind {
-		logrus.Debugf("CalculateOuts: Current hand is already better than Three of a Kind: %v", currentHand)
-		outs := make([]Card, 0)
-		for card := range outcomes {
-			outs = append(outs, card)
-		}
-		return outs
-	}
-
-	// Find outs for trips draw
-	hasThreeOfAKind, tripsOuts := hasThreeOfAKindDraw(holeCards, communityCards, seenCards)
-	if hasThreeOfAKind {
-		for _, out := range tripsOuts {
-			outcomes[out] = true
+	// --- Straight ---
+	if currentHand.Rank < Straight {
+		if hasDraw, outs := hasStraightDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[Straight] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
 		}
 	}
 
-	var result []Card
-	for card := range outcomes {
-		result = append(result, card)
+	// --- Three of a Kind ---
+	if currentHand.Rank < ThreeOfAKind {
+		if hasDraw, outs := hasThreeOfAKindDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[ThreeOfAKind] = outs
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
+		}
 	}
 
-	return result
+	// Consolidate all unique outs
+	for card := range allOutsMap {
+		outsInfo.AllOuts = append(outsInfo.AllOuts, card)
+	}
+
+	return len(outsInfo.AllOuts) > 0, outsInfo
+}
+
+func hasStraightFlushDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	pool := append(holeCards, communityCards...)
+	suitCounts := make(map[Suit]int)
+	for _, c := range pool {
+		suitCounts[c.Suit]++
+	}
+
+	for suit, count := range suitCounts {
+		if count >= 4 { // Need at least 4 cards of the same suit for a SF draw
+			suitedCards := []Card{}
+			for _, c := range pool {
+				if c.Suit == suit {
+					suitedCards = append(suitedCards, c)
+				}
+			}
+
+			// Now check for a straight draw within the suited cards
+			uniqueRanks := make(map[Rank]bool)
+			for _, c := range suitedCards {
+				uniqueRanks[c.Rank] = true
+			}
+
+			var outs []Card
+			for r := Rank(2); r <= Ace; r++ {
+				if !uniqueRanks[r] {
+					outCard := Card{Rank: r, Suit: suit}
+					if seenCards[outCard] {
+						continue
+					}
+
+					empPool := append(suitedCards, outCard)
+					analysis := newHandAnalysis(empPool)
+					if sfCards, ok := findBestStraight(analysis); ok {
+						// Check if the straight was completed by the card we added
+						found := false
+						for _, sc := range sfCards {
+							if sc.Rank == r {
+								found = true
+								break
+							}
+						}
+						if found {
+							outs = append(outs, outCard)
+						}
+					}
+				}
+			}
+			if len(outs) > 0 {
+				return true, outs
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func hasFlushDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
