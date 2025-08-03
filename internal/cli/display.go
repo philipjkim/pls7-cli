@@ -97,6 +97,9 @@ func DisplayGameState(g *game.Game) {
 					return outsInfo.AllOuts[i].Rank < outsInfo.AllOuts[j].Rank
 				})
 				output += formatOuts(outsInfo)
+
+				amountToCall := g.BetToCall - p.CurrentBet
+				output += formatEquities(g.Pot, amountToCall, len(outsInfo.AllOuts), g.Phase)
 			}
 		}
 
@@ -147,6 +150,23 @@ func formatOuts(outsInfo *poker.OutsInfo) string {
 		}
 	}
 	return result
+}
+
+func formatEquities(pot, amountToCall, numOuts int, phase game.GamePhase) string {
+	numCommunityCards := 0
+	if phase == game.PhaseFlop {
+		numCommunityCards = 3
+	} else if phase == game.PhaseTurn {
+		numCommunityCards = 4
+	} else {
+		// For Pre-Flop and River, we don't calculate outs or equities
+		return ""
+	}
+
+	return fmt.Sprintf("\n\t- Break-even equity based on pot odds: %.2f\n\t- Equity: %.2f\n",
+		poker.CalculateBreakEvenEquityBasedOnPotOdds(pot, amountToCall),
+		poker.CalculateEquity(numCommunityCards, numOuts),
+	)
 }
 
 // clearScreen clears the console. (Note: This is a simple implementation)

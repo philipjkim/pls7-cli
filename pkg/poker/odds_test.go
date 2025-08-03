@@ -274,7 +274,7 @@ func TestCalculateBreakEvenEquityBasedOnPotOdds(t *testing.T) {
 	}
 }
 
-func TestCalculateEquity(t *testing.T) {
+func TestCalculateEquityWithCards(t *testing.T) {
 	testCases := []struct {
 		name           string
 		holeCards      []Card
@@ -297,7 +297,7 @@ func TestCalculateEquity(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := CalculateEquity(tc.holeCards, tc.communityCards, 1)
+			actual := CalculateEquityWithCards(tc.holeCards, tc.communityCards)
 			if actual != tc.expectedEquity {
 				t.Errorf("Expected equity to be %.2f, but got %.2f", tc.expectedEquity, actual)
 			}

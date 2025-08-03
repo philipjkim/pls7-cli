@@ -1,6 +1,8 @@
 package poker
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+)
 
 // OutsInfo stores the detailed results of an outs calculation.
 type OutsInfo struct {
@@ -513,8 +515,8 @@ func CalculateBreakEvenEquityBasedOnPotOdds(pot int, amountToCall int) float64 {
 	return float64(amountToCall) / float64(totalPot)
 }
 
-// CalculateEquity calculates the equity of our hand based on the number of outs and the number of opponents.
-func CalculateEquity(ourHand, communityCards []Card, numOpponents int) float64 {
+// CalculateEquityWithCards calculates the equity of our hand based on the number of outs and the number of opponents.
+func CalculateEquityWithCards(ourHand, communityCards []Card) float64 {
 	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, false)
 	if !hasOuts {
 		return 0
@@ -529,4 +531,19 @@ func CalculateEquity(ourHand, communityCards []Card, numOpponents int) float64 {
 	}
 
 	return 0
+}
+
+// CalculateEquity calculates the equity of our hand based on the game phase and the number of outs.
+func CalculateEquity(numCommunityCards, numOuts int) float64 {
+	if numOuts == 0 || (numCommunityCards < 3 || numCommunityCards > 5) {
+		logrus.Warnf("CalculateEquity: Invalid number of outs (%d) or community cards (%d)", numOuts, numCommunityCards)
+		return 0
+	}
+
+	if numCommunityCards == 3 { // Flop phase
+		return float64(numOuts*4) / 100
+	}
+
+	// Turn phase
+	return float64(numOuts*2) / 100
 }
