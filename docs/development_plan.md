@@ -126,6 +126,6 @@
   3. `pkg/poker/`에 Equity 및 Pot Odds 계산 로직 및 테스트 추가. 
       - Equity 계산 로직 (✅)
       - Pot Odds 계산 로직 (✅)
-  4. `internal/cli/display.go`에 계산된 정보 표시 로직 추가 (`--dev` 모드, 플레이어 한정).
+  4. `internal/cli/display.go`에 계산된 정보 표시 로직 추가 (`--dev` 모드, 플레이어 한정). (✅)
   5. 전체 기능 테스트 및 리팩토링.
 * **완료여부**: ⏳ (현재 진행 중)
