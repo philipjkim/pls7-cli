@@ -16,4 +16,6 @@ const (
 )
 
 // PlayerHoleCardsForDebug is YOU (human player) hole cards for debugging purposes.
-const PlayerHoleCardsForDebug = "As Ah Ad"
+const PlayerHoleCardsForDebug = "As Qs Ts" // For testing outs for Flush, Straight, and Skip Straight
+
+//const PlayerHoleCardsForDebug = "As Ah Ad" // For testing outs for Four of a Kind and Full House
