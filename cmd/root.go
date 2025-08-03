@@ -128,7 +128,7 @@ func runGame(cmd *cobra.Command, args []string) {
 }
 
 func showdownResults(g *game.Game) {
-	output := "--- SHOWDOWN ---"
+	output := "\n--- SHOWDOWN ---\n"
 
 	distributionResults := g.DistributePot()
 
@@ -166,15 +166,15 @@ func showdownResults(g *game.Game) {
 			winnerStatus = fmt.Sprintf(" (%s)", strings.Join(statuses, " & "))
 		}
 
-		output += fmt.Sprintf("- %-7s: %v -> %s%s", player.Name, player.Hand, handDesc, winnerStatus)
+		output += fmt.Sprintf("- %-7s: %v -> %s%s\n", player.Name, player.Hand, handDesc, winnerStatus)
 	}
 
 	logrus.Debugf("distributionResults: %+v", distributionResults)
 
-	output += fmt.Sprintln("--- POT DISTRIBUTION ---")
+	output += fmt.Sprintln("\n--- POT DISTRIBUTION ---")
 	for _, result := range distributionResults {
 		output += fmt.Sprintf(
-			"%s wins %s chips with %s",
+			"%s wins %s chips with %s\n",
 			result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
 		)
 	}
