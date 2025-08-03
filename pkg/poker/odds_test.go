@@ -251,3 +251,56 @@ func cardSlicesEqual(a, b []Card) bool {
 
 	return true
 }
+
+func TestCalculateBreakEvenEquityBasedOnPotOdds(t *testing.T) {
+	testCases := []struct {
+		name         string
+		pot          int
+		amountToCall int
+		expected     float64
+	}{
+		{"Simple Case", 1000, 500, 0.3333333333333333},
+		{"Zero Call Amount", 1000, 0, 0},
+		{"Zero Pot", 0, 500, 1},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := CalculateBreakEvenEquityBasedOnPotOdds(tc.pot, tc.amountToCall)
+			if actual != tc.expected {
+				t.Errorf("Expected break even equity to be %.2f, but got %.2f", tc.expected, actual)
+			}
+		})
+	}
+}
+
+func TestCalculateEquity(t *testing.T) {
+	testCases := []struct {
+		name           string
+		holeCards      []Card
+		communityCards []Card
+		expectedEquity float64
+	}{
+		{
+			name:           "Flush Draw on Flop",
+			holeCards:      cardsFromStrings("As Js 5h"),
+			communityCards: cardsFromStrings("8s 7s 2d"),
+			expectedEquity: 0.36, // 9 outs * 4 = 36%
+		},
+		{
+			name:           "OESD on Turn",
+			holeCards:      cardsFromStrings("8s 7s Kc"),
+			communityCards: cardsFromStrings("6c 5h 2d 2h"),
+			expectedEquity: 0.16, // 8 outs * 2 = 16%
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := CalculateEquity(tc.holeCards, tc.communityCards, 1)
+			if actual != tc.expectedEquity {
+				t.Errorf("Expected equity to be %.2f, but got %.2f", tc.expectedEquity, actual)
+			}
+		})
+	}
+}

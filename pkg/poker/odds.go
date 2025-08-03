@@ -503,3 +503,30 @@ func findPocketPair(holeCards []Card) (bool, Rank) {
 	logrus.Debugf("findPocketPair: Hole cards: %v, Pocket pair rank: %d", holeCards, pocketPairRank)
 	return pocketPairRank != 0, Rank(pocketPairRank)
 }
+
+// CalculateBreakEvenEquityBasedOnPotOdds calculates the break-even equity based on the pot size and the amount to call.
+func CalculateBreakEvenEquityBasedOnPotOdds(pot int, amountToCall int) float64 {
+	if amountToCall == 0 {
+		return 0
+	}
+	totalPot := pot + amountToCall
+	return float64(amountToCall) / float64(totalPot)
+}
+
+// CalculateEquity calculates the equity of our hand based on the number of outs and the number of opponents.
+func CalculateEquity(ourHand, communityCards []Card, numOpponents int) float64 {
+	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, false)
+	if !hasOuts {
+		return 0
+	}
+
+	numOuts := len(outsInfo.AllOuts)
+
+	if len(communityCards) == 3 { // Flop
+		return float64(numOuts*4) / 100
+	} else if len(communityCards) == 4 { // Turn
+		return float64(numOuts*2) / 100
+	}
+
+	return 0
+}
