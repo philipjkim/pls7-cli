@@ -42,10 +42,22 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	// The order of checks is from highest rank to lowest rank.
 	// We check for all possible draws for hands that are better than the current hand.
 
+	// --- Skip Straight Flush ---
+	if currentHand.Rank < SkipStraightFlush {
+		if hasDraw, outs := hasSkipStraightFlushDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[SkipStraightFlush] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
+		}
+	}
+
 	// --- Straight Flush ---
 	if currentHand.Rank < StraightFlush {
 		if hasDraw, outs := hasStraightFlushDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[StraightFlush] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -56,6 +68,7 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	if currentHand.Rank < FourOfAKind {
 		if hasDraw, outs := hasFourOfAKindDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[FourOfAKind] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -66,6 +79,7 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	if currentHand.Rank < FullHouse {
 		if hasDraw, outs := hasFullHouseDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[FullHouse] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -76,6 +90,7 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	if currentHand.Rank < Flush {
 		if hasDraw, outs := hasFlushDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[Flush] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -86,6 +101,7 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	if currentHand.Rank < SkipStraight {
 		if hasDraw, outs := hasSkipStraightDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[SkipStraight] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -96,6 +112,7 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	if currentHand.Rank < Straight {
 		if hasDraw, outs := hasStraightDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[Straight] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -106,6 +123,7 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	if currentHand.Rank < ThreeOfAKind {
 		if hasDraw, outs := hasThreeOfAKindDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[ThreeOfAKind] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
 			for _, out := range outs {
 				allOutsMap[out] = true
 			}
@@ -118,6 +136,62 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 	}
 
 	return len(outsInfo.AllOuts) > 0, outsInfo
+}
+
+func hasSkipStraightFlushDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	pool := append(holeCards, communityCards...)
+	suitCounts := make(map[Suit]int)
+	for _, c := range pool {
+		suitCounts[c.Suit]++
+	}
+
+	for suit, count := range suitCounts {
+		if count >= 4 { // Need at least 4 cards of the same suit for a SSF draw
+			suitedCards := []Card{}
+			for _, c := range pool {
+				if c.Suit == suit {
+					suitedCards = append(suitedCards, c)
+				}
+			}
+
+			// Now check for a skip straight draw within the suited cards
+			uniqueRanks := make(map[Rank]bool)
+			for _, c := range suitedCards {
+				uniqueRanks[c.Rank] = true
+			}
+
+			var outs []Card
+			for r := Rank(2); r <= Ace; r++ {
+				if !uniqueRanks[r] {
+					outCard := Card{Rank: r, Suit: suit}
+					if seenCards[outCard] {
+						continue
+					}
+
+					empPool := append(suitedCards, outCard)
+					analysis := newHandAnalysis(empPool)
+					if skipStraightCards, ok := findSkipStraight(analysis); ok {
+						// Check if the skip straight was completed by the card we added
+						found := false
+						for _, sc := range skipStraightCards {
+							if sc.Rank == r {
+								found = true
+								break
+							}
+						}
+						if found {
+							outs = append(outs, outCard)
+						}
+					}
+				}
+			}
+			if len(outs) > 0 {
+				return true, outs
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func hasStraightFlushDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {

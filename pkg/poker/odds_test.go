@@ -1,6 +1,7 @@
 package poker
 
 import (
+	"fmt"
 	"pls7-cli/internal/util"
 	"sort"
 	"testing"
@@ -189,12 +190,24 @@ func TestCalculateOuts(t *testing.T) {
 				StraightFlush: cardsFromStrings("9s 4s"),
 			},
 		},
+		{
+			name:            "Skip Straight Flush Draw (Open-ended)",
+			holeCards:       cardsFromStrings("Ts 8s 6s"),
+			communityCards:  cardsFromStrings("Kh Kd 4s"),
+			lowlessMode:     true,
+			expectedAllOuts: cardsFromStrings("Qs Qh Qd Qc 2s 2h 2d 2c 3s 5s 7s 9s Js Ks As"),
+			expectedOutsPerRank: map[HandRank][]Card{
+				SkipStraightFlush: cardsFromStrings("Qs 2s"),
+				Flush:             cardsFromStrings("2s 3s 5s 7s 9s Js Qs Ks As"),
+				SkipStraight:      cardsFromStrings("2s 2h 2d 2c Qs Qh Qd Qc"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			hasOuts, outsInfo := CalculateOuts(tc.holeCards, tc.communityCards, tc.lowlessMode)
-			//fmt.Printf("hasOuts: %v, outsInfo: %+v\n", hasOuts, outsInfo)
+			fmt.Printf("hasOuts: %v, outsInfo: %+v\n", hasOuts, outsInfo)
 
 			if (len(tc.expectedAllOuts) > 0) != hasOuts {
 				t.Errorf("Expected hasOuts to be %v, but got %v", len(tc.expectedAllOuts) > 0, hasOuts)
