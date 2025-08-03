@@ -34,100 +34,94 @@ func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player) game.Player
 	return g.GetCPUAction(pl)
 }
 
-// playCmd represents the play command
-var playCmd = &cobra.Command{
-	Use:   "play",
-	Short: "Starts a new game of PLS7",
-	Long:  `Starts a new game of PLS7 with 1 player and 5 CPUs.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		util.InitLogger(devMode)
+func runGame(cmd *cobra.Command, args []string) {
+	util.InitLogger(devMode)
 
-		fmt.Println("==================================================")
-		fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
-		fmt.Println("==================================================")
-		fmt.Printf("\nStarting the game with %s difficulty!\n", difficultyStr)
+	fmt.Println("==================================================")
+	fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
+	fmt.Println("==================================================")
+	fmt.Printf("\nStarting the game with %s difficulty!\n", difficultyStr)
 
-		playerActionProvider := &CLIActionProvider{}
-		cpuActionProvider := &CPUActionProvider{}
+	playerActionProvider := &CLIActionProvider{}
+	cpuActionProvider := &CPUActionProvider{}
 
-		var difficulty game.Difficulty
-		switch strings.ToLower(difficultyStr) {
-		case "easy":
-			difficulty = game.DifficultyEasy
-		case "hard":
-			difficulty = game.DifficultyHard
-		default:
-			difficulty = game.DifficultyMedium
-		}
+	var difficulty game.Difficulty
+	switch strings.ToLower(difficultyStr) {
+	case "easy":
+		difficulty = game.DifficultyEasy
+	case "hard":
+		difficulty = game.DifficultyHard
+	default:
+		difficulty = game.DifficultyMedium
+	}
 
-		playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-		initialChips := game.BigBlindAmt * 300 // 300BB
-		g := game.NewGame(playerNames, initialChips, difficulty, devMode, lowlessMode, showOuts)
+	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
+	initialChips := game.BigBlindAmt * 300 // 300BB
+	g := game.NewGame(playerNames, initialChips, difficulty, devMode, lowlessMode, showOuts)
 
-		// Main Game Loop (multi-hand)
+	// Main Game Loop (multi-hand)
+	for {
+		g.StartNewHand()
+
+		// Single Hand Loop
 		for {
-			g.StartNewHand()
+			if g.CountNonFoldedPlayers() <= 1 {
+				break
+			}
 
-			// Single Hand Loop
-			for {
-				if g.CountNonFoldedPlayers() <= 1 {
-					break
-				}
-
-				if g.CountPlayersAbleToAct() < 2 {
-					for g.Phase != game.PhaseShowdown {
-						g.Advance()
-					}
-				}
-
-				switch g.Phase {
-				case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
-					g.PrepareNewBettingRound()
-					g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, cli.DisplayGameState)
+			if g.CountPlayersAbleToAct() < 2 {
+				for g.Phase != game.PhaseShowdown {
 					g.Advance()
-				case game.PhaseShowdown, game.PhaseHandOver:
-					break
-				}
-
-				if g.Phase == game.PhaseShowdown || g.Phase == game.PhaseHandOver {
-					break
 				}
 			}
 
-			// Conclude the hand
-			if g.CountNonFoldedPlayers() > 1 {
-				cli.DisplayGameState(g)
-				showdownResults(g)
-			} else {
-				fmt.Println("\n--- POT DISTRIBUTION ---")
-				results := g.AwardPotToLastPlayer()
-				for _, result := range results {
-					fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc)
-				}
-				fmt.Println("------------------------")
-			}
-
-			g.CleanupHand()
-
-			if g.Players[0].Status == game.PlayerStatusEliminated {
-				fmt.Println("\nYou have been eliminated. GAME OVER.")
+			switch g.Phase {
+			case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
+				g.PrepareNewBettingRound()
+				g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, cli.DisplayGameState)
+				g.Advance()
+			case game.PhaseShowdown, game.PhaseHandOver:
 				break
 			}
 
-			if g.CountRemainingPlayers() <= 1 {
-				fmt.Println("\n--- GAME OVER ---")
-				break
-			}
-
-			fmt.Print("\nPress ENTER to start the next hand, or type 'q' to exit > ")
-			reader := bufio.NewReader(os.Stdin)
-			input, _ := reader.ReadString('\n')
-			if strings.TrimSpace(strings.ToLower(input)) == "q" {
-				fmt.Println("Thanks for playing!")
+			if g.Phase == game.PhaseShowdown || g.Phase == game.PhaseHandOver {
 				break
 			}
 		}
-	},
+
+		// Conclude the hand
+		if g.CountNonFoldedPlayers() > 1 {
+			cli.DisplayGameState(g)
+			showdownResults(g)
+		} else {
+			fmt.Println("\n--- POT DISTRIBUTION ---")
+			results := g.AwardPotToLastPlayer()
+			for _, result := range results {
+				fmt.Printf("%s wins %s chips with %s\n", result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc)
+			}
+			fmt.Println("------------------------")
+		}
+
+		g.CleanupHand()
+
+		if g.Players[0].Status == game.PlayerStatusEliminated {
+			fmt.Println("\nYou have been eliminated. GAME OVER.")
+			break
+		}
+
+		if g.CountRemainingPlayers() <= 1 {
+			fmt.Println("\n--- GAME OVER ---")
+			break
+		}
+
+		fmt.Print("\nPress ENTER to start the next hand, or type 'q' to exit > ")
+		reader := bufio.NewReader(os.Stdin)
+		input, _ := reader.ReadString('\n')
+		if strings.TrimSpace(strings.ToLower(input)) == "q" {
+			fmt.Println("Thanks for playing!")
+			break
+		}
+	}
 }
 
 func showdownResults(g *game.Game) {
@@ -183,12 +177,4 @@ func showdownResults(g *game.Game) {
 	}
 	output += fmt.Sprintln("------------------------")
 	fmt.Println(output)
-}
-
-func init() {
-	rootCmd.AddCommand(playCmd)
-	playCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
-	playCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
-	playCmd.Flags().BoolVar(&lowlessMode, "lowless", false, "Enable lowless mode (play with high hand only).")
-	playCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found.")
 }
