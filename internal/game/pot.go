@@ -120,10 +120,10 @@ func (g *Game) DistributePot() []DistributionResult {
 	// Distribute each pot
 	for _, pot := range pots {
 		logrus.Debugf("Distributing PotTier: Amount: %d, MaxBet: %d, Eligible Players: %v", pot.Amount, pot.MaxBet, getPlayerNames(pot.Players))
-		highWinners, bestHighHand := findBestHighHand(pot.Players, g.CommunityCards, g.LowlessMode)
-		lowWinners, bestLowHand := findBestLowHand(pot.Players, g.CommunityCards, g.LowlessMode)
+		highWinners, bestHighHand := findBestHighHand(pot.Players, g.CommunityCards, !g.Rules.LowHand.Enabled)
+		lowWinners, bestLowHand := findBestLowHand(pot.Players, g.CommunityCards, !g.Rules.LowHand.Enabled)
 
-		if !g.LowlessMode && len(lowWinners) > 0 {
+		if g.Rules.LowHand.Enabled && len(lowWinners) > 0 {
 			// Split pot for high and low
 			lowPot := pot.Amount / 2
 			highPot := pot.Amount - lowPot

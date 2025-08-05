@@ -8,7 +8,12 @@ import (
 func TestHand_EliminatedPlayersAreSkipped(t *testing.T) {
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
 	initialChips := 100000
-	g := NewGame(playerNames, initialChips, DifficultyMedium, true, false, false)
+	rules := &GameRules{
+		HoleCards: HoleCardRules{
+			Count: 3,
+		},
+	}
+	g := NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false)
 
 	// Manually eliminate two players
 	g.Players[1].Chips = 0

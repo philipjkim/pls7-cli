@@ -25,7 +25,13 @@ func (m *SimpleActionProvider) GetAction(g *Game, p *Player) PlayerAction {
 }
 
 func newGameForBettingTests(playerNames []string, initialChips int) *Game {
-	return NewGame(playerNames, initialChips, DifficultyMedium, true, false, false)
+	rules := &GameRules{
+		HoleCards: HoleCardRules{
+			Count: 3,
+		},
+		LowHand: LowHandRules{Enabled: false},
+	}
+	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false)
 }
 
 // TestBettingRound_PlayerMustCallAllIn tests a realistic multi-street all-in scenario.

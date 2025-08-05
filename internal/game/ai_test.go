@@ -78,6 +78,9 @@ func TestEvaluateHandStrength(t *testing.T) {
 				Phase:          tc.phase,
 				CommunityCards: cardsFromStrings(tc.communityCardsStr),
 				DevMode:        true,
+				Rules: &GameRules{
+					LowHand: LowHandRules{Enabled: false},
+				},
 			}
 			player := &Player{
 				Hand: cardsFromStrings(tc.holeCardsStr),

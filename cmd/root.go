@@ -37,9 +37,14 @@ func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player) game.Player
 func runGame(cmd *cobra.Command, args []string) {
 	util.InitLogger(devMode)
 
-	fmt.Println("==================================================")
-	fmt.Println("     PLS7 (Pot Limit Sampyong - 7 or better)")
-	fmt.Println("==================================================")
+	// Load game rules
+	rules, err := game.LoadGameRulesFromFile("rules/pls7.yml")
+	if err != nil {
+		logrus.Fatalf("Failed to load game rules: %v", err)
+	}
+	rules.LowHand.Enabled = !lowlessMode
+
+	fmt.Printf("======== %s ========\n", rules.Name)
 	fmt.Printf("Starting the game with %s difficulty!", difficultyStr)
 
 	playerActionProvider := &CLIActionProvider{}
@@ -57,7 +62,7 @@ func runGame(cmd *cobra.Command, args []string) {
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 	initialChips := game.BigBlindAmt * 300 // 300BB
-	g := game.NewGame(playerNames, initialChips, difficulty, devMode, lowlessMode, showOuts)
+	g := game.NewGame(playerNames, initialChips, difficulty, rules, devMode, showOuts)
 
 	// Main Game Loop (multi-hand)
 	for {
@@ -147,10 +152,10 @@ func showdownResults(g *game.Game) {
 		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
 			continue
 		}
-		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.LowlessMode)
+		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, !g.Rules.LowHand.Enabled)
 
 		handDesc := highHand.String()
-		if lowHand != nil {
+		if g.Rules.LowHand.Enabled && lowHand != nil {
 			var lowHandRanks []string
 			for _, c := range lowHand.Cards {
 				lowHandRanks = append(lowHandRanks, c.Rank.String())

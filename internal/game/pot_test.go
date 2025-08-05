@@ -11,7 +11,13 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	// Scenario: 4 players. CPU 1 is eliminated. YOU and CPU 3 fold.
 	// The winner must be CPU 2, not the eliminated CPU 1.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true, false, false)
+	rules := &GameRules{
+		HoleCards: HoleCardRules{
+			Count: 3,
+		},
+		LowHand: LowHandRules{Enabled: false},
+	}
+	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false)
 
 	// Setup the game state
 	g.Pot = 1500
@@ -48,7 +54,13 @@ func TestDistributePot_SidePots(t *testing.T) {
 	// BigStack (10000) has the worst hand.
 	// No low hands qualify.
 	playerNames := []string{"ShortStack", "MidStack", "BigStack"}
-	g := NewGame(playerNames, 0, DifficultyMedium, true, false, false)
+	rules := &GameRules{
+		HoleCards: HoleCardRules{
+			Count: 5, // Does not matter for this test
+		},
+		LowHand: LowHandRules{Enabled: false},
+	}
+	g := NewGame(playerNames, 0, DifficultyMedium, rules, true, false)
 
 	// Setup player states
 	g.Players[0].Chips = 0
@@ -102,7 +114,13 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 	// Scenario: 3 players. Player C bets 1000 and folds. Player A and B go to showdown with 3000 each.
 	// The total pot should be 7000. Player A has the winning hand.
 	playerNames := []string{"Player A", "Player B", "Player C"}
-	g := NewGame(playerNames, 10000, DifficultyMedium, true, false, false)
+	rules := &GameRules{
+		HoleCards: HoleCardRules{
+			Count: 5, // Does not matter for this test
+		},
+		LowHand: LowHandRules{Enabled: false},
+	}
+	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false)
 
 	// Setup player states
 	g.Players[0].Chips = 7000
