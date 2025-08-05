@@ -202,6 +202,16 @@ func TestCalculateOuts(t *testing.T) {
 				SkipStraight:      cardsFromStrings("2s 2h 2d 2c Qs Qh Qd Qc"),
 			},
 		},
+		{
+			name:            "Low Hand Draw",
+			holeCards:       cardsFromStrings("2s 3c 6h"),
+			communityCards:  cardsFromStrings("Kh Kd 7s"),
+			lowlessMode:     false,
+			expectedAllOuts: cardsFromStrings("As Ah Ad Ac 4s 4h 4d 4c 5s 5h 5d 5c"),
+			expectedOutsPerRank: map[HandRank][]Card{
+				HighCard: cardsFromStrings("As Ah Ad Ac 4s 4h 4d 4c 5s 5h 5d 5c"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {

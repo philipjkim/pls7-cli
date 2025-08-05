@@ -143,10 +143,10 @@ func (g *Game) StartNewHand() {
 	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
 	if g.DevMode || g.ShowsOuts {
-		// Deal [As, Qs, Ts] to the first player in dev mode to test Skip Straight with high Ace.
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {
-			playerHoleCards := cardsFromStrings(PlayerHoleCardsForDebug)
+			// Edit the following line to set your hole cards for debugging purposes.
+			playerHoleCards := cardsFromStrings(PlayerHoleCardsForDebug["A23-suited"])
 			firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
 			secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
 			thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])

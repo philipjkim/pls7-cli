@@ -132,6 +132,17 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 		}
 	}
 
+	// --- Low Hands (only if lowlessMode is false) ---
+	if !lowlessMode {
+		if hasDraw, outs := hasLowHandDraw(holeCards, communityCards, seenCards); hasDraw {
+			outsInfo.OutsPerHandRank[HighCard] = outs
+			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
+			for _, out := range outs {
+				allOutsMap[out] = true
+			}
+		}
+	}
+
 	// Consolidate all unique outs
 	for card := range allOutsMap {
 		outsInfo.AllOuts = append(outsInfo.AllOuts, card)
@@ -486,6 +497,55 @@ func hasFourOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[C
 	return len(outs) > 0, outs
 }
 
+// hasLowHandDraw checks if the player has a low hand draw.
+// A low hand draw is possible if the player has at least one low card (A-7) in their hole cards
+func hasLowHandDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
+	lowCards := make(map[Rank]bool)
+	for _, c := range holeCards {
+		if isLowCard(c) {
+			lowCards[c.Rank] = true
+		}
+	}
+
+	// At least one low card is required to consider low draws.
+	if len(lowCards) < 1 {
+		logrus.Debugf("CalculateOuts: No low cards in hole cards: %v", holeCards)
+		return false, []Card{}
+	}
+
+	for _, c := range communityCards {
+		if c.Rank <= Seven {
+			lowCards[c.Rank] = true
+		}
+	}
+
+	if len(lowCards) != 4 {
+		logrus.Debugf("CalculateOuts: cannot draw since lowCards count is not 4: %v", lowCards)
+		return false, []Card{}
+	}
+
+	// If we have 4 low cards, we can draw a low hand
+	var outs []Card
+	for _, r := range []Rank{Ace, Two, Three, Four, Five, Six, Seven} {
+		if !lowCards[r] {
+			for _, suit := range []Suit{Spade, Heart, Diamond, Club} {
+				outCard := Card{Rank: r, Suit: suit}
+				if !seenCards[outCard] {
+					outs = append(outs, outCard)
+					logrus.Debugf("CalculateOuts: Found low draw out: %v, current outs: %v", outCard, outs)
+				}
+			}
+		}
+	}
+
+	return len(outs) > 0, outs
+}
+
+// isLowCard checks if the card is a low card (A-7)
+func isLowCard(c Card) bool {
+	return c.Rank <= Seven || c.Rank == Ace
+}
+
 // findPocketPair checks if the player has a pocket pair in their hole cards.
 //
 // Returns true if a pocket pair is found, along with the rank of the pocket pair.
@@ -517,7 +577,8 @@ func CalculateBreakEvenEquityBasedOnPotOdds(pot int, amountToCall int) float64 {
 
 // CalculateEquityWithCards calculates the equity of our hand based on the number of outs and the number of opponents.
 func CalculateEquityWithCards(ourHand, communityCards []Card) float64 {
-	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, false)
+	// Note that outs are calculated without low hands draw.
+	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, true)
 	if !hasOuts {
 		return 0
 	}
