@@ -14,3 +14,17 @@ const (
 	DifficultyMedium
 	DifficultyHard
 )
+
+// String returns a human-readable string representation of the Difficulty.
+func (d Difficulty) String() string {
+	switch d {
+	case DifficultyEasy:
+		return "Easy"
+	case DifficultyMedium:
+		return "Medium"
+	case DifficultyHard:
+		return "Hard"
+	default:
+		return "Unknown"
+	}
+}

@@ -19,8 +19,10 @@ func DisplayGameState(g *game.Game) {
 	var output string // Concat all output here and print at once not to be mixed with other logs
 
 	phaseName := strings.ToUpper(g.Phase.String())
-	output += fmt.Sprintf("\n\n--- HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
-		g.HandCount, phaseName, util.FormatNumber(g.Pot), util.FormatNumber(game.SmallBlindAmt), util.FormatNumber(game.BigBlindAmt))
+	output += fmt.Sprintf("\n\n--- %s (%s) | HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
+		g.Rules.Abbreviation, g.Difficulty, g.HandCount, phaseName,
+		util.FormatNumber(g.Pot), util.FormatNumber(game.SmallBlindAmt), util.FormatNumber(game.BigBlindAmt),
+	)
 
 	var communityCardStrings []string
 	for _, c := range g.CommunityCards {
@@ -88,7 +90,7 @@ func DisplayGameState(g *game.Game) {
 
 		// Display outs for the player in dev mode
 		if g.CanShowOuts(p) {
-			hasOuts, outsInfo := poker.CalculateOuts(p.Hand, g.CommunityCards, !g.Rules.LowHand.Enabled)
+			hasOuts, outsInfo := poker.CalculateOuts(p.Hand, g.CommunityCards, g.Rules.LowHand.Enabled)
 			if hasOuts {
 				sort.Slice(outsInfo.AllOuts, func(i, j int) bool {
 					if outsInfo.AllOuts[i].Suit != outsInfo.AllOuts[j].Suit {

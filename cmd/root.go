@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	ruleStr       string // To hold the --rule flag value (load rules/{rule}.yml when the game starts)
 	difficultyStr string // To hold the flag value
 	devMode       bool   // To hold the --dev flag value
 	showOuts      bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
@@ -38,7 +39,7 @@ func runGame(cmd *cobra.Command, args []string) {
 	util.InitLogger(devMode)
 
 	// Load game rules
-	rules, err := config.LoadGameRulesFromFile("rules/pls7.yml")
+	rules, err := config.LoadGameRulesFromOptions(ruleStr)
 	if err != nil {
 		logrus.Fatalf("Failed to load game rules: %v", err)
 	}
@@ -151,7 +152,7 @@ func showdownResults(g *game.Game) {
 		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
 			continue
 		}
-		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, !g.Rules.LowHand.Enabled)
+		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules.LowHand.Enabled)
 
 		handDesc := highHand.String()
 		if g.Rules.LowHand.Enabled && lowHand != nil {
@@ -204,6 +205,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().StringVarP(&ruleStr, "game rule", "r", "pls7", "Game rule to use (pls7, pls).")
 	rootCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	rootCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found (temporarily draws fixed good hole cards).")

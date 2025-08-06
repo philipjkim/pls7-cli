@@ -133,7 +133,9 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowGameEnabled bool)
 	}
 
 	// --- Low Hands (only if lowGameEnabled is true) ---
+	logrus.Debugf("CalculateOuts: Checking for low hands draws, lowGameEnabled: %v", lowGameEnabled)
 	if lowGameEnabled {
+		logrus.Debugf("CalculateOuts: Low game enabled, checking for low hand draws")
 		if hasDraw, outs := hasLowHandDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[HighCard] = outs
 			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
@@ -509,7 +511,7 @@ func hasLowHandDraw(holeCards []Card, communityCards []Card, seenCards map[Card]
 
 	// At least one low card is required to consider low draws.
 	if len(lowCards) < 1 {
-		logrus.Debugf("CalculateOuts: No low cards in hole cards: %v", holeCards)
+		logrus.Debugf("hasLowHandDraw: No low cards in hole cards: %v", holeCards)
 		return false, []Card{}
 	}
 
@@ -520,7 +522,7 @@ func hasLowHandDraw(holeCards []Card, communityCards []Card, seenCards map[Card]
 	}
 
 	if len(lowCards) != 4 {
-		logrus.Debugf("CalculateOuts: cannot draw since lowCards count is not 4: %v", lowCards)
+		logrus.Debugf("hasLowHandDraw: cannot draw since lowCards count is not 4: %v", lowCards)
 		return false, []Card{}
 	}
 
@@ -532,7 +534,7 @@ func hasLowHandDraw(holeCards []Card, communityCards []Card, seenCards map[Card]
 				outCard := Card{Rank: r, Suit: suit}
 				if !seenCards[outCard] {
 					outs = append(outs, outCard)
-					logrus.Debugf("CalculateOuts: Found low draw out: %v, current outs: %v", outCard, outs)
+					logrus.Debugf("hasLowHandDraw: Found low draw out: %v, current outs: %v", outCard, outs)
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v3"
 	os "os"
 )
@@ -75,4 +76,11 @@ func LoadGameRulesFromFile(filePath string) (*GameRules, error) {
 	}
 
 	return &rules, nil
+}
+
+// LoadGameRulesFromOptions loads game rules from a YAML string by option value.
+// - Available ruleStr: "pls", "pls7"
+func LoadGameRulesFromOptions(ruleStr string) (*GameRules, error) {
+	filePath := fmt.Sprintf("rules/%s.yml", ruleStr)
+	return LoadGameRulesFromFile(filePath)
 }

@@ -154,7 +154,7 @@ func (g *Game) StartNewHand() {
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {
 			// Edit the following line to set your hole cards for debugging purposes.
-			playerHoleCards := poker.CardsFromStrings(PlayerHoleCardsForDebug["3As"])
+			playerHoleCards := poker.CardsFromStrings(PlayerHoleCardsForDebug["A23-suited"])
 			firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
 			secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
 			thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])
