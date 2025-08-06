@@ -152,7 +152,7 @@ func showdownResults(g *game.Game) {
 		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
 			continue
 		}
-		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules.LowHand.Enabled)
+		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules)
 
 		handDesc := highHand.String()
 		if g.Rules.LowHand.Enabled && lowHand != nil {

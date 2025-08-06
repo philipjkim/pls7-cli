@@ -3,6 +3,7 @@ package poker
 import (
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"sort"
 )
@@ -135,7 +136,7 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 }
 
 // EvaluateHand analyzes a full 8-card pool and determines the best high and low hands.
-func EvaluateHand(holeCards []Card, communityCards []Card, lowGameEnabled bool) (highResult *HandResult, lowResult *HandResult) {
+func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *config.GameRules) (highResult *HandResult, lowResult *HandResult) {
 	pool := make([]Card, 0, 8)
 	pool = append(pool, holeCards...)
 	pool = append(pool, communityCards...)
@@ -220,8 +221,9 @@ func EvaluateHand(holeCards []Card, communityCards []Card, lowGameEnabled bool) 
 	}
 
 	// --- Low Hand Evaluation ---
-	if lowGameEnabled {
-		if lowHand, ok := findBestLowHand(analysis); ok {
+	logrus.Debugf("EvaluateHand: lowHandEnabled=%v, maxRank=%v", gameRules.LowHand.Enabled, gameRules.LowHand.MaxRank)
+	if gameRules.LowHand.Enabled {
+		if lowHand, ok := findBestLowHand(analysis, Rank(gameRules.LowHand.MaxRank)); ok {
 			lowResult = lowHand
 		}
 	}
@@ -250,21 +252,21 @@ func findSkipStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 
 // --- New Helper Function for Low Hand ---
 
-// findBestLowHand finds the best possible 7-or-better low hand from the pool.
-func findBestLowHand(analysis *handAnalysis) (*HandResult, bool) {
+// findBestLowHand finds the best possible N-or-better low hand from the pool.
+func findBestLowHand(analysis *handAnalysis, maxRank Rank) (*HandResult, bool) {
 	uniqueLowCards := make([]Card, 0, 8)
 	usedRanks := make(map[Rank]bool)
 
-	// Find all unique cards with rank 7 or lower, treating Ace as a low card.
+	// Find all unique cards with rank N or lower, treating Ace as a low card.
 	for _, card := range analysis.cards {
-		isLowCard := card.Rank <= Seven || card.Rank == Ace
+		isLowCard := card.Rank <= maxRank || card.Rank == Ace
 		if isLowCard && !usedRanks[card.Rank] {
 			uniqueLowCards = append(uniqueLowCards, card)
 			usedRanks[card.Rank] = true
 		}
 	}
 
-	// A low hand must have at least 5 unique cards of rank 7 or lower
+	// A low hand must have at least 5 unique cards of rank N or lower
 	if len(uniqueLowCards) < 5 {
 		return nil, false
 	}

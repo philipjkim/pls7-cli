@@ -64,7 +64,7 @@ func DisplayGameState(g *game.Game) {
 			handInfo = fmt.Sprintf("| Hand: %s", strings.Join(handStrings, " "))
 
 			if g.Phase > game.PhasePreFlop {
-				highRank, lowRank := poker.EvaluateHand(p.Hand, g.CommunityCards, !g.Rules.LowHand.Enabled)
+				highRank, lowRank := poker.EvaluateHand(p.Hand, g.CommunityCards, g.Rules)
 				rankInfo := fmt.Sprintf(" | High: %s", highRank.String())
 				if g.Rules.LowHand.Enabled && lowRank != nil {
 					rankInfo += fmt.Sprintf(", Low: %s", lowRank.String())
@@ -90,7 +90,7 @@ func DisplayGameState(g *game.Game) {
 
 		// Display outs for the player in dev mode
 		if g.CanShowOuts(p) {
-			hasOuts, outsInfo := poker.CalculateOuts(p.Hand, g.CommunityCards, g.Rules.LowHand.Enabled)
+			hasOuts, outsInfo := poker.CalculateOuts(p.Hand, g.CommunityCards, g.Rules)
 			if hasOuts {
 				sort.Slice(outsInfo.AllOuts, func(i, j int) bool {
 					if outsInfo.AllOuts[i].Suit != outsInfo.AllOuts[j].Suit {

@@ -1,6 +1,7 @@
 package poker
 
 import (
+	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"testing"
 )
@@ -51,7 +52,10 @@ func TestHighHands(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := CardsFromStrings(tc.cardString)
-			highHand, _ := EvaluateHand(pool[:3], pool[3:], false)
+			highHand, _ := EvaluateHand(
+				pool[:3], pool[3:],
+				&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+			)
 
 			if highHand == nil {
 				t.Fatalf("Expected rank %v, but got nil", tc.expectedRank)
@@ -83,7 +87,13 @@ func TestLowHands(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := CardsFromStrings(tc.cardString)
-			_, lowHand := EvaluateHand(pool[:3], pool[3:], tc.lowGameEnabled) // Use the flag from the test case
+			gameRules := &config.GameRules{
+				LowHand: config.LowHandRules{
+					Enabled: tc.lowGameEnabled,
+					MaxRank: 7, // Assuming 7-or-better for low hands
+				},
+			}
+			_, lowHand := EvaluateHand(pool[:3], pool[3:], gameRules)
 
 			if !tc.expectLowHand {
 				if lowHand != nil {
@@ -231,9 +241,15 @@ func TestLowHandComparison(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pool1 := CardsFromStrings(tc.hand1Str)
 			pool2 := CardsFromStrings(tc.hand2Str)
+			gameRules := &config.GameRules{
+				LowHand: config.LowHandRules{
+					Enabled: true,
+					MaxRank: 7,
+				},
+			}
 
-			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:], true)
-			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:], true)
+			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:], gameRules)
+			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:], gameRules)
 
 			if lowHand1 == nil || lowHand2 == nil {
 				t.Fatal("Both hands should qualify for a low hand in this test")

@@ -2,6 +2,7 @@ package poker
 
 import (
 	"fmt"
+	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"sort"
 	"testing"
@@ -216,7 +217,10 @@ func TestCalculateOuts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			hasOuts, outsInfo := CalculateOuts(tc.holeCards, tc.communityCards, tc.lowGameEnabled)
+			gameRules := &config.GameRules{
+				LowHand: config.LowHandRules{Enabled: tc.lowGameEnabled, MaxRank: 7},
+			}
+			hasOuts, outsInfo := CalculateOuts(tc.holeCards, tc.communityCards, gameRules)
 			fmt.Printf("hasOuts: %v, outsInfo: %+v\n", hasOuts, outsInfo)
 
 			if (len(tc.expectedAllOuts) > 0) != hasOuts {

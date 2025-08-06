@@ -2,6 +2,7 @@ package poker
 
 import (
 	"github.com/sirupsen/logrus"
+	"pls7-cli/internal/config"
 )
 
 // OutsInfo stores the detailed results of an outs calculation.
@@ -19,8 +20,8 @@ type OutsInfo struct {
 // - Full House Draw: trips or two pair made (only if trips or two pair made by pocket pair)
 // - Quad Draw: 3 cards of the same rank (only if trips made by pocket pair)
 // - Skip Straight Draw: 4 cards in skip-sequence (including gutshot, e.g. 2-4-8-T, 3-5-7-9)
-func CalculateOuts(holeCards []Card, communityCards []Card, lowGameEnabled bool) (bool, *OutsInfo) {
-	currentHand, _ := EvaluateHand(holeCards, communityCards, lowGameEnabled)
+func CalculateOuts(holeCards []Card, communityCards []Card, gameRules *config.GameRules) (bool, *OutsInfo) {
+	currentHand, _ := EvaluateHand(holeCards, communityCards, gameRules)
 	if currentHand == nil {
 		return false, &OutsInfo{
 			OutsPerHandRank: make(map[HandRank][]Card),
@@ -133,8 +134,8 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowGameEnabled bool)
 	}
 
 	// --- Low Hands (only if lowGameEnabled is true) ---
-	logrus.Debugf("CalculateOuts: Checking for low hands draws, lowGameEnabled: %v", lowGameEnabled)
-	if lowGameEnabled {
+	logrus.Tracef("CalculateOuts: Checking for low hands draws, lowGameEnabled: %v", gameRules.LowHand.Enabled)
+	if gameRules.LowHand.Enabled {
 		logrus.Debugf("CalculateOuts: Low game enabled, checking for low hand draws")
 		if hasDraw, outs := hasLowHandDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[HighCard] = outs
@@ -409,7 +410,10 @@ func hasThreeOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[
 
 func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
 	// Check if we already have a full house made
-	handRank, _ := EvaluateHand(holeCards, communityCards, false)
+	handRank, _ := EvaluateHand(
+		holeCards, communityCards,
+		&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+	)
 	if handRank.Rank == FullHouse {
 		logrus.Debugf("hasFullHouseDraw: Already have a full house: %v, holeCards: %v, communityCards: %v",
 			handRank, holeCards, communityCards)
@@ -482,7 +486,10 @@ func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Car
 // hasFourOfAKindDraw checks if the player has a four of a kind draw.
 // Note that this does not require a pocket pair, but rather checks if the player has trips made.
 func hasFourOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
-	handRank, _ := EvaluateHand(holeCards, communityCards, false)
+	handRank, _ := EvaluateHand(
+		holeCards, communityCards,
+		&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+	)
 	if handRank.Rank != ThreeOfAKind {
 		logrus.Debugf("hasFourOfAKindDraw: Current hand is not trips, cannot draw four of a kind: %v", handRank)
 		return false, []Card{}
@@ -580,7 +587,10 @@ func CalculateBreakEvenEquityBasedOnPotOdds(pot int, amountToCall int) float64 {
 // CalculateEquityWithCards calculates the equity of our hand based on the number of outs and the number of opponents.
 func CalculateEquityWithCards(ourHand, communityCards []Card) float64 {
 	// Note that outs are calculated without low hands draw.
-	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, false)
+	hasOuts, outsInfo := CalculateOuts(
+		ourHand, communityCards,
+		&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+	)
 	if !hasOuts {
 		return 0
 	}
