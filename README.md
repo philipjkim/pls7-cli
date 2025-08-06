@@ -73,7 +73,7 @@ That's it! You are now ready to run the application.
 ```bash
 # Show help message
 go run main.go -h
-Starts a new game of PLS7 with 1 player and 5 CPUs.
+Starts a new game of Poker (PLS7, PLS, NLH) with 1 player and 5 CPUs.
 
 Usage:
   pls7 [flags]
@@ -81,14 +81,18 @@ Usage:
 Flags:
       --dev                 Enable development mode for verbose logging.
   -d, --difficulty string   Set AI difficulty (easy, medium, hard) (default "medium")
+  -r, --rule string         Game rule to use (pls7, pls, nlh). (default "pls7")
   -h, --help                help for pls7
-      --outs                Shows outs for players if found.
+      --outs                Shows outs for players if found (temporarily draws fixed good hole cards).
 
-# standard
+# PLS7, medium AI
 go run main.go
 
 # for debugging (not clearing previous output)
 go run main.go --dev
+
+# NLH, easy AI, with outs
+go run main.go -r nlh -d easy --outs
 ```
 
 ## Creating an Executable

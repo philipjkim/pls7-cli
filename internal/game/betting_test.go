@@ -27,6 +27,7 @@ func (m *SimpleActionProvider) GetAction(g *Game, p *Player) PlayerAction {
 
 func newGameForBettingTests(playerNames []string, initialChips int) *Game {
 	rules := &config.GameRules{
+		Abbreviation: "PLS",
 		HoleCards: config.HoleCardRules{
 			Count: 3,
 		},

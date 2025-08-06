@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestHighHands(t *testing.T) {
+func TestPLS7HighHands(t *testing.T) {
 	util.InitLogger(true)
 
 	testCases := []struct {
@@ -77,7 +77,7 @@ func TestHighHands(t *testing.T) {
 	}
 }
 
-func TestLowHands(t *testing.T) {
+func TestPLS7LowHands(t *testing.T) {
 	testCases := []struct {
 		name           string
 		cardString     string
@@ -122,7 +122,7 @@ func TestLowHands(t *testing.T) {
 	}
 }
 
-func TestFindBestStraight(t *testing.T) {
+func TestPLS7FindBestStraight(t *testing.T) {
 	testCases := []struct {
 		name             string
 		cardString       string
@@ -201,8 +201,8 @@ func TestFindBestStraight(t *testing.T) {
 	}
 }
 
-// TestLowHandComparison specifically tests the comparison logic between two low hands.
-func TestLowHandComparison(t *testing.T) {
+// TestPLS7LowHandComparison specifically tests the comparison logic between two low hands.
+func TestPLS7LowHandComparison(t *testing.T) {
 	util.InitLogger(true)
 
 	// compare is a helper to simulate the comparison logic.

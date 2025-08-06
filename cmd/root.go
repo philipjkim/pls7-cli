@@ -206,8 +206,8 @@ func showdownResults(g *game.Game) {
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "pls7",
-	Short: "Starts a new game of PLS7",
-	Long:  `Starts a new game of PLS7 with 1 player and 5 CPUs.`,
+	Short: "Starts a new game of Poker",
+	Long:  `Starts a new game of Poker (PLS7, PLS, NLH) with 1 player and 5 CPUs.`,
 	Run:   runGame,
 }
 
@@ -221,7 +221,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&ruleStr, "game rule", "r", "pls7", "Game rule to use (pls7, pls).")
+	rootCmd.Flags().StringVarP(&ruleStr, "rule", "r", "pls7", "Game rule to use (pls7, pls, nlh).")
 	rootCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	rootCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found (temporarily draws fixed good hole cards).")

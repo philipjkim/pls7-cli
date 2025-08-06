@@ -2,10 +2,11 @@ package poker
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"sort"
+
+	"github.com/sirupsen/logrus"
 )
 
 // HandRank defines the ranking of a poker hand.
@@ -177,7 +178,7 @@ func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *config.Gam
 
 	// --- High Hand Evaluation ---
 	handRankOrder := getHandRanks(&gameRules.HandRankings)
-	logrus.Debugf("EvaluateHand: handRankOrder: %+v", handRankOrder)
+	logrus.Tracef("EvaluateHand: handRankOrder: %+v", handRankOrder)
 
 	// Iterate through the determined hand ranking order and evaluate
 	for _, rank := range handRankOrder {
@@ -322,7 +323,7 @@ func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *config.Gam
 	}
 
 	// --- Low Hand Evaluation ---
-	logrus.Debugf("EvaluateHand: lowHandEnabled=%v, maxRank=%v", gameRules.LowHand.Enabled, gameRules.LowHand.MaxRank)
+	logrus.Tracef("EvaluateHand: lowHandEnabled=%v, maxRank=%v", gameRules.LowHand.Enabled, gameRules.LowHand.MaxRank)
 	if gameRules.LowHand.Enabled {
 		if lowHand, ok := findBestLowHand(analysis, Rank(gameRules.LowHand.MaxRank)); ok {
 			lowResult = lowHand

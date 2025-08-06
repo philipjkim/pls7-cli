@@ -2,17 +2,32 @@ package game
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
+
+	"github.com/sirupsen/logrus"
 )
 
-// PlayerHoleCardsForDebug is YOU (human player) hole cards for debugging purposes.
-var PlayerHoleCardsForDebug = map[string]string{
-	"3As":        "As Ah Ad", // For testing outs for Four of a Kind and Full House
-	"AQT-suited": "As Qs Ts", // For testing outs for Flush, Straight, and Skip Straight
-	"AAK":        "As Ah Ks", // For testing outs for Three of a Kind
-	"A23-suited": "As 2s 3s", // For testing outs for Straight, Flush, and low hand scenarios
+// playerHoleCardsForDebug is YOU (human player) hole cards for debugging purposes.
+var playerHoleCardsForDebug = map[string]map[string]string{
+	"PLS7": {
+		"3As":        "As Ah Ad", // For testing outs for Four of
+		"AQT-suited": "As Qs Ts", // For testing outs for Flush, Straight, and Skip Straight
+		"AAK":        "As Ah Ks", // For testing outs for Three of a Kind
+		"A23-suited": "As 2s 3s", // For testing outs for Straight, Flush, and low hand scenarios
+	},
+	"PLS": {
+		"3As":        "As Ah Ad", // For testing outs for Four of
+		"AQT-suited": "As Qs Ts", // For testing outs for Flush, Straight, and Skip Straight
+		"AAK":        "As Ah Ks", // For testing outs for Three of a Kind
+		"AKQ-suited": "As Ks Qs", // For testing outs for Straight and Flush
+	},
+	"NLH": {
+		"AA":        "As Ah", // For testing outs for Three of a Kind and Full House
+		"KK":        "Ks Kh", // For testing outs for Three of a Kind and Full House
+		"AK-suited": "As Ks", // For testing outs for Straight and Flush
+		"KQ-suited": "Ks Qs", // For testing outs for Straight and Flush
+	},
 }
 
 // ProcessAction updates the game state based on a player's action.
@@ -150,18 +165,34 @@ func (g *Game) StartNewHand() {
 	g.BetToCall = BigBlindAmt
 	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
+	ruleAbbr := g.Rules.Abbreviation
 	if g.DevMode || g.ShowsOuts {
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {
 			// Edit the following line to set your hole cards for debugging purposes.
-			playerHoleCards := poker.CardsFromStrings(PlayerHoleCardsForDebug["A23-suited"])
-			firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
-			secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
-			thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])
-			you.Hand = []poker.Card{firstCard, secondCard, thirdCard}
+			switch ruleAbbr {
+			case "PLS7", "PLS":
+				playerHoleCards := poker.CardsFromStrings(playerHoleCardsForDebug[ruleAbbr]["3As"])
+				firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
+				secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
+				thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])
+				you.Hand = []poker.Card{firstCard, secondCard, thirdCard}
+			case "NLH":
+				playerHoleCards := poker.CardsFromStrings(playerHoleCardsForDebug[ruleAbbr]["AA"])
+				firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
+				secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
+				you.Hand = []poker.Card{firstCard, secondCard}
+			default: // TODO: handle error case
+				logrus.Warnf("Unsupported rule abbreviation: %s", ruleAbbr)
+				playerHoleCards := poker.CardsFromStrings(playerHoleCardsForDebug[ruleAbbr]["3As"])
+				firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
+				secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
+				thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])
+				you.Hand = []poker.Card{firstCard, secondCard, thirdCard}
+			}
 		}
 		for i := 1; i < len(g.Players); i++ {
-			for j := 0; j < 3; j++ {
+			for j := 0; j < g.Rules.HoleCards.Count; j++ {
 				if g.Players[i].Status == PlayerStatusPlaying {
 					card, _ := g.Deck.Deal()
 					g.Players[i].Hand = append(g.Players[i].Hand, card)
@@ -169,7 +200,7 @@ func (g *Game) StartNewHand() {
 			}
 		}
 	} else {
-		for i := 0; i < 3; i++ {
+		for i := 0; i < g.Rules.HoleCards.Count; i++ {
 			for pos, p := range g.Players {
 				if p.Status == PlayerStatusPlaying {
 					card, _ := g.Deck.Deal()
