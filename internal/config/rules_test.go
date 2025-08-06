@@ -25,19 +25,12 @@ hole_cards:
   use_constraint: "any"
   use_count: 0
 hand_rankings:
-  enabled:
-    - "royal_flush"
-    - "skip_straight_flush"
-    - "straight_flush"
-    - "four_of_a_kind"
-    - "full_house"
-    - "flush"
-    - "skip_straight"
-    - "straight"
-    - "three_of_a_kind"
-    - "two_pair"
-    - "one_pair"
-    - "high_card"
+  use_standard_rankings: false
+  custom_rankings:
+    - name: "skip_straight_flush"
+      insert_after_rank: "royal_flush"
+    - name: "skip_straight"
+      insert_after_rank: "flush"
 low_hand:
   enabled: true
   max_rank: 7
@@ -72,11 +65,23 @@ low_hand:
 	if rules.HoleCards.UseConstraint != "any" {
 		t.Errorf("Expected hole_cards.use_constraint to be 'any', but got '%s'", rules.HoleCards.UseConstraint)
 	}
-	if len(rules.HandRankings.Enabled) != 12 {
-		t.Errorf("Expected 12 enabled hand rankings, but got %d", len(rules.HandRankings.Enabled))
+	if rules.HandRankings.UseStandardRankings != false {
+		t.Errorf("Expected use_standard_rankings to be false, but got %t", rules.HandRankings.UseStandardRankings)
 	}
-	if rules.HandRankings.Enabled[1] != "skip_straight_flush" {
-		t.Errorf("Expected second enabled hand ranking to be 'skip_straight_flush', but got '%s'", rules.HandRankings.Enabled[1])
+	if len(rules.HandRankings.CustomRankings) != 2 {
+		t.Errorf("Expected 2 custom hand rankings, but got %d", len(rules.HandRankings.CustomRankings))
+	}
+	if rules.HandRankings.CustomRankings[0].Name != "skip_straight_flush" {
+		t.Errorf("Expected first custom ranking name to be 'skip_straight_flush', but got '%s'", rules.HandRankings.CustomRankings[0].Name)
+	}
+	if rules.HandRankings.CustomRankings[0].InsertAfterRank != "royal_flush" {
+		t.Errorf("Expected first custom ranking insert_after_rank to be 'royal_flush', but got '%s'", rules.HandRankings.CustomRankings[0].InsertAfterRank)
+	}
+	if rules.HandRankings.CustomRankings[1].Name != "skip_straight" {
+		t.Errorf("Expected second custom ranking name to be 'skip_straight', but got '%s'", rules.HandRankings.CustomRankings[1].Name)
+	}
+	if rules.HandRankings.CustomRankings[1].InsertAfterRank != "flush" {
+		t.Errorf("Expected second custom ranking insert_after_rank to be 'flush', but got '%s'", rules.HandRankings.CustomRankings[1].InsertAfterRank)
 	}
 	if !rules.LowHand.Enabled {
 		t.Error("Expected low_hand.enabled to be true, but got false")

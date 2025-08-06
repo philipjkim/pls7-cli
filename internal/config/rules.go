@@ -27,9 +27,26 @@ type HoleCardRules struct {
 
 // HandRankingsRules lists the poker hands that are valid in this game, ordered from strongest to weakest.
 type HandRankingsRules struct {
-	// Enabled is a list of hand ranking names.
-	// e.g., "royal_flush", "skip_straight_flush", "straight_flush", etc.
-	Enabled []string `yaml:"enabled"`
+	// UseStandardRankings specifies whether to use standard poker hand rankings.
+	// If true, the game uses the universally recognized poker hand hierarchy.
+	// If false, custom_rankings will be used to define additional or modified rankings.
+	UseStandardRankings bool `yaml:"use_standard_rankings"`
+
+	// CustomRankings defines a list of custom hand rankings and their insertion points
+	// within the standard hierarchy (if UseStandardRankings is true) or as a complete
+	// custom hierarchy (if UseStandardRankings is false, though this is not fully supported yet).
+	CustomRankings []CustomHandRanking `yaml:"custom_rankings"`
+}
+
+// CustomHandRanking defines a custom poker hand rank and where it should be inserted.
+type CustomHandRanking struct {
+	// Name is the name of the custom hand ranking (e.g., "skip_straight_flush").
+	Name string `yaml:"name"`
+
+	// InsertAfterRank specifies the name of the standard or custom hand ranking
+	// after which this custom ranking should be inserted in the hierarchy.
+	// (e.g., "royal_flush" means this custom rank is just below royal_flush).
+	InsertAfterRank string `yaml:"insert_after_rank"`
 }
 
 // LowHandRules defines the rules for the low hand portion of the game (for Hi-Lo variants).
