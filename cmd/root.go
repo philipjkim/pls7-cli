@@ -3,8 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"os"
 	"pls7-cli/internal/cli"
 	"pls7-cli/internal/config"
@@ -12,6 +10,9 @@ import (
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -134,6 +135,7 @@ func runGame(cmd *cobra.Command, args []string) {
 
 func showdownResults(g *game.Game) {
 	output := "\n--- SHOWDOWN ---\n"
+	output += fmt.Sprintf("Community Cards: %s\n", g.CommunityCards)
 
 	distributionResults := g.DistributePot()
 
@@ -142,11 +144,25 @@ func showdownResults(g *game.Game) {
 		winType := ""
 		if strings.HasPrefix(result.HandDesc, "High") || strings.HasPrefix(result.HandDesc, "takes") {
 			winType = "High Winner"
+		} else if strings.HasPrefix(result.HandDesc, "Scoop") {
+			winType = "High/Low Winner"
 		} else {
 			winType = "Low Winner"
 		}
 		winnerMap[result.PlayerName] = append(winnerMap[result.PlayerName], winType)
+
+		// For debugging purposes, log the showdown results for "YOU"
+		if result.PlayerName == "YOU" {
+			logrus.Debugf(
+				"showdownResults: YOU - handDesc=%v, winType=%v, winnerMapValue=%+v",
+				result.HandDesc, winType, winnerMap[result.PlayerName],
+			)
+		}
 	}
+	logrus.Debugf(
+		"showdownResults: winnerMap=%+v, distributionResults=%+v",
+		winnerMap, distributionResults,
+	)
 
 	for _, player := range g.Players {
 		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {

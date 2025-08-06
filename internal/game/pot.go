@@ -2,10 +2,11 @@ package game
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"pls7-cli/pkg/poker"
 	"sort"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // DistributionResult stores the results of the pot distribution for printing.
@@ -109,7 +110,15 @@ func (g *Game) DistributePot() []DistributionResult {
 				Players: eligiblePlayers,
 				MaxBet:  tierBet,
 			})
-			logrus.Debugf("  New PotTier created: Amount: %d, MaxBet: %d, Players: %v", tierAmount, tierBet, getPlayerNames(eligiblePlayers))
+			logrus.Debugf(
+				"  New PotTier created: Amount: %d, MaxBet: %d, Players: %v",
+				tierAmount, tierBet, getPlayerNames(eligiblePlayers),
+			)
+			if len(eligiblePlayers) == 1 {
+				logrus.Warnf(
+					"  Single player %s eligible for PotTier with amount %d", eligiblePlayers[0].Name, tierAmount,
+				)
+			}
 		}
 		lastBet = tierBet
 	}
@@ -122,6 +131,14 @@ func (g *Game) DistributePot() []DistributionResult {
 		logrus.Debugf("Distributing PotTier: Amount: %d, MaxBet: %d, Eligible Players: %v", pot.Amount, pot.MaxBet, getPlayerNames(pot.Players))
 		highWinners, bestHighHand := findBestHighHand(pot.Players, g)
 		lowWinners, bestLowHand := findBestLowHand(pot.Players, g)
+		logrus.Debugf(
+			"DistributePot: High Winners: %v, Best High Hand: %s",
+			getPlayerNames(highWinners), bestHighHand,
+		)
+		logrus.Debugf(
+			"DistributePot: Low Winners: %v, Best Low Hand: %s",
+			getPlayerNames(lowWinners), bestLowHand,
+		)
 
 		if g.Rules.LowHand.Enabled && len(lowWinners) > 0 {
 			// Split pot for high and low
@@ -154,7 +171,12 @@ func (g *Game) DistributePot() []DistributionResult {
 			for _, winner := range highWinners {
 				winner.Chips += highShare
 				winnerChipMap[winner.Name] += highShare
-				winnerHandDescMap[winner.Name] = highHandDesc
+				// If the player also won low, append to their description
+				if desc, exists := winnerHandDescMap[winner.Name]; exists {
+					winnerHandDescMap[winner.Name] = fmt.Sprintf("Scoop: %s, %s", desc, highHandDesc)
+				} else {
+					winnerHandDescMap[winner.Name] = highHandDesc
+				}
 				logrus.Debugf("    %s wins %d from high pot", winner.Name, highShare)
 			}
 		} else {

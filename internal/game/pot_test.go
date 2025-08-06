@@ -169,3 +169,80 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 		t.Errorf("Expected pot to be 0 after distribution, but got %d", g.Pot)
 	}
 }
+
+// TestDistributePot_ComplexSidePotAndAllIn reproduces the specific bug found in the log file.
+// This test covers a complex scenario with multiple all-ins, side pots, and a call.
+func TestDistributePot_ComplexSidePotAndAllIn(t *testing.T) {
+	util.InitLogger(true)
+
+	// Scenario setup based on the bug log
+	playerNames := []string{"YOU", "CPU 1", "CPU 4"}
+	rules := &config.GameRules{
+		HoleCards:    config.HoleCardRules{Count: 3},
+		LowHand:      config.LowHandRules{Enabled: true, MaxRank: 7},
+		HandRankings: config.HandRankingsRules{UseStandardRankings: true},
+	}
+	g := NewGame(playerNames, 0, DifficultyEasy, rules, true, false)
+
+	// Player states based on the corrected scenario
+	// YOU: Calls the final all-in
+	g.Players[0].Chips = 1136500 - 254500 // Initial chips before the final bets
+	g.Players[0].TotalBetInHand = 254500
+	g.Players[0].Status = PlayerStatusPlaying
+	g.Players[0].Hand = poker.CardsFromStrings("As 2s 3s") // Hand for Straight and Low
+
+	// CPU 1: All-in with the highest bet
+	g.Players[1].Chips = 0
+	g.Players[1].TotalBetInHand = 254500
+	g.Players[1].Status = PlayerStatusAllIn
+	g.Players[1].Hand = poker.CardsFromStrings("6c Jc 9h") // A-High
+
+	// CPU 4: All-in with a lower bet
+	g.Players[2].Chips = 13000 - 205000 // Reflects state before final all-in
+	g.Players[2].TotalBetInHand = 205000
+	g.Players[2].Status = PlayerStatusAllIn
+	g.Players[2].Hand = poker.CardsFromStrings("Ts 6s 4h") // Two Pair
+
+	// Community cards
+	g.CommunityCards = poker.CardsFromStrings("Ad Kd 5c 4d Th")
+
+	// Total pot is the sum of all bets
+	g.Pot = 254500 + 254500 + 205000
+
+	// Action
+	results := g.DistributePot()
+
+	// --- Assertions ---
+	// Expected distribution:
+	// Main Pot (205,000 * 3 = 615,000): YOU wins high and low (scoops).
+	// Side Pot 1 ((254,500 - 205,000) * 2 = 99,000): Between YOU and CPU 1. YOU wins high and low.
+	// Total for YOU: 615,000 + 99,000 = 714,000
+
+	// Find the result for "YOU"
+	var youResult *DistributionResult
+	for i := range results {
+		if results[i].PlayerName == "YOU" {
+			youResult = &results[i]
+			break
+		}
+	}
+
+	if youResult == nil {
+		t.Fatalf("Expected results for player 'YOU', but found none")
+	}
+
+	if youResult.AmountWon != 714000 {
+		t.Errorf("Expected YOU to win 714000, but got %d", youResult.AmountWon)
+	}
+
+	// Check final chip counts
+	// Initial chips for YOU: 1136500 - 254500 = 882000
+	// Final chips: 882000 + 714000 = 1596000
+	if g.Players[0].Chips != 1596000 {
+		t.Errorf("Expected YOU's final chips to be 1596000, but got %d", g.Players[0].Chips)
+	}
+
+	if g.Players[1].Chips != 0 {
+		t.Errorf("Expected CPU 1's final chips to be 0, but got %d", g.Players[1].Chips)
+	}
+}

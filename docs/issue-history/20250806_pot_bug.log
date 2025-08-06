@@ -1,0 +1,131 @@
+--- PLS7 (Easy) | HAND #22 | PHASE: RIVER | POT: 492,000 | BLINDS: 500/1,000 ---
+Board: A♦️  K♦️  5♣️️  4♦️  10♥️️
+
+Players:
+D YOU    : Chips: 1,136,500, Current Bet: 192,000 - Call 144,000  | Hand: A♠️️  2♠️️  3♠️️  | High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ , Low: 5-High, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+> CPU 1  : Chips: 158,500  , Current Bet: 96,000  | Hand: 6♣️️  J♣️️  9♥️️  | High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️
+CPU 4  : Chips: 13,000   , Current Bet: 192,000 - Raise to 192,000  | Hand: 10♠️️  6♠️️  4♥️️  | High: Two Pair, 10s and 4s, 10♠️️ -10♥️️ -4♥️️ -4♦️ -A♦️
+-------------------------------------------------
+CPU 1 raises to 254,500.
+DEBU[2025-08-06T18:38:36+09:00] CPU 1's action: {Raise 384000}, wasAggressive: true, currentActionCloser: CPU 1
+DEBU[2025-08-06T18:38:36+09:00] action closer changed from CPU 1 to YOU
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:36+09:00] Player YOU: Status: Playing, Current Bet: 192,000, Last Action: Call 144,000, actionInfo: [, Current Bet: 192,000 - Call 144,000]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:36+09:00] Player CPU 1: Status: All In, Current Bet: 254,500, Last Action: Raise to 254,500 (All-in), actionInfo: [, Current Bet: 254,500 - Raise to 254,500 (All-in)]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:36+09:00] Player CPU 4: Status: Playing, Current Bet: 192,000, Last Action: Raise to 192,000, actionInfo: [, Current Bet: 192,000]
+DEBU[2025-08-06T18:38:36+09:00] Total chips match expected value: 1,800,000
+
+
+--- PLS7 (Easy) | HAND #22 | PHASE: RIVER | POT: 650,500 | BLINDS: 500/1,000 ---
+Board: A♦️  K♦️  5♣️️  4♦️  10♥️️
+
+Players:
+D YOU    : Chips: 1,136,500, Current Bet: 192,000 - Call 144,000  | Hand: A♠️️  2♠️️  3♠️️  | High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ , Low: 5-High, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+CPU 1  : Chips: 0        , Current Bet: 254,500 - Raise to 254,500 (All-in)  | Hand: 6♣️️  J♣️️  9♥️️  | High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️
+> CPU 4  : Chips: 13,000   , Current Bet: 192,000  | Hand: 10♠️️  6♠️️  4♥️️  | High: Two Pair, 10s and 4s, 10♠️️ -10♥️️ -4♥️️ -4♦️ -A♦️
+-------------------------------------------------
+CPU 4 raises to 205,000.
+DEBU[2025-08-06T18:38:36+09:00] CPU 4's action: {Raise 509000}, wasAggressive: true, currentActionCloser: YOU
+DEBU[2025-08-06T18:38:36+09:00] action closer changed from YOU to CPU 1
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:36+09:00] Player YOU: Status: Playing, Current Bet: 192,000, Last Action: Call 144,000, actionInfo: [, Current Bet: 192,000]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:36+09:00] Player CPU 1: Status: All In, Current Bet: 254,500, Last Action: Raise to 254,500 (All-in), actionInfo: [, Current Bet: 254,500 - Raise to 254,500 (All-in)]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:36+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:36+09:00] Player CPU 4: Status: All In, Current Bet: 205,000, Last Action: Raise to 205,000 (All-in), actionInfo: [, Current Bet: 205,000 - Raise to 205,000 (All-in)]
+DEBU[2025-08-06T18:38:36+09:00] Total chips match expected value: 1,800,000
+
+
+--- PLS7 (Easy) | HAND #22 | PHASE: RIVER | POT: 663,500 | BLINDS: 500/1,000 ---
+Board: A♦️  K♦️  5♣️️  4♦️  10♥️️
+
+Players:
+> YOU    : Chips: 1,136,500, Current Bet: 192,000  | Hand: A♠️️  2♠️️  3♠️️  | High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ , Low: 5-High, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+CPU 1  : Chips: 0        , Current Bet: 254,500 - Raise to 254,500 (All-in)  | Hand: 6♣️️  J♣️️  9♥️️  | High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️
+CPU 4  : Chips: 0        , Current Bet: 205,000 - Raise to 205,000 (All-in)  | Hand: 10♠️️  6♠️️  4♥️️  | High: Two Pair, 10s and 4s, 10♠️️ -10♥️️ -4♥️️ -4♦️ -A♦️
+-------------------------------------------------
+Choose your action: (c)all 13,000, (r)aise, (f)old > c
+YOU calls 13,000.
+DEBU[2025-08-06T18:38:37+09:00] YOU's action: {Call 0}, wasAggressive: false, currentActionCloser: CPU 1
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] Player YOU: Status: Playing, Current Bet: 205,000, Last Action: Call 13,000, actionInfo: [, Current Bet: 205,000 - Call 13,000]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] Player CPU 1: Status: All In, Current Bet: 254,500, Last Action: Raise to 254,500 (All-in), actionInfo: [, Current Bet: 254,500]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] Player CPU 4: Status: All In, Current Bet: 205,000, Last Action: Raise to 205,000 (All-in), actionInfo: [, Current Bet: 205,000 - Raise to 205,000 (All-in)]
+DEBU[2025-08-06T18:38:37+09:00] Total chips match expected value: 1,800,000
+
+
+--- PLS7 (Easy) | HAND #22 | PHASE: SHOWDOWN | POT: 676,500 | BLINDS: 500/1,000 ---
+Board: A♦️  K♦️  5♣️️  4♦️  10♥️️
+
+Players:
+D YOU    : Chips: 1,123,500, Current Bet: 205,000 - Call 13,000  | Hand: A♠️️  2♠️️  3♠️️  | High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ , Low: 5-High, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+> CPU 1  : Chips: 0        , Current Bet: 254,500  | Hand: 6♣️️  J♣️️  9♥️️  | High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️
+CPU 4  : Chips: 0        , Current Bet: 205,000 - Raise to 205,000 (All-in)  | Hand: 10♠️️  6♠️️  4♥️️  | High: Two Pair, 10s and 4s, 10♠️️ -10♥️️ -4♥️️ -4♦️ -A♦️
+-------------------------------------------------
+DEBU[2025-08-06T18:38:37+09:00] DistributePot: Initial Pot: 676500, All Contributors: [YOU CPU 1 CPU 4], Bet Tiers: [209000 258500]
+DEBU[2025-08-06T18:38:37+09:00]   New PotTier created: Amount: 627000, MaxBet: 209000, Players: [YOU CPU 1 CPU 4]
+DEBU[2025-08-06T18:38:37+09:00]   New PotTier created: Amount: 49500, MaxBet: 258500, Players: [CPU 1]
+DEBU[2025-08-06T18:38:37+09:00] Distributing PotTier: Amount: 627000, MaxBet: 209000, Eligible Players: [YOU CPU 1 CPU 4]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] DistributePot: High Winners: [YOU], Best High Hand: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+DEBU[2025-08-06T18:38:37+09:00] DistributePot: Low Winners: [YOU], Best Low Hand: 5-High, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+DEBU[2025-08-06T18:38:37+09:00]   Split Pot: lowPot: 313500, highPot: 313500
+DEBU[2025-08-06T18:38:37+09:00]     YOU wins 313500 from low pot
+DEBU[2025-08-06T18:38:37+09:00]     YOU wins 313500 from high pot
+DEBU[2025-08-06T18:38:37+09:00] Distributing PotTier: Amount: 49500, MaxBet: 258500, Eligible Players: [CPU 1]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] DistributePot: High Winners: [CPU 1], Best High Hand: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️
+DEBU[2025-08-06T18:38:37+09:00] DistributePot: Low Winners: [], Best Low Hand: N/A
+DEBU[2025-08-06T18:38:37+09:00]     CPU 1 scoops 49500 from pot
+DEBU[2025-08-06T18:38:37+09:00] DistributePot: Final results: [{PlayerName:YOU AmountWon:627000 HandDesc:Scoop: Low: 5-4-3-2-A-High, High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ } {PlayerName:CPU 1 AmountWon:49500 HandDesc:High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️  (Scoop)}]
+DEBU[2025-08-06T18:38:37+09:00] showdownResults: YOU - handDesc=Scoop: Low: 5-4-3-2-A-High, High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ , winType=Scoop (High + Low) Winner, winnerMapValue=[Scoop (High + Low) Winner]
+DEBU[2025-08-06T18:38:37+09:00] showdownResults: winnerMap=map[CPU 1:[High Winner] YOU:[Scoop (High + Low) Winner]], distributionResults=[{PlayerName:YOU AmountWon:627000 HandDesc:Scoop: Low: 5-4-3-2-A-High, High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ } {PlayerName:CPU 1 AmountWon:49500 HandDesc:High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️  (Scoop)}]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: handRankOrder: [Royal Flush Skip Straight Flush Straight Flush Four of a Kind Full House Flush Skip Straight Straight Three of a Kind Two Pair One Pair High Card]
+DEBU[2025-08-06T18:38:37+09:00] EvaluateHand: lowHandEnabled=true, maxRank=7
+DEBU[2025-08-06T18:38:37+09:00] distributionResults: [{PlayerName:YOU AmountWon:627000 HandDesc:Scoop: Low: 5-4-3-2-A-High, High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️ } {PlayerName:CPU 1 AmountWon:49500 HandDesc:High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️  (Scoop)}]
+
+--- SHOWDOWN ---
+Community Cards: [A♦️  K♦️  5♣️️  4♦️  10♥️️ ]
+- YOU    : [A♠️️  2♠️️  3♠️️ ] -> Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️  | Low: 5-4-3-2-A-High (Scoop (High + Low) Winner)
+- CPU 1  : [6♣️️  J♣️️  9♥️️ ] -> A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️  (High Winner)
+- CPU 4  : [10♠️️  6♠️️  4♥️️ ] -> Two Pair, 10s and 4s, 10♠️️ -10♥️️ -4♥️️ -4♦️ -A♦️
+
+--- POT DISTRIBUTION ---
+YOU wins 627,000 chips with Scoop: Low: 5-4-3-2-A-High, High: Straight, 5♣️️ -4♦️ -3♠️️ -2♠️️ -A♠️️
+CPU 1 wins 49,500 chips with High: A-High, A♦️ -K♦️ -J♣️️ -10♥️️ -9♥️️  (Scoop)
+------------------------
+
+
+--- End of Hand ---
+CPU 4 has been eliminated!

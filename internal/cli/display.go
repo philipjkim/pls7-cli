@@ -2,12 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 	"sort"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // DisplayGameState prints the current state of the game board and players.
@@ -143,7 +144,11 @@ func formatOuts(outsInfo *poker.OutsInfo) string {
 			if len(outs) == 0 {
 				continue
 			}
-			result += fmt.Sprintf("\t\t%s: ", rank.String())
+			possibleHandRankStr := rank.String()
+			if rank.String() == poker.HighCard.String() {
+				possibleHandRankStr = possibleHandRankStr + " (for low hand)"
+			}
+			result += fmt.Sprintf("\t\t%s: ", possibleHandRankStr)
 			outRankStrings := make([]string, 0, len(outs))
 			for _, c := range outs {
 				outRankStrings = append(outRankStrings, c.String())
