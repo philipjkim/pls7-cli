@@ -19,8 +19,8 @@ type OutsInfo struct {
 // - Full House Draw: trips or two pair made (only if trips or two pair made by pocket pair)
 // - Quad Draw: 3 cards of the same rank (only if trips made by pocket pair)
 // - Skip Straight Draw: 4 cards in skip-sequence (including gutshot, e.g. 2-4-8-T, 3-5-7-9)
-func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (bool, *OutsInfo) {
-	currentHand, _ := EvaluateHand(holeCards, communityCards, lowlessMode)
+func CalculateOuts(holeCards []Card, communityCards []Card, lowGameEnabled bool) (bool, *OutsInfo) {
+	currentHand, _ := EvaluateHand(holeCards, communityCards, lowGameEnabled)
 	if currentHand == nil {
 		return false, &OutsInfo{
 			OutsPerHandRank: make(map[HandRank][]Card),
@@ -132,8 +132,8 @@ func CalculateOuts(holeCards []Card, communityCards []Card, lowlessMode bool) (b
 		}
 	}
 
-	// --- Low Hands (only if lowlessMode is false) ---
-	if !lowlessMode {
+	// --- Low Hands (only if lowGameEnabled is true) ---
+	if lowGameEnabled {
 		if hasDraw, outs := hasLowHandDraw(holeCards, communityCards, seenCards); hasDraw {
 			outsInfo.OutsPerHandRank[HighCard] = outs
 			logrus.Debugf("CalculateOuts: outsInfo.OutsPerHandRank updated: %+v", outsInfo.OutsPerHandRank)
@@ -578,7 +578,7 @@ func CalculateBreakEvenEquityBasedOnPotOdds(pot int, amountToCall int) float64 {
 // CalculateEquityWithCards calculates the equity of our hand based on the number of outs and the number of opponents.
 func CalculateEquityWithCards(ourHand, communityCards []Card) float64 {
 	// Note that outs are calculated without low hands draw.
-	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, true)
+	hasOuts, outsInfo := CalculateOuts(ourHand, communityCards, false)
 	if !hasOuts {
 		return 0
 	}

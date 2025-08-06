@@ -194,9 +194,9 @@ func (g *Game) getShowdownPlayers() []*Player {
 	return active
 }
 
-func findBestHighHand(players []*Player, communityCards []poker.Card, isLowLess bool) (winners []*Player, bestHand *poker.HandResult) {
+func findBestHighHand(players []*Player, communityCards []poker.Card, lowGameEnabled bool) (winners []*Player, bestHand *poker.HandResult) {
 	for _, p := range players {
-		highHand, _ := poker.EvaluateHand(p.Hand, communityCards, isLowLess)
+		highHand, _ := poker.EvaluateHand(p.Hand, communityCards, lowGameEnabled)
 		if bestHand == nil || compareHandResults(highHand, bestHand) == 1 {
 			bestHand = highHand
 			winners = []*Player{p}
@@ -207,9 +207,9 @@ func findBestHighHand(players []*Player, communityCards []poker.Card, isLowLess 
 	return
 }
 
-func findBestLowHand(players []*Player, communityCards []poker.Card, isLowLess bool) (winners []*Player, bestHand *poker.HandResult) {
+func findBestLowHand(players []*Player, communityCards []poker.Card, lowGameEnabled bool) (winners []*Player, bestHand *poker.HandResult) {
 	for _, p := range players {
-		_, lowHand := poker.EvaluateHand(p.Hand, communityCards, isLowLess)
+		_, lowHand := poker.EvaluateHand(p.Hand, communityCards, lowGameEnabled)
 		if lowHand == nil {
 			continue
 		}

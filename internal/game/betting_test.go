@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"pls7-cli/internal/config"
 	"testing"
 )
 
@@ -25,11 +26,11 @@ func (m *SimpleActionProvider) GetAction(g *Game, p *Player) PlayerAction {
 }
 
 func newGameForBettingTests(playerNames []string, initialChips int) *Game {
-	rules := &GameRules{
-		HoleCards: HoleCardRules{
+	rules := &config.GameRules{
+		HoleCards: config.HoleCardRules{
 			Count: 3,
 		},
-		LowHand: LowHandRules{Enabled: false},
+		LowHand: config.LowHandRules{Enabled: false},
 	}
 	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false)
 }

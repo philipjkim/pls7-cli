@@ -2,6 +2,7 @@ package game
 
 import (
 	"math/rand"
+	"pls7-cli/internal/config"
 	"pls7-cli/pkg/poker"
 	"testing"
 )
@@ -76,14 +77,14 @@ func TestEvaluateHandStrength(t *testing.T) {
 			// Setup game state for the test
 			g := &Game{
 				Phase:          tc.phase,
-				CommunityCards: cardsFromStrings(tc.communityCardsStr),
+				CommunityCards: poker.CardsFromStrings(tc.communityCardsStr),
 				DevMode:        true,
-				Rules: &GameRules{
-					LowHand: LowHandRules{Enabled: false},
+				Rules: &config.GameRules{
+					LowHand: config.LowHandRules{Enabled: false},
 				},
 			}
 			player := &Player{
-				Hand: cardsFromStrings(tc.holeCardsStr),
+				Hand: poker.CardsFromStrings(tc.holeCardsStr),
 			}
 
 			score := evaluateHandStrength(g, player)

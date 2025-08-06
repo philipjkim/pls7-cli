@@ -13,210 +13,210 @@ func TestCalculateOuts(t *testing.T) {
 		name                string
 		holeCards           []Card
 		communityCards      []Card
-		lowlessMode         bool
+		lowGameEnabled      bool
 		expectedAllOuts     []Card
 		expectedOutsPerRank map[HandRank][]Card
 	}{
 		{
 			name:            "Open-ended Straight Draw",
-			holeCards:       cardsFromStrings("8s 7s Kc"),
-			communityCards:  cardsFromStrings("6c 5h 2d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
+			holeCards:       CardsFromStrings("8s 7s Kc"),
+			communityCards:  CardsFromStrings("6c 5h 2d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight: cardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
+				Straight: CardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
 			},
 		},
 		{
 			name:            "OESD with Ace high",
-			holeCards:       cardsFromStrings("As Kh Qs"),
-			communityCards:  cardsFromStrings("Jh 5c 2d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ts Th Td Tc"),
+			holeCards:       CardsFromStrings("As Kh Qs"),
+			communityCards:  CardsFromStrings("Jh 5c 2d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ts Th Td Tc"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight: cardsFromStrings("Ts Th Td Tc"),
+				Straight: CardsFromStrings("Ts Th Td Tc"),
 			},
 		},
 		{
 			name:            "OESD with Ace low",
-			holeCards:       cardsFromStrings("4s 3d 2h"),
-			communityCards:  cardsFromStrings("As Qc Tc"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("5s 5h 5d 5c"),
+			holeCards:       CardsFromStrings("4s 3d 2h"),
+			communityCards:  CardsFromStrings("As Qc Tc"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("5s 5h 5d 5c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight: cardsFromStrings("5s 5h 5d 5c"),
+				Straight: CardsFromStrings("5s 5h 5d 5c"),
 			},
 		},
 		{
 			name:            "Gutshot 8654",
-			holeCards:       cardsFromStrings("8s 6s 5c"),
-			communityCards:  cardsFromStrings("Ad Kh 4h"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("7s 7h 7d 7c"),
+			holeCards:       CardsFromStrings("8s 6s 5c"),
+			communityCards:  CardsFromStrings("Ad Kh 4h"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("7s 7h 7d 7c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight: cardsFromStrings("7s 7h 7d 7c"),
+				Straight: CardsFromStrings("7s 7h 7d 7c"),
 			},
 		},
 		{
 			name:            "Gutshot with Ace high",
-			holeCards:       cardsFromStrings("As Qd Jc"),
-			communityCards:  cardsFromStrings("Th 7c 3d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ks Kh Kd Kc"),
+			holeCards:       CardsFromStrings("As Qd Jc"),
+			communityCards:  CardsFromStrings("Th 7c 3d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ks Kh Kd Kc"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight: cardsFromStrings("Ks Kh Kd Kc"),
+				Straight: CardsFromStrings("Ks Kh Kd Kc"),
 			},
 		},
 		{
 			name:            "Gutshot with Ace low",
-			holeCards:       cardsFromStrings("4h 3c As"),
-			communityCards:  cardsFromStrings("Jh 8c 5d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("2s 2h 2d 2c"),
+			holeCards:       CardsFromStrings("4h 3c As"),
+			communityCards:  CardsFromStrings("Jh 8c 5d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("2s 2h 2d 2c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight: cardsFromStrings("2s 2h 2d 2c"),
+				Straight: CardsFromStrings("2s 2h 2d 2c"),
 			},
 		},
 		{
 			name:            "Flush-only Draw",
-			holeCards:       cardsFromStrings("As Js 5h"),
-			communityCards:  cardsFromStrings("8s 7s 2d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ks Qs Ts 9s 6s 5s 4s 3s 2s"),
+			holeCards:       CardsFromStrings("As Js 5h"),
+			communityCards:  CardsFromStrings("8s 7s 2d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ks Qs Ts 9s 6s 5s 4s 3s 2s"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Flush: cardsFromStrings("Ks Qs Ts 9s 6s 5s 4s 3s 2s"),
+				Flush: CardsFromStrings("Ks Qs Ts 9s 6s 5s 4s 3s 2s"),
 			},
 		},
 		{
 			name:            "Straight or Flush Draw",
-			holeCards:       cardsFromStrings("8s 7s Kc"),
-			communityCards:  cardsFromStrings("6s 5s 2d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("As Ks Qs Js Ts 9s 4s 3s 2s 9h 9d 9c 4h 4d 4c"),
+			holeCards:       CardsFromStrings("8s 7s Kc"),
+			communityCards:  CardsFromStrings("6s 5s 2d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("As Ks Qs Js Ts 9s 4s 3s 2s 9h 9d 9c 4h 4d 4c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Flush:    cardsFromStrings("As Ks Qs Js Ts 9s 4s 3s 2s"),
-				Straight: cardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
+				Flush:    CardsFromStrings("As Ks Qs Js Ts 9s 4s 3s 2s"),
+				Straight: CardsFromStrings("9s 9h 9d 9c 4s 4h 4d 4c"),
 			},
 		},
 		{
 			name:            "Triple Draw with Pocket Pair",
-			holeCards:       cardsFromStrings("8s 8h 6c"),
-			communityCards:  cardsFromStrings("As Js 2d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("8d 8c"),
+			holeCards:       CardsFromStrings("8s 8h 6c"),
+			communityCards:  CardsFromStrings("As Js 2d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("8d 8c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				ThreeOfAKind: cardsFromStrings("8d 8c"),
+				ThreeOfAKind: CardsFromStrings("8d 8c"),
 			},
 		},
 		{
 			name:                "Non-Draw for Triple because board is paired, not pocket pair",
-			holeCards:           cardsFromStrings("8s 6d 5c"),
-			communityCards:      cardsFromStrings("As Jh Jd"),
-			lowlessMode:         true,
+			holeCards:           CardsFromStrings("8s 6d 5c"),
+			communityCards:      CardsFromStrings("As Jh Jd"),
+			lowGameEnabled:      false,
 			expectedAllOuts:     []Card{},
 			expectedOutsPerRank: map[HandRank][]Card{},
 		},
 		{
 			name:            "Full House Draw from Two Pair with Pocket Pair",
-			holeCards:       cardsFromStrings("8s 8h 6c"),
-			communityCards:  cardsFromStrings("As Ah 5d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ad Ac 8d 8c"),
+			holeCards:       CardsFromStrings("8s 8h 6c"),
+			communityCards:  CardsFromStrings("As Ah 5d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ad Ac 8d 8c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				FullHouse: cardsFromStrings("Ad Ac 8d 8c"),
+				FullHouse: CardsFromStrings("Ad Ac 8d 8c"),
 			},
 		},
 		{
 			name:            "Full House and Quad Draw from Trips with Pocket Pair",
-			holeCards:       cardsFromStrings("8s 8h 6c"),
-			communityCards:  cardsFromStrings("As 8d 5d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ah Ad Ac 6s 6h 6d 5s 5h 5c 8c"),
+			holeCards:       CardsFromStrings("8s 8h 6c"),
+			communityCards:  CardsFromStrings("As 8d 5d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ah Ad Ac 6s 6h 6d 5s 5h 5c 8c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				FullHouse:   cardsFromStrings("Ah Ad Ac 6s 6h 6d 5s 5h 5c"),
-				FourOfAKind: cardsFromStrings("8c"),
+				FullHouse:   CardsFromStrings("Ah Ad Ac 6s 6h 6d 5s 5h 5c"),
+				FourOfAKind: CardsFromStrings("8c"),
 			},
 		},
 		{
 			name:            "Full House Draw from Two Pair without pocket pair",
-			holeCards:       cardsFromStrings("As 8h 6c"),
-			communityCards:  cardsFromStrings("Ac 8s 5d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ad Ah 8d 8c"),
+			holeCards:       CardsFromStrings("As 8h 6c"),
+			communityCards:  CardsFromStrings("Ac 8s 5d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ad Ah 8d 8c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				FullHouse: cardsFromStrings("Ad Ah 8d 8c"),
+				FullHouse: CardsFromStrings("Ad Ah 8d 8c"),
 			},
 		},
 		{
 			name:            "Full House and Quad Draw from Trips without pocket pair",
-			holeCards:       cardsFromStrings("As 8h 6c"),
-			communityCards:  cardsFromStrings("Ah Ad 5d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ac 6s 6h 6d 5s 5h 5c 8s 8d 8c"),
+			holeCards:       CardsFromStrings("As 8h 6c"),
+			communityCards:  CardsFromStrings("Ah Ad 5d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ac 6s 6h 6d 5s 5h 5c 8s 8d 8c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				FullHouse:   cardsFromStrings("6s 6h 6d 5s 5h 5c 8s 8d 8c"),
-				FourOfAKind: cardsFromStrings("Ac"),
+				FullHouse:   CardsFromStrings("6s 6h 6d 5s 5h 5c 8s 8d 8c"),
+				FourOfAKind: CardsFromStrings("Ac"),
 			},
 		},
 		{
 			name:            "Skip Straight Draw (Gutshot)",
-			holeCards:       cardsFromStrings("8s 6s 3c"),
-			communityCards:  cardsFromStrings("Ad Qh 4h"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Ts Th Td Tc"),
+			holeCards:       CardsFromStrings("8s 6s 3c"),
+			communityCards:  CardsFromStrings("Ad Qh 4h"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Ts Th Td Tc"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				SkipStraight: cardsFromStrings("Ts Th Td Tc"),
+				SkipStraight: CardsFromStrings("Ts Th Td Tc"),
 			},
 		},
 		{
 			name:            "Skip Straight Draw (Open-ended)",
-			holeCards:       cardsFromStrings("3s 5s 7c"),
-			communityCards:  cardsFromStrings("9d Qh Qh"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("As Ah Ad Ac Js Jh Jd Jc"),
+			holeCards:       CardsFromStrings("3s 5s 7c"),
+			communityCards:  CardsFromStrings("9d Qh Qh"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("As Ah Ad Ac Js Jh Jd Jc"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				SkipStraight: cardsFromStrings("As Ah Ad Ac Js Jh Jd Jc"),
+				SkipStraight: CardsFromStrings("As Ah Ad Ac Js Jh Jd Jc"),
 			},
 		},
 		{
 			name:            "Straight Flush Draw (Open-ended)",
-			holeCards:       cardsFromStrings("8s 7s Kc"),
-			communityCards:  cardsFromStrings("6s 5s 2d"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Js 4d 4c 9h 2s Qs Ks 9c 4s 9s Ts As 4h 9d 3s"),
+			holeCards:       CardsFromStrings("8s 7s Kc"),
+			communityCards:  CardsFromStrings("6s 5s 2d"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Js 4d 4c 9h 2s Qs Ks 9c 4s 9s Ts As 4h 9d 3s"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				Straight:      cardsFromStrings("4s 4h 4d 4c 9s 9h 9d 9c"),
-				Flush:         cardsFromStrings("2s 3s 4s 9s Ts Js Qs Ks As"),
-				StraightFlush: cardsFromStrings("9s 4s"),
+				Straight:      CardsFromStrings("4s 4h 4d 4c 9s 9h 9d 9c"),
+				Flush:         CardsFromStrings("2s 3s 4s 9s Ts Js Qs Ks As"),
+				StraightFlush: CardsFromStrings("9s 4s"),
 			},
 		},
 		{
 			name:            "Skip Straight Flush Draw (Open-ended)",
-			holeCards:       cardsFromStrings("Ts 8s 6s"),
-			communityCards:  cardsFromStrings("Kh Kd 4s"),
-			lowlessMode:     true,
-			expectedAllOuts: cardsFromStrings("Qs Qh Qd Qc 2s 2h 2d 2c 3s 5s 7s 9s Js Ks As"),
+			holeCards:       CardsFromStrings("Ts 8s 6s"),
+			communityCards:  CardsFromStrings("Kh Kd 4s"),
+			lowGameEnabled:  false,
+			expectedAllOuts: CardsFromStrings("Qs Qh Qd Qc 2s 2h 2d 2c 3s 5s 7s 9s Js Ks As"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				SkipStraightFlush: cardsFromStrings("Qs 2s"),
-				Flush:             cardsFromStrings("2s 3s 5s 7s 9s Js Qs Ks As"),
-				SkipStraight:      cardsFromStrings("2s 2h 2d 2c Qs Qh Qd Qc"),
+				SkipStraightFlush: CardsFromStrings("Qs 2s"),
+				Flush:             CardsFromStrings("2s 3s 5s 7s 9s Js Qs Ks As"),
+				SkipStraight:      CardsFromStrings("2s 2h 2d 2c Qs Qh Qd Qc"),
 			},
 		},
 		{
 			name:            "Low Hand Draw",
-			holeCards:       cardsFromStrings("2s 3c 6h"),
-			communityCards:  cardsFromStrings("Kh Kd 7s"),
-			lowlessMode:     false,
-			expectedAllOuts: cardsFromStrings("As Ah Ad Ac 4s 4h 4d 4c 5s 5h 5d 5c"),
+			holeCards:       CardsFromStrings("2s 3c 6h"),
+			communityCards:  CardsFromStrings("Kh Kd 7s"),
+			lowGameEnabled:  true,
+			expectedAllOuts: CardsFromStrings("As Ah Ad Ac 4s 4h 4d 4c 5s 5h 5d 5c"),
 			expectedOutsPerRank: map[HandRank][]Card{
-				HighCard: cardsFromStrings("As Ah Ad Ac 4s 4h 4d 4c 5s 5h 5d 5c"),
+				HighCard: CardsFromStrings("As Ah Ad Ac 4s 4h 4d 4c 5s 5h 5d 5c"),
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			hasOuts, outsInfo := CalculateOuts(tc.holeCards, tc.communityCards, tc.lowlessMode)
+			hasOuts, outsInfo := CalculateOuts(tc.holeCards, tc.communityCards, tc.lowGameEnabled)
 			fmt.Printf("hasOuts: %v, outsInfo: %+v\n", hasOuts, outsInfo)
 
 			if (len(tc.expectedAllOuts) > 0) != hasOuts {
@@ -285,6 +285,7 @@ func TestCalculateBreakEvenEquityBasedOnPotOdds(t *testing.T) {
 }
 
 func TestCalculateEquityWithCards(t *testing.T) {
+	util.InitLogger(true)
 	testCases := []struct {
 		name           string
 		holeCards      []Card
@@ -293,14 +294,14 @@ func TestCalculateEquityWithCards(t *testing.T) {
 	}{
 		{
 			name:           "Flush Draw on Flop",
-			holeCards:      cardsFromStrings("As Js 5h"),
-			communityCards: cardsFromStrings("8s 7s 2d"),
+			holeCards:      CardsFromStrings("As Js 5h"),
+			communityCards: CardsFromStrings("8s 7s 2d"),
 			expectedEquity: 0.36, // 9 outs * 4 = 36%
 		},
 		{
 			name:           "OESD on Turn",
-			holeCards:      cardsFromStrings("8s 7s Kc"),
-			communityCards: cardsFromStrings("6c 5h 2d 2h"),
+			holeCards:      CardsFromStrings("8s 7s Kc"),
+			communityCards: CardsFromStrings("6c 5h 2d 2h"),
 			expectedEquity: 0.16, // 8 outs * 2 = 16%
 		},
 	}

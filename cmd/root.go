@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"pls7-cli/internal/cli"
+	"pls7-cli/internal/config"
 	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
@@ -16,7 +17,6 @@ import (
 var (
 	difficultyStr string // To hold the flag value
 	devMode       bool   // To hold the --dev flag value
-	lowlessMode   bool   // To hold the --lowless flag value
 	showOuts      bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
 )
 
@@ -38,14 +38,13 @@ func runGame(cmd *cobra.Command, args []string) {
 	util.InitLogger(devMode)
 
 	// Load game rules
-	rules, err := game.LoadGameRulesFromFile("rules/pls7.yml")
+	rules, err := config.LoadGameRulesFromFile("rules/pls7.yml")
 	if err != nil {
 		logrus.Fatalf("Failed to load game rules: %v", err)
 	}
-	rules.LowHand.Enabled = !lowlessMode
 
 	fmt.Printf("======== %s ========\n", rules.Name)
-	fmt.Printf("Starting the game with %s difficulty!", difficultyStr)
+	fmt.Printf("Starting the game with %s difficulty!\n", difficultyStr)
 
 	playerActionProvider := &CLIActionProvider{}
 	cpuActionProvider := &CPUActionProvider{}
@@ -207,6 +206,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	rootCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
-	rootCmd.Flags().BoolVar(&lowlessMode, "lowless", false, "Enable lowless mode (play with high hand only).")
 	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found (temporarily draws fixed good hole cards).")
 }

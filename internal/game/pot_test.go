@@ -1,7 +1,9 @@
 package game
 
 import (
+	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
+	"pls7-cli/pkg/poker"
 	"testing"
 )
 
@@ -11,11 +13,11 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	// Scenario: 4 players. CPU 1 is eliminated. YOU and CPU 3 fold.
 	// The winner must be CPU 2, not the eliminated CPU 1.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	rules := &GameRules{
-		HoleCards: HoleCardRules{
+	rules := &config.GameRules{
+		HoleCards: config.HoleCardRules{
 			Count: 3,
 		},
-		LowHand: LowHandRules{Enabled: false},
+		LowHand: config.LowHandRules{Enabled: false},
 	}
 	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false)
 
@@ -54,11 +56,11 @@ func TestDistributePot_SidePots(t *testing.T) {
 	// BigStack (10000) has the worst hand.
 	// No low hands qualify.
 	playerNames := []string{"ShortStack", "MidStack", "BigStack"}
-	rules := &GameRules{
-		HoleCards: HoleCardRules{
+	rules := &config.GameRules{
+		HoleCards: config.HoleCardRules{
 			Count: 5, // Does not matter for this test
 		},
-		LowHand: LowHandRules{Enabled: false},
+		LowHand: config.LowHandRules{Enabled: false},
 	}
 	g := NewGame(playerNames, 0, DifficultyMedium, rules, true, false)
 
@@ -66,17 +68,17 @@ func TestDistributePot_SidePots(t *testing.T) {
 	g.Players[0].Chips = 0
 	g.Players[0].TotalBetInHand = 2000
 	g.Players[0].Status = PlayerStatusAllIn
-	g.Players[0].Hand = cardsFromStrings("As Ac Ad Ah Ks") // Four of a Kind (best hand)
+	g.Players[0].Hand = poker.CardsFromStrings("As Ac Ad Ah Ks") // Four of a Kind (best hand)
 
 	g.Players[1].Chips = 0
 	g.Players[1].TotalBetInHand = 5000
 	g.Players[1].Status = PlayerStatusAllIn
-	g.Players[1].Hand = cardsFromStrings("Qs Qc Qd Jh Js") // Full House (second best)
+	g.Players[1].Hand = poker.CardsFromStrings("Qs Qc Qd Jh Js") // Full House (second best)
 
 	g.Players[2].Chips = 0
 	g.Players[2].TotalBetInHand = 10000
 	g.Players[2].Status = PlayerStatusAllIn
-	g.Players[2].Hand = cardsFromStrings("Ts 9c 8d 7h 6s") // Straight (worst hand)
+	g.Players[2].Hand = poker.CardsFromStrings("Ts 9c 8d 7h 6s") // Straight (worst hand)
 
 	// Total pot is the sum of all bets
 	g.Pot = 2000 + 5000 + 10000
@@ -114,24 +116,24 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 	// Scenario: 3 players. Player C bets 1000 and folds. Player A and B go to showdown with 3000 each.
 	// The total pot should be 7000. Player A has the winning hand.
 	playerNames := []string{"Player A", "Player B", "Player C"}
-	rules := &GameRules{
-		HoleCards: HoleCardRules{
+	rules := &config.GameRules{
+		HoleCards: config.HoleCardRules{
 			Count: 5, // Does not matter for this test
 		},
-		LowHand: LowHandRules{Enabled: false},
+		LowHand: config.LowHandRules{Enabled: false},
 	}
 	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false)
 
 	// Setup player states
 	g.Players[0].Chips = 7000
 	g.Players[0].TotalBetInHand = 3000
-	g.Players[0].Status = PlayerStatusPlaying              // Showdown
-	g.Players[0].Hand = cardsFromStrings("As Ac Ad Ah Ks") // Four of a Kind (Winner)
+	g.Players[0].Status = PlayerStatusPlaying                    // Showdown
+	g.Players[0].Hand = poker.CardsFromStrings("As Ac Ad Ah Ks") // Four of a Kind (Winner)
 
 	g.Players[1].Chips = 7000
 	g.Players[1].TotalBetInHand = 3000
-	g.Players[1].Status = PlayerStatusPlaying              // Showdown
-	g.Players[1].Hand = cardsFromStrings("Qs Qc Qd Qh Js") // Four of a Kind (Loser)
+	g.Players[1].Status = PlayerStatusPlaying                    // Showdown
+	g.Players[1].Hand = poker.CardsFromStrings("Qs Qc Qd Qh Js") // Four of a Kind (Loser)
 
 	g.Players[2].Chips = 9000
 	g.Players[2].TotalBetInHand = 1000

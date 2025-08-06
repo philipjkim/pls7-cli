@@ -1,36 +1,9 @@
 package poker
 
 import (
-	"fmt"
 	"pls7-cli/internal/util"
-	"strings"
 	"testing"
 )
-
-// cardsFromStrings is a helper function to make creating cards in tests easier.
-// It takes a space-separated string of cards like "As Kd Tc" and converts it.
-func cardsFromStrings(s string) []Card {
-	parts := strings.Split(s, " ")
-	cards := make([]Card, len(parts))
-
-	rankMap := map[rune]Rank{
-		'2': Two, '3': Three, '4': Four, '5': Five, '6': Six, '7': Seven,
-		'8': Eight, '9': Nine, 'T': Ten, 'J': Jack, 'Q': Queen, 'K': King, 'A': Ace,
-	}
-	suitMap := map[rune]Suit{
-		's': Spade, 'h': Heart, 'd': Diamond, 'c': Club,
-	}
-
-	for i, part := range parts {
-		if len(part) != 2 {
-			panic(fmt.Sprintf("Invalid card string: %s", part))
-		}
-		rank := rankMap[rune(part[0])]
-		suit := suitMap[rune(part[1])]
-		cards[i] = Card{Rank: rank, Suit: suit}
-	}
-	return cards
-}
 
 func TestHighHands(t *testing.T) {
 	util.InitLogger(true)
@@ -77,8 +50,8 @@ func TestHighHands(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pool := cardsFromStrings(tc.cardString)
-			highHand, _ := EvaluateHand(pool[:3], pool[3:], false) // false for lowless mode
+			pool := CardsFromStrings(tc.cardString)
+			highHand, _ := EvaluateHand(pool[:3], pool[3:], false)
 
 			if highHand == nil {
 				t.Fatalf("Expected rank %v, but got nil", tc.expectedRank)
@@ -94,23 +67,23 @@ func TestLowHands(t *testing.T) {
 	testCases := []struct {
 		name           string
 		cardString     string
-		lowlessMode    bool   // New flag for testing
+		lowGameEnabled bool   // New flag for testing
 		expectLowHand  bool   // Does a low hand exist?
 		expectedValues string // Expected the best low hand, e.g., "7 6 4 2 A"
 	}{
-		{name: "Nut Low (A-5)", cardString: "As 2c 3d 4h 5s 8s 9s Ts", lowlessMode: false, expectLowHand: true, expectedValues: "5 4 3 2 A"},
-		{name: "7-High Low", cardString: "As 2c 4d 6h 7s 8s 9s Ts", lowlessMode: false, expectLowHand: true, expectedValues: "7 6 4 2 A"},
-		{name: "No Low (Not enough cards)", cardString: "As 2c 3d 4h 8s 9s Ts Js", lowlessMode: false, expectLowHand: false},
-		{name: "No Low (Pair exists)", cardString: "As Ac 2d 3h 4s 8s 9s Ts", lowlessMode: false, expectLowHand: false},
-		{name: "High/Low Combo (Straight Flush and Low)", cardString: "As 2s 3s 4s 5s 8c 9d Th", lowlessMode: false, expectLowHand: true, expectedValues: "5 4 3 2 A"},
-		// New test case for lowless mode
-		{name: "Lowless Mode - No Low Hand Expected", cardString: "As 2c 3d 4h 5s 8s 9s Ts", lowlessMode: true, expectLowHand: false},
+		{name: "Nut Low (A-5)", cardString: "As 2c 3d 4h 5s 8s 9s Ts", lowGameEnabled: true, expectLowHand: true, expectedValues: "5 4 3 2 A"},
+		{name: "7-High Low", cardString: "As 2c 4d 6h 7s 8s 9s Ts", lowGameEnabled: true, expectLowHand: true, expectedValues: "7 6 4 2 A"},
+		{name: "No Low (Not enough cards)", cardString: "As 2c 3d 4h 8s 9s Ts Js", lowGameEnabled: true, expectLowHand: false},
+		{name: "No Low (Pair exists)", cardString: "As Ac 2d 3h 4s 8s 9s Ts", lowGameEnabled: true, expectLowHand: false},
+		{name: "High/Low Combo (Straight Flush and Low)", cardString: "As 2s 3s 4s 5s 8c 9d Th", lowGameEnabled: true, expectLowHand: true, expectedValues: "5 4 3 2 A"},
+		// when lowGameEnabled is false, we should not expect a low hand
+		{name: "LowGameEnabled set to false - No Low Hand Expected", cardString: "As 2c 3d 4h 5s 8s 9s Ts", lowGameEnabled: false, expectLowHand: false},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pool := cardsFromStrings(tc.cardString)
-			_, lowHand := EvaluateHand(pool[:3], pool[3:], tc.lowlessMode) // Use the flag from the test case
+			pool := CardsFromStrings(tc.cardString)
+			_, lowHand := EvaluateHand(pool[:3], pool[3:], tc.lowGameEnabled) // Use the flag from the test case
 
 			if !tc.expectLowHand {
 				if lowHand != nil {
@@ -186,7 +159,7 @@ func TestFindBestStraight(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pool := cardsFromStrings(tc.cardString)
+			pool := CardsFromStrings(tc.cardString)
 			analysis := newHandAnalysis(pool)
 
 			straightCards, ok := findBestStraight(analysis)
@@ -210,6 +183,8 @@ func TestFindBestStraight(t *testing.T) {
 
 // TestLowHandComparison specifically tests the comparison logic between two low hands.
 func TestLowHandComparison(t *testing.T) {
+	util.InitLogger(true)
+
 	// compare is a helper to simulate the comparison logic.
 	// Returns 1 if h1 is better (lower), -1 if h2 is better, 0 if tie.
 	compare := func(h1, h2 *HandResult) int {
@@ -254,11 +229,11 @@ func TestLowHandComparison(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pool1 := cardsFromStrings(tc.hand1Str)
-			pool2 := cardsFromStrings(tc.hand2Str)
+			pool1 := CardsFromStrings(tc.hand1Str)
+			pool2 := CardsFromStrings(tc.hand2Str)
 
-			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:], false)
-			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:], false)
+			_, lowHand1 := EvaluateHand(pool1[:3], pool1[3:], true)
+			_, lowHand2 := EvaluateHand(pool2[:3], pool2[3:], true)
 
 			if lowHand1 == nil || lowHand2 == nil {
 				t.Fatal("Both hands should qualify for a low hand in this test")

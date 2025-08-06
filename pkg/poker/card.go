@@ -1,6 +1,9 @@
 package poker
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Suit represents the suit of a card.
 type Suit int
@@ -58,4 +61,28 @@ type Card struct {
 // String makes Card implement the Stringer interface.
 func (c Card) String() string {
 	return fmt.Sprintf("%s%s ", c.Rank.String(), c.Suit.String())
+}
+
+// CardsFromStrings is a helper function to make creating cards in tests easier.
+// It takes a space-separated string of cards like "As Kd Tc" and converts it.
+func CardsFromStrings(s string) []Card {
+	if s == "" {
+		return []Card{}
+	}
+	parts := strings.Split(s, " ")
+
+	cards := make([]Card, len(parts))
+	rankMap := map[rune]Rank{
+		'2': Two, '3': Three, '4': Four, '5': Five, '6': Six, '7': Seven,
+		'8': Eight, '9': Nine, 'T': Ten, 'J': Jack, 'Q': Queen, 'K': King, 'A': Ace,
+	}
+	suitMap := map[rune]Suit{
+		's': Spade, 'h': Heart, 'd': Diamond, 'c': Club,
+	}
+	for i, part := range parts {
+		rank := rankMap[rune(part[0])]
+		suit := suitMap[rune(part[1])]
+		cards[i] = Card{Rank: rank, Suit: suit}
+	}
+	return cards
 }

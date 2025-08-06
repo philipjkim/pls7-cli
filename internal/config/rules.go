@@ -1,4 +1,4 @@
-package game
+package config
 
 import (
 	"gopkg.in/yaml.v3"

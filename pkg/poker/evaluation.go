@@ -135,7 +135,7 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 }
 
 // EvaluateHand analyzes a full 8-card pool and determines the best high and low hands.
-func EvaluateHand(holeCards []Card, communityCards []Card, isLowless bool) (highResult *HandResult, lowResult *HandResult) {
+func EvaluateHand(holeCards []Card, communityCards []Card, lowGameEnabled bool) (highResult *HandResult, lowResult *HandResult) {
 	pool := make([]Card, 0, 8)
 	pool = append(pool, holeCards...)
 	pool = append(pool, communityCards...)
@@ -220,7 +220,7 @@ func EvaluateHand(holeCards []Card, communityCards []Card, isLowless bool) (high
 	}
 
 	// --- Low Hand Evaluation ---
-	if !isLowless {
+	if lowGameEnabled {
 		if lowHand, ok := findBestLowHand(analysis); ok {
 			lowResult = lowHand
 		}

@@ -1,0 +1,24 @@
+name: "Pot-Limit Sampyeong"
+abbreviation: "PLS"
+betting_limit: "pot_limit"
+hole_cards:
+  count: 3
+  use_constraint: "any"
+  use_count: 0
+hand_rankings:
+  enabled:
+    - "royal_flush"
+    - "skip_straight_flush"
+    - "straight_flush"
+    - "four_of_a_kind"
+    - "full_house"
+    - "flush"
+    - "skip_straight"
+    - "straight"
+    - "three_of_a_kind"
+    - "two_pair"
+    - "one_pair"
+    - "high_card"
+low_hand:
+  enabled: false
+  max_rank: 0

@@ -7,6 +7,14 @@ import (
 	"pls7-cli/pkg/poker"
 )
 
+// PlayerHoleCardsForDebug is YOU (human player) hole cards for debugging purposes.
+var PlayerHoleCardsForDebug = map[string]string{
+	"3As":        "As Ah Ad", // For testing outs for Four of a Kind and Full House
+	"AQT-suited": "As Qs Ts", // For testing outs for Flush, Straight, and Skip Straight
+	"AAK":        "As Ah Ks", // For testing outs for Three of a Kind
+	"A23-suited": "As 2s 3s", // For testing outs for Straight, Flush, and low hand scenarios
+}
+
 // ProcessAction updates the game state based on a player's action.
 // It returns true if an aggressive action (bet, raise) was taken.
 func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool) {
@@ -146,7 +154,7 @@ func (g *Game) StartNewHand() {
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {
 			// Edit the following line to set your hole cards for debugging purposes.
-			playerHoleCards := cardsFromStrings(PlayerHoleCardsForDebug["A23-suited"])
+			playerHoleCards := poker.CardsFromStrings(PlayerHoleCardsForDebug["3As"])
 			firstCard, _ := g.Deck.DealForDebug(playerHoleCards[0])
 			secondCard, _ := g.Deck.DealForDebug(playerHoleCards[1])
 			thirdCard, _ := g.Deck.DealForDebug(playerHoleCards[2])

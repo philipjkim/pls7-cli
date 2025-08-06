@@ -105,6 +105,7 @@
   5.  `cli.DisplayGameState` 함수에서 `LowlessMode`에 따라 로우 핸드 정보 표시 스킵. (✅)
   6.  `ai.go`의 AI 로직에서 `LowlessMode`에 따라 로우 핸드 관련 판단 로직 조정 (필요시). (✅)
   7.  `evaluation_test.go`에 `LowlessMode` 관련 테스트 케이스 추가. (✅)
+* 기타: `--lowless` 옵션은 제거되었고, 게임 룰 파일 (YAML) 에서 `low_hand.enabled` 플래그로 대체됨.
 * **완료여부**: ✅
 
 ---
