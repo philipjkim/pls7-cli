@@ -49,13 +49,23 @@ func TestHighHands(t *testing.T) {
 		{name: "3 Card Play (Full House)", cardString: "As Ac Ah Ks Kc 2d 3c 4d", expectedRank: FullHouse},
 	}
 
+	gameRules := &config.GameRules{
+		LowHand: config.LowHandRules{
+			Enabled: false, // Low hands are not enabled for these tests
+			MaxRank: 0,     // No low hand rules apply
+		},
+		HandRankings: config.HandRankingsRules{
+			UseStandardRankings: false,
+			CustomRankings: []config.CustomHandRanking{
+				{Name: "skip_straight_flush", InsertAfterRank: "royal_flush"},
+				{Name: "skip_straight", InsertAfterRank: "flush"},
+			},
+		},
+	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := CardsFromStrings(tc.cardString)
-			highHand, _ := EvaluateHand(
-				pool[:3], pool[3:],
-				&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
-			)
+			highHand, _ := EvaluateHand(pool[:3], pool[3:], gameRules)
 
 			if highHand == nil {
 				t.Fatalf("Expected rank %v, but got nil", tc.expectedRank)
@@ -259,6 +269,75 @@ func TestLowHandComparison(t *testing.T) {
 			if winner != tc.expectedWinner {
 				t.Errorf("Expected winner to be %d, but got %d. Hand1: %v, Hand2: %v",
 					tc.expectedWinner, winner, lowHand1.HighValues, lowHand2.HighValues)
+			}
+		})
+	}
+}
+
+// TestHandRankOrder tests the order of hand ranks by given game rules.
+func TestHandRankOrder(t *testing.T) {
+	util.InitLogger(true)
+
+	testCases := []struct {
+		name         string
+		gameRules    *config.HandRankingsRules
+		expectedRank []HandRank
+	}{
+		{
+			name: "Standard Hand Rankings",
+			gameRules: &config.HandRankingsRules{
+				UseStandardRankings: true,
+				CustomRankings:      []config.CustomHandRanking{},
+			},
+			expectedRank: []HandRank{
+				RoyalFlush,
+				StraightFlush,
+				FourOfAKind,
+				FullHouse,
+				Flush,
+				Straight,
+				ThreeOfAKind,
+				TwoPair,
+				OnePair,
+				HighCard,
+			},
+		},
+		{
+			name: "Custom Hand Rankings with Skip Straight Flush and Skip Straight",
+			gameRules: &config.HandRankingsRules{
+				UseStandardRankings: false,
+				CustomRankings: []config.CustomHandRanking{
+					{Name: "skip_straight_flush", InsertAfterRank: "royal_flush"},
+					{Name: "skip_straight", InsertAfterRank: "flush"},
+				},
+			},
+			expectedRank: []HandRank{
+				RoyalFlush,
+				SkipStraightFlush,
+				StraightFlush,
+				FourOfAKind,
+				FullHouse,
+				Flush,
+				SkipStraight,
+				Straight,
+				ThreeOfAKind,
+				TwoPair,
+				OnePair,
+				HighCard,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := getHandRanks(tc.gameRules)
+			if len(actual) != len(tc.expectedRank) {
+				t.Fatalf("Expected %d hand ranks, but got %d", len(tc.expectedRank), len(actual))
+			}
+			for i, rank := range actual {
+				if rank != tc.expectedRank[i] {
+					t.Errorf("Expected rank %v at position %d, but got %v", tc.expectedRank[i], i, rank)
+				}
 			}
 		})
 	}

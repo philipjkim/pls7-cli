@@ -58,9 +58,13 @@ func TestDistributePot_SidePots(t *testing.T) {
 	playerNames := []string{"ShortStack", "MidStack", "BigStack"}
 	rules := &config.GameRules{
 		HoleCards: config.HoleCardRules{
-			Count: 5, // Does not matter for this test
+			Count: 3,
 		},
 		LowHand: config.LowHandRules{Enabled: false},
+		HandRankings: config.HandRankingsRules{
+			UseStandardRankings: true,
+			CustomRankings:      []config.CustomHandRanking{},
+		},
 	}
 	g := NewGame(playerNames, 0, DifficultyMedium, rules, true, false)
 
