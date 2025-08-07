@@ -1,5 +1,7 @@
 package game
 
+import "math/rand"
+
 // ActionType defines the type of action a player can take.
 type ActionType int
 
@@ -25,5 +27,5 @@ type PlayerAction struct {
 // ActionProvider is an interface that defines how to get a player's action.
 // This allows us to use the real CLI prompt in the game, and a mock prompter in tests.
 type ActionProvider interface {
-	GetAction(g *Game, p *Player) PlayerAction
+	GetAction(g *Game, p *Player, r *rand.Rand) PlayerAction
 }

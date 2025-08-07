@@ -2,8 +2,10 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -63,7 +65,6 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		return true
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
-		g.LastRaiseAmount = amountToPost
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
 		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
@@ -310,74 +311,36 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 }
 
 // ExecuteBettingLoop runs the core betting logic for a round.
-// It assumes the round has already been prepared.
+// It now takes a single ActionProvider for all players.
 func (g *Game) ExecuteBettingLoop(
-	playerActionProvider ActionProvider,
-	cpuActionProvider ActionProvider,
+	actionProvider ActionProvider,
 	displayCurrentStatus func(g *Game),
 ) {
-	// If only one player remains in the hand, award them the pot immediately.
-	if g.CountNonFoldedPlayers() == 1 {
-		// Find the last remaining player
-		var lastPlayer *Player
-		for _, p := range g.Players {
-			if p.Status != PlayerStatusFolded && p.Status != PlayerStatusEliminated {
-				lastPlayer = p
-				break
-			}
-		}
-		if lastPlayer != nil {
-			logrus.Debugf("Only one player (%s) remains in the hand. Awarding pot.", lastPlayer.Name)
-			// Award the pot to this player. This will also reset g.Pot to 0.
-			g.AwardPotToLastPlayer()
-		}
-		return // End the betting loop
+	if g.CountNonFoldedPlayers() < 2 {
+		return // No betting needed if fewer than 2 players are in the hand.
 	}
 
-	if g.CountPlayersAbleToAct() < 2 {
-		// If only one player can act, check if they need to call a previous all-in.
-		player := g.Players[g.CurrentTurnPos]
-		if player.Status == PlayerStatusPlaying && player.CurrentBet < g.BetToCall {
-			// This single player must act.
-		} else {
-			return // Otherwise, no betting is possible, so skip the round.
-		}
-	}
-
+	// Determine who acts last.
 	actionCloserPos := 0
 	if g.Phase == PhasePreFlop {
-		actionCloserPos = actionCloserPosForPreFlop(g) // BB acts last
+		actionCloserPos = actionCloserPosForPreFlop(g)
 	} else {
-		actionCloserPos = g.DealerPos // Dealer acts last
+		// Post-flop, the first player to act is after the dealer.
+		// The action closer is the player right before them (the dealer, or last active player).
+		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
 	}
 
 	for {
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == PlayerStatusPlaying {
-			displayCurrentStatus(g) // Display the current game state
+			displayCurrentStatus(g)
 
-			var action PlayerAction
-			if player.IsCPU {
-				action = cpuActionProvider.GetAction(g, player)
-			} else {
-				action = playerActionProvider.GetAction(g, player)
-			}
+			// All actions are now determined by the single provider.
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			action := actionProvider.GetAction(g, player, r)
 
-			wasAggressive := g.ProcessAction(player, action)
-			logrus.Debugf(
-				"%s's action: %v, wasAggressive: %v, currentActionCloser: %v\n",
-				player.Name, action, wasAggressive, g.Players[actionCloserPos].Name,
-			)
-			if wasAggressive {
-				previousActionCloserPos := actionCloserPos
-				actionCloserPos = g.FindPreviousActivePlayer(g.CurrentTurnPos)
-				logrus.Debugf(
-					"action closer changed from %v to %v\n",
-					g.Players[previousActionCloserPos].Name,
-					g.Players[actionCloserPos].Name,
-				)
-			}
+			g.ProcessAction(player, action)
 		}
 
 		if g.CurrentTurnPos == actionCloserPos {

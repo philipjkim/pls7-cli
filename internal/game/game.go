@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 	"pls7-cli/internal/config"
 	"pls7-cli/pkg/poker"
 	"time"
@@ -70,6 +71,11 @@ func NewGame(
 			Chips: initialChips,
 			IsCPU: isCPU,
 		}
+		// Assign a random profile to CPU players
+		if isCPU {
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			assignRandomProfile(players[i], r)
+		}
 	}
 
 	g := &Game{
@@ -115,4 +121,16 @@ func (g *Game) CanShowOuts(p *Player) bool {
 	availablePhase := g.Phase == PhaseFlop || g.Phase == PhaseTurn
 	optionEnabled := g.DevMode || g.ShowsOuts
 	return humanPlayerInPlay && optionEnabled && availablePhase
+}
+
+// minRaiseAmount calculates the minimum amount for a valid raise.
+func (g *Game) minRaiseAmount() int {
+	minRaiseIncrease := g.LastRaiseAmount
+	if minRaiseIncrease == 0 {
+		minRaiseIncrease = g.BetToCall
+	}
+	if g.BetToCall == 0 {
+		minRaiseIncrease = BigBlindAmt
+	}
+	return g.BetToCall + minRaiseIncrease
 }
