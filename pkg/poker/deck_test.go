@@ -1,7 +1,9 @@
 package poker
 
 import (
+	"math/rand"
 	"testing"
+	"time"
 )
 
 // TestDeck_DealForDebug tests the DealForDebug method, which is used to deal specific cards for testing purposes.
@@ -13,7 +15,8 @@ func TestDeck_DealForDebug(t *testing.T) {
 	}
 
 	deck := NewDeck()
-	deck.Shuffle()
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	deck.Shuffle(r)
 	if len(deck.Cards) < 52 {
 		t.Fatalf("Expected deck to have 52 cards, but got %d", len(deck.Cards))
 	}

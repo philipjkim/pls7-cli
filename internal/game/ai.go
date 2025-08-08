@@ -3,124 +3,131 @@ package game
 import (
 	"math/rand"
 	"pls7-cli/pkg/poker"
+	"sort"
 	"time"
 )
 
-// GetCPUAction is a dispatcher that calls the appropriate AI logic based on difficulty.
-func (g *Game) GetCPUAction(player *Player) PlayerAction {
-	// For the actual game, we create a random source here.
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+// byRank implements sort.Interface for []poker.Rank
+type byRank []poker.Rank
 
-	switch g.Difficulty {
-	case DifficultyEasy:
-		return g.getEasyAction(player, r)
-	case DifficultyMedium:
-		return g.getMediumAction(player) // Medium AI doesn't use randomness
-	case DifficultyHard:
-		return g.getHardAction(player, r)
-	}
-	return g.getMediumAction(player)
+func (a byRank) Len() int           { return len(a) }
+func (a byRank) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byRank) Less(i, j int) bool { return a[i] > a[j] } // Sort descending
+
+// Pre-defined AI profiles
+var aiProfiles = map[string]AIProfile{
+	"Tight-Aggressive": {
+		Name:                 "Tight-Aggressive",
+		PlayHandThreshold:    20, // Plays only top 20% of hands
+		RaiseHandThreshold:   25, // Raises with top 15% of hands
+		BluffingFrequency:    0.15, // Bluffs 15% of the time
+		AggressionFactor:     0.7, // High aggression
+		MinRaiseMultiplier:   2.5,
+		MaxRaiseMultiplier:   4.0,
+	},
+	"Loose-Aggressive": {
+		Name:                 "Loose-Aggressive",
+		PlayHandThreshold:    10, // Plays top 40% of hands
+		RaiseHandThreshold:   20, // Raises with top 25% of hands
+		BluffingFrequency:    0.35, // Bluffs 35% of the time
+		AggressionFactor:     0.9,  // Very high aggression
+		MinRaiseMultiplier:   2.0,
+		MaxRaiseMultiplier:   3.5,
+	},
+	"Tight-Passive": {
+		Name:                 "Tight-Passive",
+		PlayHandThreshold:    22, // Plays only top 18% of hands
+		RaiseHandThreshold:   28, // Raises only with premium hands
+		BluffingFrequency:    0.05, // Rarely bluffs
+		AggressionFactor:     0.3,  // Low aggression, prefers calling
+		MinRaiseMultiplier:   2.0,
+		MaxRaiseMultiplier:   2.5,
+	},
+	"Loose-Passive": {
+		Name:                 "Loose-Passive",
+		PlayHandThreshold:    8,    // Plays a wide range of hands
+		RaiseHandThreshold:   24,   // Rarely raises
+		BluffingFrequency:    0.10, // Bluffs occasionally with draws
+		AggressionFactor:     0.2,  // Very passive, calls a lot
+		MinRaiseMultiplier:   2.0,
+		MaxRaiseMultiplier:   3.0,
+	},
 }
 
-// getEasyAction implements the "Easy" AI: unpredictable and random.
-func (g *Game) getEasyAction(player *Player, r *rand.Rand) PlayerAction {
+// Assigns a random AI profile to a CPU player.
+func assignRandomProfile(player *Player, r *rand.Rand) {
+	profiles := []AIProfile{}
+	for _, p := range aiProfiles {
+		profiles = append(profiles, p)
+	}
+	player.Profile = &profiles[r.Intn(len(profiles))]
+}
+
+// GetCPUAction now uses the player's profile to make decisions.
+func (g *Game) GetCPUAction(player *Player, r *rand.Rand) PlayerAction {
+
+	strength := g.handEvaluator(g, player)
 	canCheck := player.CurrentBet == g.BetToCall
 
 	time.Sleep(g.CPUThinkTime())
 
-	if !canCheck {
-		switch g.Phase {
-		case PhasePreFlop:
-			if r.Float64() < 0.8 {
-				return PlayerAction{Type: ActionCall}
-			}
-			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
-		case PhaseFlop, PhaseTurn:
-			prob := r.Float64()
-			if prob < 0.3 {
-				return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
-			}
-			if prob < 0.7 {
-				return PlayerAction{Type: ActionCall}
-			}
+	// --- Pre-Flop Logic ---
+	if g.Phase == PhasePreFlop {
+		if strength < player.Profile.PlayHandThreshold {
 			return PlayerAction{Type: ActionFold}
-		case PhaseRiver:
-			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
-		default:
-			panic("unhandled default case")
 		}
-	}
-	return PlayerAction{Type: ActionCheck}
-}
-
-// getMediumAction implements the "Medium" AI: honest and rule-based.
-func (g *Game) getMediumAction(player *Player) PlayerAction {
-	strength := g.handEvaluator(g, player) // Use the function field
-	canCheck := player.CurrentBet == g.BetToCall
-
-	time.Sleep(g.CPUThinkTime())
-
-	// Post-Flop Logic
-	if g.Phase > PhasePreFlop {
-		if strength >= float64(poker.FullHouse) {
-			time.Sleep(g.CPUThinkTime())
-			return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
+		if strength >= player.Profile.RaiseHandThreshold {
+			return PlayerAction{Type: ActionRaise, Amount: g.minRaiseAmount() * 2}
 		}
-		if strength >= float64(poker.TwoPair) {
-			if canCheck {
-				time.Sleep(g.CPUThinkTime())
-				return PlayerAction{Type: ActionBet, Amount: g.Pot / 2}
-			}
-			return PlayerAction{Type: ActionCall}
-		}
-		if canCheck {
-			return PlayerAction{Type: ActionCheck}
-		}
-		return PlayerAction{Type: ActionFold}
-	}
-
-	// Pre-Flop Logic
-	if strength > 25 {
-		time.Sleep(g.CPUThinkTime())
-		return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 3}
-	}
-	if strength > 15 {
 		return PlayerAction{Type: ActionCall}
 	}
-	if !canCheck {
-		return PlayerAction{Type: ActionFold}
-	}
-	return PlayerAction{Type: ActionCheck}
-}
 
-// getHardAction implements the "Hard" AI: strategic with bluffing.
-func (g *Game) getHardAction(player *Player, r *rand.Rand) PlayerAction {
-	strength := g.handEvaluator(g, player) // Use the function field
-	canCheck := player.CurrentBet == g.BetToCall
+	// --- Post-Flop Logic ---
 
-	time.Sleep(g.CPUThinkTime())
-
-	// 20% chance to bluff with a weak hand post-flop
-	if g.Phase > PhasePreFlop && strength < float64(poker.OnePair) && r.Float64() < 0.20 {
-		time.Sleep(g.CPUThinkTime())
+	// 1. Bluffing Logic
+	isBluffing := r.Float64() < player.Profile.BluffingFrequency
+	if isBluffing && strength < float64(poker.OnePair) {
 		if canCheck {
 			return PlayerAction{Type: ActionBet, Amount: g.Pot / 2}
 		}
-		return PlayerAction{Type: ActionRaise, Amount: g.BetToCall * 2}
+		return PlayerAction{Type: ActionRaise, Amount: g.minRaiseAmount() * 2}
 	}
 
-	return g.getMediumAction(player)
+	// 2. Value Betting/Raising Logic (based on hand strength)
+	if strength >= float64(poker.TwoPair) { // Strong hands
+		if r.Float64() < player.Profile.AggressionFactor {
+			return PlayerAction{Type: ActionRaise, Amount: g.minRaiseAmount() * 2}
+		} else {
+			return PlayerAction{Type: ActionCall} // Slow play
+		}
+	} else if strength >= float64(poker.OnePair) { // Decent hands
+		if canCheck {
+			return PlayerAction{Type: ActionCheck}
+		}
+		return PlayerAction{Type: ActionCall}
+	} else { // Weak hands / draws
+		if canCheck {
+			return PlayerAction{Type: ActionCheck}
+		}
+		// Decide whether to fold or call based on pot odds (simplified)
+		potOdds := float64(g.BetToCall) / float64(g.Pot+g.BetToCall)
+		// Simplified equity - just bluffing frequency for now
+		if potOdds < player.Profile.BluffingFrequency*0.5 { // Call if pot odds are good
+			return PlayerAction{Type: ActionCall}
+		}
+		return PlayerAction{Type: ActionFold}
+	}
 }
 
-// evaluateHandStrength is now a standalone function, not a method, so it can be assigned to the handEvaluator field.
+// evaluateHandStrength calculates a score for a hand, used for AI decisions.
 func evaluateHandStrength(g *Game, player *Player) float64 {
-	// Post-Flop Evaluation (based on the current best hand)
+	// Post-Flop Evaluation (based on the current best hand rank)
 	if g.Phase > PhasePreFlop {
 		highHand, _ := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules)
 		return float64(highHand.Rank)
 	}
 
-	// Pre-Flop Evaluation (based on hole cards potential)
+	// Pre-Flop Evaluation (based on hole cards potential - Chen Formula inspired)
 	var score float64
 	hand := player.Hand
 
@@ -138,19 +145,29 @@ func evaluateHandStrength(g *Game, player *Player) float64 {
 		if hand[1].Rank == hand[2].Rank {
 			pairRank = hand[1].Rank
 		}
-		score += 15 + float64(pairRank)
+		score += 15 + float64(pairRank) // Major bonus for pairs
 	}
 
 	// 3. Suited bonus
 	if hand[0].Suit == hand[1].Suit || hand[0].Suit == hand[2].Suit || hand[1].Suit == hand[2].Suit {
-		score += 4
+		score += 2
 	}
 
-	// 4. Connector bonus
+	// 4. Connector bonus (gap calculation)
 	ranks := []poker.Rank{hand[0].Rank, hand[1].Rank, hand[2].Rank}
-	isConnector := (ranks[0] == ranks[1]+1) || (ranks[0] == ranks[2]+1) || (ranks[1] == ranks[2]+1)
-	if isConnector {
+	// Sort ranks in descending order for consistent gap calculation
+	sort.Sort(byRank(ranks))
+
+	// Check for connectors
+	if (ranks[0] == ranks[1]+1 && ranks[1] == ranks[2]+1) { // 3-card straight
 		score += 5
+	} else if (ranks[0] == ranks[1]+1) || (ranks[1] == ranks[2]+1) { // 2-card connector
+		score += 2
+	}
+
+	// Bonus for cards being higher than T and close together
+	if ranks[0] >= poker.Ten && (ranks[0]-ranks[2] < 5) {
+		score += 1
 	}
 
 	return score

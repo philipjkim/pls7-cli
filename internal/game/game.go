@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 	"pls7-cli/internal/config"
 	"pls7-cli/pkg/poker"
 	"time"
@@ -43,6 +44,7 @@ type Game struct {
 	DevMode       bool // Flag to indicate if the game is in development mode
 	ShowsOuts     bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
 	Rules         *config.GameRules
+	Rand          *rand.Rand // Centralized random number generator
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -62,13 +64,19 @@ func NewGame(
 	isDev bool,
 	showsOuts bool,
 ) *Game {
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // Create a single random source for the game
 	players := make([]*Player, len(playerNames))
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
 		players[i] = &Player{
-			Name:  name,
-			Chips: initialChips,
-			IsCPU: isCPU,
+			Name:     name,
+			Chips:    initialChips,
+			IsCPU:    isCPU,
+			Position: i,
+		}
+		// Assign a random profile to CPU players
+		if isCPU {
+			assignRandomProfile(players[i], r)
 		}
 	}
 
@@ -79,6 +87,7 @@ func NewGame(
 		DevMode:    isDev,
 		ShowsOuts:  showsOuts,
 		Rules:      rules,
+		Rand:       r,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength
@@ -115,4 +124,16 @@ func (g *Game) CanShowOuts(p *Player) bool {
 	availablePhase := g.Phase == PhaseFlop || g.Phase == PhaseTurn
 	optionEnabled := g.DevMode || g.ShowsOuts
 	return humanPlayerInPlay && optionEnabled && availablePhase
+}
+
+// minRaiseAmount calculates the minimum amount for a valid raise.
+func (g *Game) minRaiseAmount() int {
+	minRaiseIncrease := g.LastRaiseAmount
+	if minRaiseIncrease == 0 {
+		minRaiseIncrease = g.BetToCall
+	}
+	if g.BetToCall == 0 {
+		minRaiseIncrease = BigBlindAmt
+	}
+	return g.BetToCall + minRaiseIncrease
 }

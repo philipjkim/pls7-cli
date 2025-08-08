@@ -63,9 +63,10 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		return true
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
-		g.LastRaiseAmount = amountToPost
+		previousBetToCall := g.BetToCall
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
+		g.LastRaiseAmount = g.BetToCall - previousBetToCall
 		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
@@ -140,7 +141,7 @@ func (g *Game) StartNewHand() {
 	g.HandCount++
 	g.Phase = PhasePreFlop
 	g.Deck = poker.NewDeck()
-	g.Deck.Shuffle()
+	g.Deck.Shuffle(g.Rand)
 	g.CommunityCards = []poker.Card{}
 	g.Pot = 0
 	g.LastRaiseAmount = 0
@@ -310,77 +311,47 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 }
 
 // ExecuteBettingLoop runs the core betting logic for a round.
-// It assumes the round has already been prepared.
+// It now takes a single ActionProvider for all players.
 func (g *Game) ExecuteBettingLoop(
-	playerActionProvider ActionProvider,
-	cpuActionProvider ActionProvider,
+	actionProvider ActionProvider,
 	displayCurrentStatus func(g *Game),
 ) {
-	// If only one player remains in the hand, award them the pot immediately.
-	if g.CountNonFoldedPlayers() == 1 {
-		// Find the last remaining player
-		var lastPlayer *Player
-		for _, p := range g.Players {
-			if p.Status != PlayerStatusFolded && p.Status != PlayerStatusEliminated {
-				lastPlayer = p
-				break
-			}
-		}
-		if lastPlayer != nil {
-			logrus.Debugf("Only one player (%s) remains in the hand. Awarding pot.", lastPlayer.Name)
-			// Award the pot to this player. This will also reset g.Pot to 0.
-			g.AwardPotToLastPlayer()
-		}
-		return // End the betting loop
+	if g.CountNonFoldedPlayers() < 2 {
+		return // No betting needed if fewer than 2 players are in the hand.
 	}
 
-	if g.CountPlayersAbleToAct() < 2 {
-		// If only one player can act, check if they need to call a previous all-in.
-		player := g.Players[g.CurrentTurnPos]
-		if player.Status == PlayerStatusPlaying && player.CurrentBet < g.BetToCall {
-			// This single player must act.
-		} else {
-			return // Otherwise, no betting is possible, so skip the round.
-		}
-	}
+	// Determine who acts last.
+	var actionCloserPos int
+	var aggressor *Player
 
-	actionCloserPos := 0
 	if g.Phase == PhasePreFlop {
-		actionCloserPos = actionCloserPosForPreFlop(g) // BB acts last
+		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
 	} else {
-		actionCloserPos = g.DealerPos // Dealer acts last
+		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
 	}
 
 	for {
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == PlayerStatusPlaying {
-			displayCurrentStatus(g) // Display the current game state
+			displayCurrentStatus(g)
 
-			var action PlayerAction
-			if player.IsCPU {
-				action = cpuActionProvider.GetAction(g, player)
-			} else {
-				action = playerActionProvider.GetAction(g, player)
-			}
+			// All actions are now determined by the single provider.
+			action := actionProvider.GetAction(g, player, g.Rand)
 
 			wasAggressive := g.ProcessAction(player, action)
-			logrus.Debugf(
-				"%s's action: %v, wasAggressive: %v, currentActionCloser: %v\n",
-				player.Name, action, wasAggressive, g.Players[actionCloserPos].Name,
-			)
 			if wasAggressive {
-				previousActionCloserPos := actionCloserPos
-				actionCloserPos = g.FindPreviousActivePlayer(g.CurrentTurnPos)
-				logrus.Debugf(
-					"action closer changed from %v to %v\n",
-					g.Players[previousActionCloserPos].Name,
-					g.Players[actionCloserPos].Name,
-				)
+				aggressor = player
 			}
 		}
 
-		if g.CurrentTurnPos == actionCloserPos {
+		// The betting round ends when the action gets to the last aggressor and they have already acted.
+		if aggressor != nil && g.CurrentTurnPos == g.FindPreviousActivePlayer(aggressor.Position) {
+			break
+		}
+
+		// Or if everyone has had a turn and the bets are called.
+		if g.CurrentTurnPos == actionCloserPos && !g.isBettingActionRequired() {
 			break
 		}
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"pls7-cli/internal/cli"
 	"pls7-cli/internal/config"
@@ -25,15 +26,26 @@ var (
 // CLIActionProvider implements the ActionProvider interface using the CLI.
 type CLIActionProvider struct{}
 
-func (p *CLIActionProvider) GetAction(g *game.Game, _ *game.Player) game.PlayerAction {
+func (p *CLIActionProvider) GetAction(g *game.Game, _ *game.Player, r *rand.Rand) game.PlayerAction {
 	return cli.PromptForAction(g)
 }
 
 // CPUActionProvider implements the ActionProvider interface for CPU players.
 type CPUActionProvider struct{}
 
-func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player) game.PlayerAction {
-	return g.GetCPUAction(pl)
+func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player, r *rand.Rand) game.PlayerAction {
+	return g.GetCPUAction(pl, r)
+}
+
+// CombinedActionProvider decides which provider to use based on player type.
+type CombinedActionProvider struct{}
+
+// GetAction method for CombinedActionProvider
+func (p *CombinedActionProvider) GetAction(g *game.Game, player *game.Player, r *rand.Rand) game.PlayerAction {
+	if player.IsCPU {
+		return g.GetCPUAction(player, r)
+	}
+	return cli.PromptForAction(g)
 }
 
 func runGame(cmd *cobra.Command, args []string) {
@@ -46,53 +58,30 @@ func runGame(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("======== %s ========\n", rules.Name)
-	fmt.Printf("Starting the game with %s difficulty!\n", difficultyStr)
 
-	playerActionProvider := &CLIActionProvider{}
-	cpuActionProvider := &CPUActionProvider{}
-
-	var difficulty game.Difficulty
-	switch strings.ToLower(difficultyStr) {
-	case "easy":
-		difficulty = game.DifficultyEasy
-	case "hard":
-		difficulty = game.DifficultyHard
-	default:
-		difficulty = game.DifficultyMedium
-	}
+	// The concept of a single difficulty is removed in favor of varied AI profiles.
+	// We keep the flag for potential future use but it no longer directly sets a single difficulty.
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-	initialChips := game.BigBlindAmt * 300 // 300BB
-	g := game.NewGame(playerNames, initialChips, difficulty, rules, devMode, showOuts)
+	initialChips := game.BigBlindAmt * 300
+	g := game.NewGame(playerNames, initialChips, game.DifficultyMedium, rules, devMode, showOuts)
+
+	actionProvider := &CombinedActionProvider{}
 
 	// Main Game Loop (multi-hand)
 	for {
+
+
 		g.StartNewHand()
 
 		// Single Hand Loop
-		for {
+		for g.Phase != game.PhaseShowdown && g.Phase != game.PhaseHandOver {
 			if g.CountNonFoldedPlayers() <= 1 {
 				break
 			}
-
-			if g.CountPlayersAbleToAct() < 2 {
-				for g.Phase != game.PhaseShowdown {
-					g.Advance()
-				}
-			}
-
-			switch g.Phase {
-			case game.PhasePreFlop, game.PhaseFlop, game.PhaseTurn, game.PhaseRiver:
-				g.PrepareNewBettingRound()
-				g.ExecuteBettingLoop(playerActionProvider, cpuActionProvider, cli.DisplayGameState)
-				g.Advance()
-			case game.PhaseShowdown, game.PhaseHandOver:
-				break
-			}
-
-			if g.Phase == game.PhaseShowdown || g.Phase == game.PhaseHandOver {
-				break
-			}
+			g.PrepareNewBettingRound()
+			g.ExecuteBettingLoop(actionProvider, cli.DisplayGameState)
+			g.Advance()
 		}
 
 		// Conclude the hand
@@ -207,7 +196,7 @@ func showdownResults(g *game.Game) {
 var rootCmd = &cobra.Command{
 	Use:   "pls7",
 	Short: "Starts a new game of Poker",
-	Long:  `Starts a new game of Poker (PLS7, PLS, NLH) with 1 player and 5 CPUs.`,
+	Long:  `Starts a new game of Poker (PLS7, PLS, NLH) with 1 player and 5 CPUs.`, // Corrected escaping for backticks and quotes within the string literal. The original string was fine.
 	Run:   runGame,
 }
 
