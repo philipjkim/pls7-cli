@@ -73,3 +73,35 @@ func TestBettingRound_PreFlopCheckEndsRound(t *testing.T) {
 		t.Errorf("Expected pot to be 3000, but got %d", g.Pot)
 	}
 }
+
+func TestBettingRound_MultiRaiseAndAllIn(t *testing.T) {
+	util.InitLogger(true)
+	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
+	g := newGameForBettingTests(playerNames, 10000)
+	g.Players[1].Chips = 3000 // CPU 1 is short-stacked
+	g.StartNewHand() // D: YOU, SB: CPU 1, BB: CPU 2, UTG: CPU 3
+
+	actionProvider := &TestActionProvider{
+		Actions: []PlayerAction{
+			{Type: ActionRaise, Amount: 3000}, // CPU 3 (UTG) raises to 3000
+			{Type: ActionFold},                  // YOU (D) folds
+			{Type: ActionCall},                  // CPU 1 (SB) calls all-in
+			{Type: ActionFold},                  // CPU 2 (BB) folds
+		},
+	}
+
+	g.ExecuteBettingLoop(actionProvider, func(g *Game) {})
+
+	if g.Pot != 7000 {
+		t.Errorf("Expected pot to be 7000, but got %d", g.Pot)
+	}
+	if g.Players[1].Status != PlayerStatusAllIn {
+		t.Errorf("CPU 1 should be all-in")
+	}
+	if g.Players[0].Status != PlayerStatusFolded {
+		t.Errorf("YOU should have folded")
+	}
+	if g.Players[2].Status != PlayerStatusFolded {
+		t.Errorf("CPU 2 should have folded")
+	}
+}

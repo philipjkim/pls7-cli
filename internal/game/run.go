@@ -2,10 +2,8 @@ package game
 
 import (
 	"fmt"
-	"math/rand"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -65,8 +63,10 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		return true
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
+		previousBetToCall := g.BetToCall
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
+		g.LastRaiseAmount = g.BetToCall - previousBetToCall
 		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
@@ -141,7 +141,7 @@ func (g *Game) StartNewHand() {
 	g.HandCount++
 	g.Phase = PhasePreFlop
 	g.Deck = poker.NewDeck()
-	g.Deck.Shuffle()
+	g.Deck.Shuffle(g.Rand)
 	g.CommunityCards = []poker.Card{}
 	g.Pot = 0
 	g.LastRaiseAmount = 0
@@ -321,12 +321,12 @@ func (g *Game) ExecuteBettingLoop(
 	}
 
 	// Determine who acts last.
-	actionCloserPos := 0
+	var actionCloserPos int
+	var aggressor *Player
+
 	if g.Phase == PhasePreFlop {
-		actionCloserPos = actionCloserPosForPreFlop(g)
+		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
 	} else {
-		// Post-flop, the first player to act is after the dealer.
-		// The action closer is the player right before them (the dealer, or last active player).
 		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
 	}
 
@@ -337,13 +337,21 @@ func (g *Game) ExecuteBettingLoop(
 			displayCurrentStatus(g)
 
 			// All actions are now determined by the single provider.
-			r := rand.New(rand.NewSource(time.Now().UnixNano()))
-			action := actionProvider.GetAction(g, player, r)
+			action := actionProvider.GetAction(g, player, g.Rand)
 
-			g.ProcessAction(player, action)
+			wasAggressive := g.ProcessAction(player, action)
+			if wasAggressive {
+				aggressor = player
+			}
 		}
 
-		if g.CurrentTurnPos == actionCloserPos {
+		// The betting round ends when the action gets to the last aggressor and they have already acted.
+		if aggressor != nil && g.CurrentTurnPos == g.FindPreviousActivePlayer(aggressor.Position) {
+			break
+		}
+
+		// Or if everyone has had a turn and the bets are called.
+		if g.CurrentTurnPos == actionCloserPos && !g.isBettingActionRequired() {
 			break
 		}
 

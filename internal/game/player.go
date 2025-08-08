@@ -53,6 +53,7 @@ type Player struct {
 	IsCPU          bool
 	LastActionDesc string // Describes the last action taken in the round
 	Profile        *AIProfile
+	Position       int
 }
 
 // String makes PlayerStatus implement the Stringer interface.

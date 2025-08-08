@@ -3,7 +3,6 @@ package poker
 import (
 	"fmt"
 	"math/rand"
-	"time"
 )
 
 // Deck represents a deck of cards.
@@ -23,8 +22,7 @@ func NewDeck() *Deck {
 }
 
 // Shuffle randomizes the order of cards in the deck.
-func (d *Deck) Shuffle() {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+func (d *Deck) Shuffle(r *rand.Rand) {
 	r.Shuffle(len(d.Cards), func(i, j int) {
 		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
 	})

@@ -44,6 +44,7 @@ type Game struct {
 	DevMode       bool // Flag to indicate if the game is in development mode
 	ShowsOuts     bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
 	Rules         *config.GameRules
+	Rand          *rand.Rand // Centralized random number generator
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -63,17 +64,18 @@ func NewGame(
 	isDev bool,
 	showsOuts bool,
 ) *Game {
+	r := rand.New(rand.NewSource(time.Now().UnixNano())) // Create a single random source for the game
 	players := make([]*Player, len(playerNames))
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
 		players[i] = &Player{
-			Name:  name,
-			Chips: initialChips,
-			IsCPU: isCPU,
+			Name:     name,
+			Chips:    initialChips,
+			IsCPU:    isCPU,
+			Position: i,
 		}
 		// Assign a random profile to CPU players
 		if isCPU {
-			r := rand.New(rand.NewSource(time.Now().UnixNano()))
 			assignRandomProfile(players[i], r)
 		}
 	}
@@ -85,6 +87,7 @@ func NewGame(
 		DevMode:    isDev,
 		ShowsOuts:  showsOuts,
 		Rules:      rules,
+		Rand:       r,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength
