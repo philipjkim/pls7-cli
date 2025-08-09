@@ -17,40 +17,40 @@ func (a byRank) Less(i, j int) bool { return a[i] > a[j] } // Sort descending
 // Pre-defined AI profiles
 var aiProfiles = map[string]AIProfile{
 	"Tight-Aggressive": {
-		Name:                 "Tight-Aggressive",
-		PlayHandThreshold:    20, // Plays only top 20% of hands
-		RaiseHandThreshold:   25, // Raises with top 15% of hands
-		BluffingFrequency:    0.15, // Bluffs 15% of the time
-		AggressionFactor:     0.7, // High aggression
-		MinRaiseMultiplier:   2.5,
-		MaxRaiseMultiplier:   4.0,
+		Name:               "Tight-Aggressive",
+		PlayHandThreshold:  20,   // Plays only top 20% of hands
+		RaiseHandThreshold: 25,   // Raises with top 15% of hands
+		BluffingFrequency:  0.15, // Bluffs 15% of the time
+		AggressionFactor:   0.7,  // High aggression
+		MinRaiseMultiplier: 2.5,
+		MaxRaiseMultiplier: 4.0,
 	},
 	"Loose-Aggressive": {
-		Name:                 "Loose-Aggressive",
-		PlayHandThreshold:    10, // Plays top 40% of hands
-		RaiseHandThreshold:   20, // Raises with top 25% of hands
-		BluffingFrequency:    0.35, // Bluffs 35% of the time
-		AggressionFactor:     0.9,  // Very high aggression
-		MinRaiseMultiplier:   2.0,
-		MaxRaiseMultiplier:   3.5,
+		Name:               "Loose-Aggressive",
+		PlayHandThreshold:  10,   // Plays top 40% of hands
+		RaiseHandThreshold: 20,   // Raises with top 25% of hands
+		BluffingFrequency:  0.35, // Bluffs 35% of the time
+		AggressionFactor:   0.9,  // Very high aggression
+		MinRaiseMultiplier: 2.0,
+		MaxRaiseMultiplier: 3.5,
 	},
 	"Tight-Passive": {
-		Name:                 "Tight-Passive",
-		PlayHandThreshold:    22, // Plays only top 18% of hands
-		RaiseHandThreshold:   28, // Raises only with premium hands
-		BluffingFrequency:    0.05, // Rarely bluffs
-		AggressionFactor:     0.3,  // Low aggression, prefers calling
-		MinRaiseMultiplier:   2.0,
-		MaxRaiseMultiplier:   2.5,
+		Name:               "Tight-Passive",
+		PlayHandThreshold:  22,   // Plays only top 18% of hands
+		RaiseHandThreshold: 28,   // Raises only with premium hands
+		BluffingFrequency:  0.05, // Rarely bluffs
+		AggressionFactor:   0.3,  // Low aggression, prefers calling
+		MinRaiseMultiplier: 2.0,
+		MaxRaiseMultiplier: 2.5,
 	},
 	"Loose-Passive": {
-		Name:                 "Loose-Passive",
-		PlayHandThreshold:    8,    // Plays a wide range of hands
-		RaiseHandThreshold:   24,   // Rarely raises
-		BluffingFrequency:    0.10, // Bluffs occasionally with draws
-		AggressionFactor:     0.2,  // Very passive, calls a lot
-		MinRaiseMultiplier:   2.0,
-		MaxRaiseMultiplier:   3.0,
+		Name:               "Loose-Passive",
+		PlayHandThreshold:  8,    // Plays a wide range of hands
+		RaiseHandThreshold: 24,   // Rarely raises
+		BluffingFrequency:  0.10, // Bluffs occasionally with draws
+		AggressionFactor:   0.2,  // Very passive, calls a lot
+		MinRaiseMultiplier: 2.0,
+		MaxRaiseMultiplier: 3.0,
 	},
 }
 
@@ -140,34 +140,57 @@ func evaluateHandStrength(g *Game, player *Player) float64 {
 	}
 
 	// 2. Pair bonus
-	if hand[0].Rank == hand[1].Rank || hand[0].Rank == hand[2].Rank || hand[1].Rank == hand[2].Rank {
-		pairRank := hand[0].Rank
-		if hand[1].Rank == hand[2].Rank {
-			pairRank = hand[1].Rank
+	if len(hand) >= 3 {
+		if hand[0].Rank == hand[1].Rank || hand[0].Rank == hand[2].Rank || hand[1].Rank == hand[2].Rank {
+			pairRank := hand[0].Rank
+			if hand[1].Rank == hand[2].Rank {
+				pairRank = hand[1].Rank
+			}
+			score += 15 + float64(pairRank) // Major bonus for pairs
 		}
-		score += 15 + float64(pairRank) // Major bonus for pairs
+	} else if len(hand) == 2 {
+		if hand[0].Rank == hand[1].Rank {
+			score += 15 + float64(hand[0].Rank)
+		}
 	}
 
 	// 3. Suited bonus
-	if hand[0].Suit == hand[1].Suit || hand[0].Suit == hand[2].Suit || hand[1].Suit == hand[2].Suit {
-		score += 2
+	if len(hand) >= 3 {
+		if hand[0].Suit == hand[1].Suit || hand[0].Suit == hand[2].Suit || hand[1].Suit == hand[2].Suit {
+			score += 2
+		}
+	} else if len(hand) == 2 {
+		if hand[0].Suit == hand[1].Suit {
+			score += 2
+		}
 	}
 
 	// 4. Connector bonus (gap calculation)
-	ranks := []poker.Rank{hand[0].Rank, hand[1].Rank, hand[2].Rank}
-	// Sort ranks in descending order for consistent gap calculation
-	sort.Sort(byRank(ranks))
+	if len(hand) >= 3 {
+		ranks := []poker.Rank{hand[0].Rank, hand[1].Rank, hand[2].Rank}
+		// Sort ranks in descending order for consistent gap calculation
+		sort.Sort(byRank(ranks))
 
-	// Check for connectors
-	if (ranks[0] == ranks[1]+1 && ranks[1] == ranks[2]+1) { // 3-card straight
-		score += 5
-	} else if (ranks[0] == ranks[1]+1) || (ranks[1] == ranks[2]+1) { // 2-card connector
-		score += 2
-	}
+		// Check for connectors
+		if ranks[0] == ranks[1]+1 && ranks[1] == ranks[2]+1 { // 3-card straight
+			score += 5
+		} else if (ranks[0] == ranks[1]+1) || (ranks[1] == ranks[2]+1) { // 2-card connector
+			score += 2
+		}
 
-	// Bonus for cards being higher than T and close together
-	if ranks[0] >= poker.Ten && (ranks[0]-ranks[2] < 5) {
-		score += 1
+		// Bonus for cards being higher than T and close together
+		if ranks[0] >= poker.Ten && (ranks[0]-ranks[2] < 5) {
+			score += 1
+		}
+	} else if len(hand) == 2 {
+		ranks := []poker.Rank{hand[0].Rank, hand[1].Rank}
+		sort.Sort(byRank(ranks))
+		if ranks[0] == ranks[1]+1 { // connectors
+			score += 2
+		}
+		if ranks[0] >= poker.Ten && (int(ranks[0])-int(ranks[1]) < 5) {
+			score += 1
+		}
 	}
 
 	return score
