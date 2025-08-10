@@ -267,17 +267,14 @@ func (g *Game) dealCommunityCards(n int) {
 // isBettingActionRequired checks if there is any pending bet that needs to be called.
 // The round can be skipped if all non-folded players have the same amount bet.
 func (g *Game) isBettingActionRequired() bool {
-	// If less than two players can even act (have chips and haven't folded), no betting can occur.
-	if g.CountPlayersAbleToAct() < 2 {
-		// However, we must check if the single active player needs to call a previous all-in.
-		for _, p := range g.Players {
-			if p.Status == PlayerStatusPlaying && p.CurrentBet < g.BetToCall {
-				return true // This player must act.
-			}
+	// If there is at least one player who can act and still needs to match the bet, betting is required.
+	for _, p := range g.Players {
+		if p.Status == PlayerStatusPlaying && p.CurrentBet < g.BetToCall {
+			return true
 		}
-		return false
 	}
-	return true
+	// Otherwise, no further betting action is required for this round.
+	return false
 }
 
 // PrepareNewBettingRound resets player bets and determines the starting player for a new round.
