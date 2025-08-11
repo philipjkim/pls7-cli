@@ -54,15 +54,6 @@ var aiProfiles = map[string]AIProfile{
 	},
 }
 
-// Assigns a random AI profile to a CPU player.
-func assignRandomProfile(player *Player, r *rand.Rand) {
-	profiles := []AIProfile{}
-	for _, p := range aiProfiles {
-		profiles = append(profiles, p)
-	}
-	player.Profile = &profiles[r.Intn(len(profiles))]
-}
-
 // GetCPUAction now uses the player's profile to make decisions.
 func (g *Game) GetCPUAction(player *Player, r *rand.Rand) PlayerAction {
 

@@ -51,11 +51,11 @@ func TestDistributePot_SidePots(t *testing.T) {
 	util.InitLogger(true)
 
 	// Scenario: 3 players go all-in with different stack sizes.
-	// ShortStack (2000) has the best hand.
+	// YOU (2000) has the best hand.
 	// MidStack (5000) has the second best hand.
 	// BigStack (10000) has the worst hand.
 	// No low hands qualify.
-	playerNames := []string{"ShortStack", "MidStack", "BigStack"}
+	playerNames := []string{"YOU", "MidStack", "BigStack"}
 	rules := &config.GameRules{
 		HoleCards: config.HoleCardRules{
 			Count: 3,
@@ -92,7 +92,7 @@ func TestDistributePot_SidePots(t *testing.T) {
 
 	// --- Assertions ---
 	// Expected distribution:
-	// Main Pot (2000 * 3 = 6000) goes to ShortStack.
+	// Main Pot (2000 * 3 = 6000) goes to YOU.
 	// Side Pot 1 ((5000-2000) * 2 = 6000) goes to MidStack.
 	// Side Pot 2 ((10000-5000) * 1 = 5000) is returned to BigStack.
 
@@ -102,7 +102,7 @@ func TestDistributePot_SidePots(t *testing.T) {
 
 	// Check chip distribution
 	if g.Players[0].Chips != 6000 {
-		t.Errorf("Expected ShortStack to win 6000, but got %d", g.Players[0].Chips)
+		t.Errorf("Expected YOU to win 6000, but got %d", g.Players[0].Chips)
 	}
 	if g.Players[1].Chips != 6000 {
 		t.Errorf("Expected MidStack to win 6000, but got %d", g.Players[1].Chips)
@@ -117,9 +117,9 @@ func TestDistributePot_SidePots(t *testing.T) {
 func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 	util.InitLogger(true)
 
-	// Scenario: 3 players. Player C bets 1000 and folds. Player A and B go to showdown with 3000 each.
-	// The total pot should be 7000. Player A has the winning hand.
-	playerNames := []string{"Player A", "Player B", "Player C"}
+	// Scenario: 3 players. Player C bets 1000 and folds. YOU and B go to showdown with 3000 each.
+	// The total pot should be 7000. YOU has the winning hand.
+	playerNames := []string{"YOU", "Player B", "Player C"}
 	rules := &config.GameRules{
 		HoleCards: config.HoleCardRules{
 			Count: 5, // Does not matter for this test
@@ -151,7 +151,7 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 
 	// --- Assertions ---
 	// Expected distribution:
-	// Player A should win the entire pot of 7000.
+	// YOU should win the entire pot of 7000.
 	// The current buggy implementation will only distribute 6000.
 
 	if len(results) != 1 {
@@ -160,7 +160,7 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 
 	// Check chip distribution
 	if g.Players[0].Chips != 14000 { // Initial 7000 + Pot 7000
-		t.Errorf("Expected Player A to have 14000 chips, but got %d", g.Players[0].Chips)
+		t.Errorf("Expected YOU to have 14000 chips, but got %d", g.Players[0].Chips)
 	}
 	if g.Players[1].Chips != 7000 {
 		t.Errorf("Expected Player B to have 7000 chips, but got %d", g.Players[1].Chips)
