@@ -75,6 +75,16 @@ func NewGame(
 		os.Exit(1)
 	}
 
+	// playerNames: 1 human + n CPUs
+	// cpuProfilesToAssign: n CPU profiles based on difficulty
+	if len(playerNames)-1 != len(cpuProfilesToAssign) {
+		logrus.Errorf(
+			"Mismatch in number of CPU profiles and players. %d != %d - 1",
+			len(cpuProfilesToAssign), len(playerNames),
+		)
+		os.Exit(1)
+	}
+
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
 		players[i] = &Player{
@@ -84,15 +94,6 @@ func NewGame(
 			Position: i,
 		}
 
-		// playerNames: 1 human + n CPUs
-		// cpuProfilesToAssign: n CPU profiles based on difficulty
-		if len(playerNames) != len(cpuProfilesToAssign)+1 {
-			logrus.Errorf(
-				"Mismatch in number of CPU profiles and players. %d != %d - 1",
-				len(cpuProfilesToAssign), len(playerNames),
-			)
-			os.Exit(1)
-		}
 		if isCPU {
 			if profile, ok := aiProfiles[cpuProfilesToAssign[i-1]]; ok {
 				players[i].Profile = &profile
