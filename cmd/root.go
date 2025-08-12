@@ -64,13 +64,26 @@ func runGame(cmd *cobra.Command, args []string) {
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 	initialChips := game.BigBlindAmt * 300
-	g := game.NewGame(playerNames, initialChips, game.DifficultyMedium, rules, devMode, showOuts)
+
+	var difficulty game.Difficulty
+	switch difficultyStr {
+	case "easy":
+		difficulty = game.DifficultyEasy
+	case "medium":
+		difficulty = game.DifficultyMedium
+	case "hard":
+		difficulty = game.DifficultyHard
+	default:
+		logrus.Warnf("Invalid difficulty '%s' specified. Defaulting to medium.", difficultyStr)
+		difficulty = game.DifficultyMedium
+	}
+
+	g := game.NewGame(playerNames, initialChips, difficulty, rules, devMode, showOuts)
 
 	actionProvider := &CombinedActionProvider{}
 
 	// Main Game Loop (multi-hand)
 	for {
-
 
 		g.StartNewHand()
 

@@ -3,9 +3,12 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"pls7-cli/internal/config"
 	"pls7-cli/pkg/poker"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // GamePhase defines the current phase of the game.
@@ -66,6 +69,22 @@ func NewGame(
 ) *Game {
 	r := rand.New(rand.NewSource(time.Now().UnixNano())) // Create a single random source for the game
 	players := make([]*Player, len(playerNames))
+	cpuProfilesToAssign, err := cpuProfiles(difficulty, len(playerNames)-1)
+	if err != nil {
+		logrus.Errorf("Failed to get CPU profiles: %v", err)
+		os.Exit(1)
+	}
+
+	// playerNames: 1 human + n CPUs
+	// cpuProfilesToAssign: n CPU profiles based on difficulty
+	if len(playerNames)-1 != len(cpuProfilesToAssign) {
+		logrus.Errorf(
+			"Mismatch in number of CPU profiles and players. %d != %d - 1",
+			len(cpuProfilesToAssign), len(playerNames),
+		)
+		os.Exit(1)
+	}
+
 	for i, name := range playerNames {
 		isCPU := (name != "YOU")
 		players[i] = &Player{
@@ -74,9 +93,14 @@ func NewGame(
 			IsCPU:    isCPU,
 			Position: i,
 		}
-		// Assign a random profile to CPU players
+
 		if isCPU {
-			assignRandomProfile(players[i], r)
+			if profile, ok := aiProfiles[cpuProfilesToAssign[i-1]]; ok {
+				players[i].Profile = &profile
+			} else {
+				logrus.Errorf("Unknown AI profile: %s", cpuProfilesToAssign[i-1])
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -136,4 +160,33 @@ func (g *Game) minRaiseAmount() int {
 		minRaiseIncrease = BigBlindAmt
 	}
 	return g.BetToCall + minRaiseIncrease
+}
+
+// cpuProfiles returns a list of CPU profiles based on the game difficulty.
+// numCPUs should be between 1 and 5, inclusive.
+func cpuProfiles(difficulty Difficulty, numCPUs int) ([]string, error) {
+	if numCPUs < 1 || numCPUs > 5 {
+		return []string{}, fmt.Errorf("numCPUs must be between 1 and 5, got %d", numCPUs)
+	}
+
+	switch difficulty {
+	case DifficultyEasy:
+		return []string{
+			"Loose-Passive", "Loose-Passive",
+			"Loose-Passive", "Loose-Passive", "Loose-Passive",
+		}[:numCPUs], nil
+	case DifficultyMedium:
+		return []string{
+			"Loose-Passive", "Loose-Passive",
+			"Tight-Passive", "Tight-Passive", "Tight-Passive",
+		}[:numCPUs], nil
+	case DifficultyHard:
+		return []string{
+			"Tight-Passive",
+			"Loose-Aggressive", "Loose-Aggressive",
+			"Tight-Aggressive", "Tight-Aggressive",
+		}[:numCPUs], nil
+	default:
+		return []string{}, fmt.Errorf("unknown difficulty: %v", difficulty)
+	}
 }

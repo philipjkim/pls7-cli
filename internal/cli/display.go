@@ -86,7 +86,11 @@ func DisplayGameState(g *game.Game) {
 			p.Name, p.Status, util.FormatNumber(p.CurrentBet), p.LastActionDesc, actionInfo,
 		)
 
-		line := fmt.Sprintf("%s%-7s: Chips: %-9s%s %s %s", indicator, p.Name, util.FormatNumber(p.Chips), actionInfo, status, handInfo)
+		nameInfo := fmt.Sprintf("%s%s", indicator, p.Name)
+		if p.IsCPU && g.DevMode {
+			nameInfo = fmt.Sprintf("%s%s (%s)", indicator, p.Name, p.Profile.Name)
+		}
+		line := fmt.Sprintf("%-30s: Chips: %-9s%s %s %s", nameInfo, util.FormatNumber(p.Chips), actionInfo, status, handInfo)
 		output += fmt.Sprintln(strings.TrimSpace(line))
 
 		// Display outs for the player in dev mode
