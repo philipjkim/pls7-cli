@@ -1,7 +1,7 @@
 package game
 
 // Game settings constants
-const (
+var (
 	SmallBlindAmt = 500
 	BigBlindAmt   = 1000
 )
