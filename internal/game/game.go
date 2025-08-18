@@ -48,6 +48,7 @@ type Game struct {
 	ShowsOuts     bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
 	Rules         *config.GameRules
 	Rand          *rand.Rand // Centralized random number generator
+	BlindUpInterval int
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -66,6 +67,7 @@ func NewGame(
 	rules *config.GameRules,
 	isDev bool,
 	showsOuts bool,
+	blindUpInterval int,
 ) *Game {
 	r := rand.New(rand.NewSource(time.Now().UnixNano())) // Create a single random source for the game
 	players := make([]*Player, len(playerNames))
@@ -112,6 +114,7 @@ func NewGame(
 		ShowsOuts:  showsOuts,
 		Rules:      rules,
 		Rand:       r,
+		BlindUpInterval: blindUpInterval,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength

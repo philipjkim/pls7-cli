@@ -21,6 +21,7 @@ var (
 	difficultyStr string // To hold the flag value
 	devMode       bool   // To hold the --dev flag value
 	showOuts      bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
+	blindUpInterval int    // To hold the --blind-up flag value
 )
 
 // CLIActionProvider implements the ActionProvider interface using the CLI.
@@ -78,7 +79,7 @@ func runGame(cmd *cobra.Command, args []string) {
 		difficulty = game.DifficultyMedium
 	}
 
-	g := game.NewGame(playerNames, initialChips, difficulty, rules, devMode, showOuts)
+	g := game.NewGame(playerNames, initialChips, difficulty, rules, devMode, showOuts, blindUpInterval)
 
 	actionProvider := &CombinedActionProvider{}
 
@@ -227,4 +228,5 @@ func init() {
 	rootCmd.Flags().StringVarP(&difficultyStr, "difficulty", "d", "medium", "Set AI difficulty (easy, medium, hard)")
 	rootCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found (temporarily draws fixed good hole cards).")
+	rootCmd.Flags().IntVar(&blindUpInterval, "blind-up", 2, "Sets the number of rounds for blind up. 0 means no blind up.")
 }
