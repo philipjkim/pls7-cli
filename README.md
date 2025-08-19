@@ -79,6 +79,7 @@ Usage:
   pls7 [flags]
 
 Flags:
+      --blind-up int        Sets the number of rounds for blind up. 0 means no blind up. (default 2)
       --dev                 Enable development mode for verbose logging.
   -d, --difficulty string   Set AI difficulty (easy, medium, hard) (default "medium")
   -r, --rule string         Game rule to use (pls7, pls, nlh). (default "pls7")
