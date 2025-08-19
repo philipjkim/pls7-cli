@@ -19,7 +19,7 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 		},
 		LowHand: config.LowHandRules{Enabled: false},
 	}
-	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false)
+	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false, 0)
 
 	// Setup the game state
 	g.Pot = 1500
@@ -66,7 +66,7 @@ func TestDistributePot_SidePots(t *testing.T) {
 			CustomRankings:      []config.CustomHandRanking{},
 		},
 	}
-	g := NewGame(playerNames, 0, DifficultyMedium, rules, true, false)
+	g := NewGame(playerNames, 0, DifficultyMedium, rules, true, false, 0)
 
 	// Setup player states
 	g.Players[0].Chips = 0
@@ -126,7 +126,7 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 		},
 		LowHand: config.LowHandRules{Enabled: false},
 	}
-	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false)
+	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false, 0)
 
 	// Setup player states
 	g.Players[0].Chips = 7000
@@ -182,7 +182,7 @@ func TestDistributePot_ComplexSidePotAndAllIn(t *testing.T) {
 		LowHand:      config.LowHandRules{Enabled: true, MaxRank: 7},
 		HandRankings: config.HandRankingsRules{UseStandardRankings: true},
 	}
-	g := NewGame(playerNames, 0, DifficultyEasy, rules, true, false)
+	g := NewGame(playerNames, 0, DifficultyEasy, rules, true, false, 0)
 
 	// Player states based on the corrected scenario
 	// YOU: Calls the final all-in

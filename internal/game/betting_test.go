@@ -29,7 +29,7 @@ func newGameForBettingTests(playerNames []string, initialChips int) *Game {
 		HoleCards:    config.HoleCardRules{Count: 3},
 		LowHand:      config.LowHandRules{Enabled: false},
 	}
-	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false)
+	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
 }
 
 // newGameForBettingTestsWithRules creates a game with a specific rule abbreviation.
@@ -48,7 +48,7 @@ func newGameForBettingTestsWithRules(playerNames []string, initialChips int, rul
 		rules.HoleCards = config.HoleCardRules{Count: 3}
 		rules.LowHand = config.LowHandRules{Enabled: false}
 	}
-	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false)
+	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
 }
 
 // all players have matched the bet, isBettingActionRequired should return false.
