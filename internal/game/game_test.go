@@ -15,7 +15,7 @@ func TestHand_EliminatedPlayersAreSkipped(t *testing.T) {
 			Count: 3,
 		},
 	}
-	g := NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false)
+	g := NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
 
 	// Manually eliminate two players
 	g.Players[1].Chips = 0
