@@ -15,16 +15,7 @@ func (c *PotLimitCalculator) CalculateBettingLimits(g *Game) (minRaiseTotal int,
 	player := g.Players[g.CurrentTurnPos]
 	amountToCall := g.BetToCall - player.CurrentBet
 
-	// Minimum Raise calculation:
-	// A raise must be at least as large as the previous bet or raise.
-	minRaiseIncrease := g.LastRaiseAmount
-	if minRaiseIncrease == 0 { // If no previous raise, min raise is the size of the bet to call
-		minRaiseIncrease = g.BetToCall
-	}
-	if g.BetToCall == 0 { // If no bet, min bet is the Big Blind
-		minRaiseIncrease = BigBlindAmt
-	}
-	minRaiseTotal = g.BetToCall + minRaiseIncrease
+	minRaiseTotal = calculateMinRaiseTotal(g, player)
 
 	// Pot-Limit Raise calculation:
 	// The max raise is the size of the pot after the player has called.
@@ -61,15 +52,7 @@ type NoLimitCalculator struct{}
 func (c *NoLimitCalculator) CalculateBettingLimits(g *Game) (minRaiseTotal int, maxRaiseTotal int) {
 	player := g.Players[g.CurrentTurnPos]
 
-	// Minimum Raise calculation (same as pot-limit)
-	minRaiseIncrease := g.LastRaiseAmount
-	if minRaiseIncrease == 0 {
-		minRaiseIncrease = g.BetToCall
-	}
-	if g.BetToCall == 0 {
-		minRaiseIncrease = BigBlindAmt
-	}
-	minRaiseTotal = g.BetToCall + minRaiseIncrease
+	minRaiseTotal = calculateMinRaiseTotal(g, player)
 
 	// Maximum Raise calculation (player's entire stack)
 	maxRaiseTotal = player.Chips + player.CurrentBet
@@ -81,4 +64,17 @@ func (c *NoLimitCalculator) CalculateBettingLimits(g *Game) (minRaiseTotal int, 
 	}
 
 	return minRaiseTotal, maxRaiseTotal
+}
+
+// calculateMinRaiseTotal calculates the minimum raise total based on the game's state.
+func calculateMinRaiseTotal(g *Game, player *Player) int {
+	// Minimum Raise calculation:
+	minRaiseIncrease := g.LastRaiseAmount
+	if minRaiseIncrease == 0 { // If no previous raise, min raise is the size of the bet to call
+		minRaiseIncrease = g.BetToCall
+	}
+	if g.BetToCall == 0 { // If no bet, min bet is the Big Blind
+		minRaiseIncrease = BigBlindAmt
+	}
+	return g.BetToCall + minRaiseIncrease
 }
