@@ -13,11 +13,9 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	// Scenario: 4 players. CPU 1 is eliminated. YOU and CPU 3 fold.
 	// The winner must be CPU 2, not the eliminated CPU 1.
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
-	rules := &config.GameRules{
-		HoleCards: config.HoleCardRules{
-			Count: 3,
-		},
-		LowHand: config.LowHandRules{Enabled: false},
+	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
+	if err != nil {
+		t.Fatalf("Failed to load game rules: %v", err)
 	}
 	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false, 0)
 
@@ -56,15 +54,9 @@ func TestDistributePot_SidePots(t *testing.T) {
 	// BigStack (10000) has the worst hand.
 	// No low hands qualify.
 	playerNames := []string{"YOU", "MidStack", "BigStack"}
-	rules := &config.GameRules{
-		HoleCards: config.HoleCardRules{
-			Count: 3,
-		},
-		LowHand: config.LowHandRules{Enabled: false},
-		HandRankings: config.HandRankingsRules{
-			UseStandardRankings: true,
-			CustomRankings:      []config.CustomHandRanking{},
-		},
+	rules, err := config.LoadGameRulesFromFile("../../rules/pls.yml")
+	if err != nil {
+		t.Fatalf("Failed to load game rules: %v", err)
 	}
 	g := NewGame(playerNames, 0, DifficultyMedium, rules, true, false, 0)
 
@@ -120,11 +112,9 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 	// Scenario: 3 players. Player C bets 1000 and folds. YOU and B go to showdown with 3000 each.
 	// The total pot should be 7000. YOU has the winning hand.
 	playerNames := []string{"YOU", "Player B", "Player C"}
-	rules := &config.GameRules{
-		HoleCards: config.HoleCardRules{
-			Count: 5, // Does not matter for this test
-		},
-		LowHand: config.LowHandRules{Enabled: false},
+	rules, err := config.LoadGameRulesFromFile("../../rules/pls.yml")
+	if err != nil {
+		t.Fatalf("Failed to load game rules: %v", err)
 	}
 	g := NewGame(playerNames, 10000, DifficultyMedium, rules, true, false, 0)
 
@@ -177,10 +167,9 @@ func TestDistributePot_ComplexSidePotAndAllIn(t *testing.T) {
 
 	// Scenario setup based on the bug log
 	playerNames := []string{"YOU", "CPU 1", "CPU 4"}
-	rules := &config.GameRules{
-		HoleCards:    config.HoleCardRules{Count: 3},
-		LowHand:      config.LowHandRules{Enabled: true, MaxRank: 7},
-		HandRankings: config.HandRankingsRules{UseStandardRankings: true},
+	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
+	if err != nil {
+		t.Fatalf("Failed to load game rules: %v", err)
 	}
 	g := NewGame(playerNames, 0, DifficultyEasy, rules, true, false, 0)
 
