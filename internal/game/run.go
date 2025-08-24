@@ -141,7 +141,7 @@ func (g *Game) StartNewHand() {
 	g.HandCount++
 
 	// Update blinds based on the interval
-	if g.BlindUpInterval > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
+	if g.BlindUpInterval > 0 && len(g.Players) > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
 		SmallBlindAmt *= 2
 		BigBlindAmt *= 2
 		fmt.Printf("\n*** Blinds are now %s/%s ***\n", util.FormatNumber(SmallBlindAmt), util.FormatNumber(BigBlindAmt))
