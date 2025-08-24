@@ -2,6 +2,7 @@ package game
 
 import (
 	"pls7-cli/internal/config"
+	"reflect"
 	"testing"
 )
 
@@ -9,11 +10,9 @@ import (
 func TestHand_EliminatedPlayersAreSkipped(t *testing.T) {
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
 	initialChips := 100000
-	rules := &config.GameRules{
-		Abbreviation: "PLS7",
-		HoleCards: config.HoleCardRules{
-			Count: 3,
-		},
+	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
+	if err != nil {
+		t.Fatalf("Failed to load game rules: %v", err)
 	}
 	g := NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
 
@@ -41,5 +40,45 @@ func TestHand_EliminatedPlayersAreSkipped(t *testing.T) {
 	}
 	if len(g.Players[2].Hand) != 3 {
 		t.Errorf("Expected active player CPU 2 to have 3 cards, but got %d", len(g.Players[2].Hand))
+	}
+}
+
+func TestNewGame_AssignsCorrectCalculator(t *testing.T) {
+	testCases := []struct {
+		name               string
+		ruleStr            string
+		expectedCalculator interface{}
+	}{
+		{
+			name:               "Pot Limit Game",
+			ruleStr:            "pls7",
+			expectedCalculator: &PotLimitCalculator{},
+		},
+		{
+			name:               "No Limit Game",
+			ruleStr:            "nlh",
+			expectedCalculator: &NoLimitCalculator{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rules, err := config.LoadGameRulesFromFile("../../rules/" + tc.ruleStr + ".yml")
+			if err != nil {
+				t.Fatalf("Failed to load game rules: %v", err)
+			}
+			g := NewGame([]string{"YOU", "CPU1"}, 1000, DifficultyEasy, rules, false, false, 0)
+
+			if g.BettingCalculator == nil {
+				t.Fatal("g.BettingCalculator is nil")
+			}
+
+			actualType := reflect.TypeOf(g.BettingCalculator)
+			expectedType := reflect.TypeOf(tc.expectedCalculator)
+
+			if actualType != expectedType {
+				t.Errorf("Expected calculator of type %v, but got %v", expectedType, actualType)
+			}
+		})
 	}
 }

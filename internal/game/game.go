@@ -43,12 +43,13 @@ type Game struct {
 	HandCount       int
 	Difficulty      Difficulty // To store the selected AI difficulty
 	// handEvaluator is a function field to allow mocking in tests.
-	handEvaluator func(g *Game, player *Player) float64
-	DevMode       bool // Flag to indicate if the game is in development mode
-	ShowsOuts     bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
-	Rules         *config.GameRules
-	Rand          *rand.Rand // Centralized random number generator
-	BlindUpInterval int
+	handEvaluator     func(g *Game, player *Player) float64
+	DevMode           bool // Flag to indicate if the game is in development mode
+	ShowsOuts         bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
+	Rules             *config.GameRules
+	Rand              *rand.Rand // Centralized random number generator
+	BlindUpInterval   int
+	BettingCalculator BettingLimitCalculator
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -106,15 +107,26 @@ func NewGame(
 		}
 	}
 
+	var calculator BettingLimitCalculator
+	switch rules.BettingLimit {
+	case "pot_limit":
+		calculator = &PotLimitCalculator{}
+	case "no_limit":
+		calculator = &NoLimitCalculator{}
+	default:
+		logrus.Fatalf("Unknown betting limit type: %s", rules.BettingLimit)
+	}
+
 	g := &Game{
-		Players:    players,
-		DealerPos:  -1,
-		Difficulty: difficulty,
-		DevMode:    isDev,
-		ShowsOuts:  showsOuts,
-		Rules:      rules,
-		Rand:       r,
-		BlindUpInterval: blindUpInterval,
+		Players:           players,
+		DealerPos:         -1,
+		Difficulty:        difficulty,
+		DevMode:           isDev,
+		ShowsOuts:         showsOuts,
+		Rules:             rules,
+		Rand:              r,
+		BlindUpInterval:   blindUpInterval,
+		BettingCalculator: calculator,
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength
@@ -143,6 +155,11 @@ func (g *Game) String() string {
 		g.HandCount, g.Phase, g.Difficulty, g.Pot, g.BetToCall, g.LastRaiseAmount,
 		dealerName, turnPlayerName, g.CommunityCards, g.Players,
 	)
+}
+
+// CalculateBettingLimits delegates the calculation to the game's betting calculator.
+func (g *Game) CalculateBettingLimits() (minRaiseTotal int, maxRaiseTotal int) {
+	return g.BettingCalculator.CalculateBettingLimits(g)
 }
 
 // CanShowOuts checks if the outs can be shown for a player based on the game state.

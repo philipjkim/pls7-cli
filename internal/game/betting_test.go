@@ -28,6 +28,7 @@ func newGameForBettingTests(playerNames []string, initialChips int) *Game {
 		Abbreviation: "PLS",
 		HoleCards:    config.HoleCardRules{Count: 3},
 		LowHand:      config.LowHandRules{Enabled: false},
+		BettingLimit: "pot_limit",
 	}
 	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
 }
@@ -41,12 +42,15 @@ func newGameForBettingTestsWithRules(playerNames []string, initialChips int, rul
 	case "NLH":
 		rules.HoleCards = config.HoleCardRules{Count: 2}
 		rules.LowHand = config.LowHandRules{Enabled: false}
-	case "PLS", "PLS7":
+		rules.BettingLimit = "no_limit"
+	case "PLS7":
 		rules.HoleCards = config.HoleCardRules{Count: 3}
 		rules.LowHand = config.LowHandRules{Enabled: ruleAbbr == "PLS7", MaxRank: 7}
-	default:
+		rules.BettingLimit = "pot_limit"
+	default: // PLS
 		rules.HoleCards = config.HoleCardRules{Count: 3}
 		rules.LowHand = config.LowHandRules{Enabled: false}
+		rules.BettingLimit = "pot_limit"
 	}
 	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
 }

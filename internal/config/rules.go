@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	os "os"
+
+	"gopkg.in/yaml.v3"
 )
 
 // HoleCardRules defines the rules for the player's private cards.
