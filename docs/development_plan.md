@@ -184,11 +184,11 @@
                 - [x] `game.CurrentPlayer() *Player` 메소드 추가
                 - [x] `game.AdvanceTurn()` 메소드 및 테스트 케이스 추가
             *   **14-3-3. 기존 루프 로직 제거**
-                - [ ] `game.RunHand()` 메소드 제거
-                - [ ] `game.ExecuteBettingLoop()` 메소드 제거 (또는 내부 로직 비우기)
+                - [x] `game.RunHand()` 메소드 제거
+                - [x] `game.ExecuteBettingLoop()` 메소드 제거 (또는 내부 로직 비우기)
             *   **14-3-4. `cmd/root.go`에 새로운 턴 기반 루프 구현**
-                - [ ] `cmd/root.go`의 `runGame` 함수에 새로운 베팅 루프 로직 작성
-                - [ ] CPU 턴 딜레이(`time.Sleep`) 로직 추가
+                - [x] `cmd/root.go`의 `runGame` 함수에 새로운 베팅 루프 로직 작성
+                - [x] CPU 턴 딜레이(`time.Sleep`) 로직 추가
     *   **14-4. `util` 패키지 정리**
         - [ ] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
 * **완료여부**: ⬜ (진행 예정)
