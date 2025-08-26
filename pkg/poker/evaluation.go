@@ -2,7 +2,6 @@ package poker
 
 import (
 	"fmt"
-	"pls7-cli/internal/util"
 	"sort"
 
 	"github.com/sirupsen/logrus"
@@ -121,7 +120,7 @@ func (hr *HandResult) CardsString() string {
 		cards[i] = c.Rank.String()
 		cards[i] += c.Suit.String() + " "
 	}
-	return util.JoinStrings(cards)
+	return JoinStrings(cards)
 }
 
 // handAnalysis is a helper struct to hold counts of ranks and suits.

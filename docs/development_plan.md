@@ -168,9 +168,9 @@
 *   **목표**: `poker-engine`과 `poker-cli` 분리를 위한 사전 작업으로, 패키지 간의 역할과 책임을 명확히 하고 잘못된 의존성을 바로잡는다.
 * **주요 작업**:
     *   **14-1. `pkg/poker` 의존성 문제 해결**
-        - [ ] `GameRules` 구조체를 `internal/config` -> `pkg/poker` 로 이동
-        - [ ] `internal/config`가 `pkg/poker`를 import 하도록 수정
-        - [ ] `JoinStrings` 유틸리티 함수를 `internal/util` -> `pkg/poker` 로 이동
+        - [x] `GameRules` 구조체를 `internal/config` -> `pkg/poker` 로 이동
+        - [x] `internal/config`가 `pkg/poker`를 import 하도록 수정
+        - [x] `JoinStrings` 유틸리티 함수를 `internal/util` -> `pkg/poker` 로 이동
     *   **14-2. `game`과 `cli`의 책임 분리**
         - [ ] `internal/game` 패키지 내의 모든 `fmt.Print*` 호출 제거
         - [ ] `ExecuteBettingLoop`에서 `displayCurrentStatus` 콜백 제거
