@@ -1,7 +1,6 @@
 package poker
 
 import (
-	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"testing"
 )
@@ -49,14 +48,14 @@ func TestPLS7HighHands(t *testing.T) {
 		{name: "3 Card Play (Full House)", cardString: "As Ac Ah Ks Kc 2d 3c 4d", expectedRank: FullHouse},
 	}
 
-	gameRules := &config.GameRules{
-		LowHand: config.LowHandRules{
+	gameRules := &GameRules{
+		LowHand: LowHandRules{
 			Enabled: false, // Low hands are not enabled for these tests
 			MaxRank: 0,     // No low hand rules apply
 		},
-		HandRankings: config.HandRankingsRules{
+		HandRankings: HandRankingsRules{
 			UseStandardRankings: false,
-			CustomRankings: []config.CustomHandRanking{
+			CustomRankings: []CustomHandRanking{
 				{Name: "skip_straight_flush", InsertAfterRank: "royal_flush"},
 				{Name: "skip_straight", InsertAfterRank: "flush"},
 			},
@@ -97,8 +96,8 @@ func TestPLS7LowHands(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			pool := CardsFromStrings(tc.cardString)
-			gameRules := &config.GameRules{
-				LowHand: config.LowHandRules{
+			gameRules := &GameRules{
+				LowHand: LowHandRules{
 					Enabled: tc.lowGameEnabled,
 					MaxRank: 7, // Assuming 7-or-better for low hands
 				},
@@ -251,8 +250,8 @@ func TestPLS7LowHandComparison(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pool1 := CardsFromStrings(tc.hand1Str)
 			pool2 := CardsFromStrings(tc.hand2Str)
-			gameRules := &config.GameRules{
-				LowHand: config.LowHandRules{
+			gameRules := &GameRules{
+				LowHand: LowHandRules{
 					Enabled: true,
 					MaxRank: 7,
 				},
@@ -280,14 +279,14 @@ func TestHandRankOrder(t *testing.T) {
 
 	testCases := []struct {
 		name         string
-		gameRules    *config.HandRankingsRules
+		gameRules    *HandRankingsRules
 		expectedRank []HandRank
 	}{
 		{
 			name: "Standard Hand Rankings",
-			gameRules: &config.HandRankingsRules{
+			gameRules: &HandRankingsRules{
 				UseStandardRankings: true,
-				CustomRankings:      []config.CustomHandRanking{},
+				CustomRankings:      []CustomHandRanking{},
 			},
 			expectedRank: []HandRank{
 				RoyalFlush,
@@ -304,9 +303,9 @@ func TestHandRankOrder(t *testing.T) {
 		},
 		{
 			name: "Custom Hand Rankings with Skip Straight Flush and Skip Straight",
-			gameRules: &config.HandRankingsRules{
+			gameRules: &HandRankingsRules{
 				UseStandardRankings: false,
-				CustomRankings: []config.CustomHandRanking{
+				CustomRankings: []CustomHandRanking{
 					{Name: "skip_straight_flush", InsertAfterRank: "royal_flush"},
 					{Name: "skip_straight", InsertAfterRank: "flush"},
 				},

@@ -2,7 +2,6 @@ package poker
 
 import (
 	"fmt"
-	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"testing"
 )
@@ -156,8 +155,8 @@ func TestNLHCalculateOuts(t *testing.T) {
 		},
 	}
 
-	gameRules := &config.GameRules{
-		LowHand: config.LowHandRules{Enabled: false, MaxRank: 0},
+	gameRules := &GameRules{
+		LowHand: LowHandRules{Enabled: false, MaxRank: 0},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

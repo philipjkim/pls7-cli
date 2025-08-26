@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"pls7-cli/internal/config"
 	"pls7-cli/pkg/poker"
 	"time"
 
@@ -46,7 +45,7 @@ type Game struct {
 	handEvaluator     func(g *Game, player *Player) float64
 	DevMode           bool // Flag to indicate if the game is in development mode
 	ShowsOuts         bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
-	Rules             *config.GameRules
+	Rules             *poker.GameRules
 	Rand              *rand.Rand // Centralized random number generator
 	BlindUpInterval   int
 	BettingCalculator BettingLimitCalculator
@@ -65,7 +64,7 @@ func NewGame(
 	playerNames []string,
 	initialChips int,
 	difficulty Difficulty,
-	rules *config.GameRules,
+	rules *poker.GameRules,
 	isDev bool,
 	showsOuts bool,
 	blindUpInterval int,

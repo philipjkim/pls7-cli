@@ -2,8 +2,8 @@ package game
 
 import (
 	"math/rand"
-	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
+	"pls7-cli/pkg/poker"
 	"testing"
 	"time"
 )
@@ -14,7 +14,7 @@ type TestActionProvider struct {
 	index   int
 }
 
-func (p *TestActionProvider) GetAction(g *Game, player *Player, r *rand.Rand) PlayerAction {
+func (p *TestActionProvider) GetAction(_ *Game, _ *Player, _ *rand.Rand) PlayerAction {
 	if p.index < len(p.Actions) {
 		action := p.Actions[p.index]
 		p.index++
@@ -24,10 +24,10 @@ func (p *TestActionProvider) GetAction(g *Game, player *Player, r *rand.Rand) Pl
 }
 
 func newGameForBettingTests(playerNames []string, initialChips int) *Game {
-	rules := &config.GameRules{
+	rules := &poker.GameRules{
 		Abbreviation: "PLS",
-		HoleCards:    config.HoleCardRules{Count: 3},
-		LowHand:      config.LowHandRules{Enabled: false},
+		HoleCards:    poker.HoleCardRules{Count: 3},
+		LowHand:      poker.LowHandRules{Enabled: false},
 		BettingLimit: "pot_limit",
 	}
 	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
@@ -35,21 +35,21 @@ func newGameForBettingTests(playerNames []string, initialChips int) *Game {
 
 // newGameForBettingTestsWithRules creates a game with a specific rule abbreviation.
 func newGameForBettingTestsWithRules(playerNames []string, initialChips int, ruleAbbr string) *Game {
-	rules := &config.GameRules{
+	rules := &poker.GameRules{
 		Abbreviation: ruleAbbr,
 	}
 	switch ruleAbbr {
 	case "NLH":
-		rules.HoleCards = config.HoleCardRules{Count: 2}
-		rules.LowHand = config.LowHandRules{Enabled: false}
+		rules.HoleCards = poker.HoleCardRules{Count: 2}
+		rules.LowHand = poker.LowHandRules{Enabled: false}
 		rules.BettingLimit = "no_limit"
 	case "PLS7":
-		rules.HoleCards = config.HoleCardRules{Count: 3}
-		rules.LowHand = config.LowHandRules{Enabled: ruleAbbr == "PLS7", MaxRank: 7}
+		rules.HoleCards = poker.HoleCardRules{Count: 3}
+		rules.LowHand = poker.LowHandRules{Enabled: ruleAbbr == "PLS7", MaxRank: 7}
 		rules.BettingLimit = "pot_limit"
 	default: // PLS
-		rules.HoleCards = config.HoleCardRules{Count: 3}
-		rules.LowHand = config.LowHandRules{Enabled: false}
+		rules.HoleCards = poker.HoleCardRules{Count: 3}
+		rules.LowHand = poker.LowHandRules{Enabled: false}
 		rules.BettingLimit = "pot_limit"
 	}
 	return NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)

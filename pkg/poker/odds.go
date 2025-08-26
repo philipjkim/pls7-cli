@@ -2,7 +2,6 @@ package poker
 
 import (
 	"github.com/sirupsen/logrus"
-	"pls7-cli/internal/config"
 )
 
 // OutsInfo stores the detailed results of an outs calculation.
@@ -20,7 +19,7 @@ type OutsInfo struct {
 // - Full House Draw: trips or two pair made (only if trips or two pair made by pocket pair)
 // - Quad Draw: 3 cards of the same rank (only if trips made by pocket pair)
 // - Skip Straight Draw: 4 cards in skip-sequence (including gutshot, e.g. 2-4-8-T, 3-5-7-9)
-func CalculateOuts(holeCards []Card, communityCards []Card, gameRules *config.GameRules) (bool, *OutsInfo) {
+func CalculateOuts(holeCards []Card, communityCards []Card, gameRules *GameRules) (bool, *OutsInfo) {
 	currentHand, _ := EvaluateHand(holeCards, communityCards, gameRules)
 	if currentHand == nil {
 		return false, &OutsInfo{
@@ -412,7 +411,7 @@ func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Car
 	// Check if we already have a full house made
 	handRank, _ := EvaluateHand(
 		holeCards, communityCards,
-		&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+		&GameRules{LowHand: LowHandRules{Enabled: false, MaxRank: 0}},
 	)
 	if handRank.Rank == FullHouse {
 		logrus.Debugf("hasFullHouseDraw: Already have a full house: %v, holeCards: %v, communityCards: %v",
@@ -488,7 +487,7 @@ func hasFullHouseDraw(holeCards []Card, communityCards []Card, seenCards map[Car
 func hasFourOfAKindDraw(holeCards []Card, communityCards []Card, seenCards map[Card]bool) (bool, []Card) {
 	handRank, _ := EvaluateHand(
 		holeCards, communityCards,
-		&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+		&GameRules{LowHand: LowHandRules{Enabled: false, MaxRank: 0}},
 	)
 	if handRank.Rank != ThreeOfAKind {
 		logrus.Debugf("hasFourOfAKindDraw: Current hand is not trips, cannot draw four of a kind: %v", handRank)
@@ -589,7 +588,7 @@ func CalculateEquityWithCards(ourHand, communityCards []Card) float64 {
 	// Note that outs are calculated without low hands draw.
 	hasOuts, outsInfo := CalculateOuts(
 		ourHand, communityCards,
-		&config.GameRules{LowHand: config.LowHandRules{Enabled: false, MaxRank: 0}},
+		&GameRules{LowHand: LowHandRules{Enabled: false, MaxRank: 0}},
 	)
 	if !hasOuts {
 		return 0
