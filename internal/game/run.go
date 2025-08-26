@@ -32,15 +32,15 @@ var playerHoleCardsForDebug = map[string]map[string]string{
 
 // ProcessAction updates the game state based on a player's action.
 // It returns true if an aggressive action (bet, raise) was taken.
-func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool) {
+func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool, eventMessage string) {
 	switch action.Type {
 	case ActionFold:
 		player.Status = PlayerStatusFolded
 		player.LastActionDesc = "Fold"
-		fmt.Printf("%s folds.\n", player.Name)
+		eventMessage = fmt.Sprintf("%s folds.", player.Name)
 	case ActionCheck:
 		player.LastActionDesc = "Check"
-		fmt.Printf("%s checks.\n", player.Name)
+		eventMessage = fmt.Sprintf("%s checks.", player.Name)
 	case ActionCall:
 		amountToCall := g.BetToCall - player.CurrentBet
 		g.postBet(player, amountToCall)
@@ -49,7 +49,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s calls %s.\n", player.Name, util.FormatNumber(amountToCall))
+		eventMessage = fmt.Sprintf("%s calls %s.", player.Name, util.FormatNumber(amountToCall))
 	case ActionBet:
 		g.LastRaiseAmount = action.Amount
 		g.postBet(player, action.Amount)
@@ -59,8 +59,8 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s bets %s.\n", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
-		return true
+		eventMessage = fmt.Sprintf("%s bets %s.", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		return true, eventMessage
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
 		previousBetToCall := g.BetToCall
@@ -72,19 +72,20 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s raises to %s.\n", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
-		return true
+		eventMessage = fmt.Sprintf("%s raises to %s.", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		return true, eventMessage
 	}
-	return false
+	return false, eventMessage
 }
 
 // CleanupHand checks for eliminated players and prepares for the next hand.
-func (g *Game) CleanupHand() {
-	fmt.Println("\n--- End of Hand ---")
+func (g *Game) CleanupHand() []string {
+	var events []string
+	events = append(events, "\n--- End of Hand ---")
 	for _, p := range g.Players {
 		if p.Chips == 0 && p.Status != PlayerStatusEliminated {
 			p.Status = PlayerStatusEliminated
-			fmt.Printf("%s has been eliminated!\n", p.Name)
+			events = append(events, fmt.Sprintf("%s has been eliminated!", p.Name))
 		}
 	}
 
@@ -92,12 +93,12 @@ func (g *Game) CleanupHand() {
 	if g.CountRemainingPlayers() <= 1 {
 		for _, p := range g.Players {
 			if p.Status != PlayerStatusEliminated {
-				fmt.Printf("%s wins the game!\n", p.Name)
+				events = append(events, fmt.Sprintf("%s wins the game!", p.Name))
 				break
 			}
 		}
-		return
 	}
+	return events
 }
 
 // CountRemainingPlayers counts players who have not been eliminated from the entire game.
@@ -137,14 +138,14 @@ func (g *Game) CountPlayersAbleToAct() int {
 }
 
 // StartNewHand now resets the LastActionDesc field.
-func (g *Game) StartNewHand() {
+func (g *Game) StartNewHand() (eventMessage string) {
 	g.HandCount++
 
 	// Update blinds based on the interval
 	if g.BlindUpInterval > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
 		SmallBlindAmt *= 2
 		BigBlindAmt *= 2
-		fmt.Printf("\n*** Blinds are now %s/%s ***\n", util.FormatNumber(SmallBlindAmt), util.FormatNumber(BigBlindAmt))
+		eventMessage = fmt.Sprintf("\n*** Blinds are now %s/%s ***\n", util.FormatNumber(SmallBlindAmt), util.FormatNumber(BigBlindAmt))
 	}
 
 	g.Phase = PhasePreFlop
@@ -218,6 +219,8 @@ func (g *Game) StartNewHand() {
 			}
 		}
 	}
+
+	return eventMessage
 }
 
 // FindNextActivePlayer finds the index of the next player who is not eliminated.
@@ -317,13 +320,12 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 
 // ExecuteBettingLoop runs the core betting logic for a round.
 // It now takes a single ActionProvider for all players.
-func (g *Game) ExecuteBettingLoop(
-	actionProvider ActionProvider,
-	displayCurrentStatus func(g *Game),
-) {
+func (g *Game) ExecuteBettingLoop(actionProvider ActionProvider) []string {
 	if g.CountNonFoldedPlayers() < 2 {
-		return // No betting needed if fewer than 2 players are in the hand.
+		return nil // No betting needed if fewer than 2 players are in the hand.
 	}
+
+	var eventMessages []string
 
 	// Determine who acts last.
 	var actionCloserPos int
@@ -339,12 +341,14 @@ func (g *Game) ExecuteBettingLoop(
 		player := g.Players[g.CurrentTurnPos]
 
 		if player.Status == PlayerStatusPlaying {
-			displayCurrentStatus(g)
-
 			// All actions are now determined by the single provider.
 			action := actionProvider.GetAction(g, player, g.Rand)
 
-			wasAggressive := g.ProcessAction(player, action)
+			wasAggressive, msg := g.ProcessAction(player, action)
+			if msg != "" {
+				eventMessages = append(eventMessages, msg)
+			}
+
 			if wasAggressive {
 				aggressor = player
 			}
@@ -362,6 +366,7 @@ func (g *Game) ExecuteBettingLoop(
 
 		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
 	}
+	return eventMessages
 }
 
 // actionCloserPosForPreFlop returns the position of the action closer in Pre-Flop phase.
@@ -374,4 +379,39 @@ func actionCloserPosForPreFlop(g *Game) int {
 		}
 		ac = (ac + 1) % len(g.Players) // Skip eliminated players
 	}
+}
+
+// RunHand executes a single hand of poker, from start to finish.
+func (g *Game) RunHand(actionProvider ActionProvider) []string {
+	var allEvents []string
+
+	// Single Hand Loop
+	for g.Phase != PhaseShowdown && g.Phase != PhaseHandOver {
+		if g.CountNonFoldedPlayers() <= 1 {
+			break
+		}
+		g.PrepareNewBettingRound()
+		bettingMessages := g.ExecuteBettingLoop(actionProvider)
+		allEvents = append(allEvents, bettingMessages...)
+		g.Advance()
+	}
+
+	// Conclude the hand
+	if g.CountNonFoldedPlayers() > 1 {
+		showdownMessages := g.FormatShowdownResults()
+		allEvents = append(allEvents, showdownMessages...)
+	} else {
+		conclusionMessages := []string{"--- POT DISTRIBUTION ---"}
+		results := g.AwardPotToLastPlayer()
+		for _, result := range results {
+			conclusionMessages = append(conclusionMessages, fmt.Sprintf(
+				"%s wins %s chips with %s",
+				result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
+			))
+		}
+		conclusionMessages = append(conclusionMessages, "------------------------")
+		allEvents = append(allEvents, conclusionMessages...)
+	}
+
+	return allEvents
 }

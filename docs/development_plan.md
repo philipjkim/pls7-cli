@@ -172,9 +172,9 @@
         - [x] `internal/config`가 `pkg/poker`를 import 하도록 수정
         - [x] `JoinStrings` 유틸리티 함수를 `internal/util` -> `pkg/poker` 로 이동
     *   **14-2. `game`과 `cli`의 책임 분리**
-        - [ ] `internal/game` 패키지 내의 모든 `fmt.Print*` 호출 제거
-        - [ ] `ExecuteBettingLoop`에서 `displayCurrentStatus` 콜백 제거
-        - [ ] `cmd/root.go`의 메인 게임 루프를 `internal/game`으로 이동
+        - [x] `internal/game` 패키지 내의 모든 `fmt.Print*` 호출 제거
+        - [x] `ExecuteBettingLoop`에서 `displayCurrentStatus` 콜백 제거
+        - [x] `cmd/root.go`의 메인 게임 루프를 `internal/game`으로 이동
     *   **14-3. `util` 패키지 정리**
         - [ ] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
 * **완료여부**: ⬜ (진행 예정)

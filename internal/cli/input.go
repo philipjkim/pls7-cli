@@ -12,6 +12,8 @@ import (
 
 // PromptForAction requests the player to choose an action during their turn.
 func PromptForAction(g *game.Game) game.PlayerAction {
+	DisplayGameState(g)
+
 	// for loop to keep prompting until a valid action is chosen
 	for {
 		player := g.Players[g.CurrentTurnPos]

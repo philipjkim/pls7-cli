@@ -108,7 +108,7 @@ func TestExecuteBettingLoop_PreFlop_AllCallCheck_Terminates_NLH(t *testing.T) {
 
 	finished := make(chan struct{})
 	go func() {
-		g.ExecuteBettingLoop(actionProvider, func(g *Game) {})
+		g.ExecuteBettingLoop(actionProvider)
 		close(finished)
 	}()
 
@@ -138,7 +138,7 @@ func TestBettingRound_AllInAndCall(t *testing.T) {
 		},
 	}
 
-	g.ExecuteBettingLoop(actionProvider, func(g *Game) {})
+	g.ExecuteBettingLoop(actionProvider)
 
 	if g.Players[0].Status != PlayerStatusAllIn || g.Players[1].Status != PlayerStatusAllIn {
 		t.Errorf("Both players should be all-in")
@@ -160,7 +160,7 @@ func TestBettingRound_PreFlopCheckEndsRound(t *testing.T) {
 			{Type: ActionCheck}, // CPU 2 (BB)
 		},
 	}
-	g.ExecuteBettingLoop(actionProvider, func(g *Game) {})
+	g.ExecuteBettingLoop(actionProvider)
 
 	if g.Pot != 3000 {
 		t.Errorf("Expected pot to be 3000, but got %d", g.Pot)
@@ -183,7 +183,7 @@ func TestBettingRound_MultiRaiseAndAllIn(t *testing.T) {
 		},
 	}
 
-	g.ExecuteBettingLoop(actionProvider, func(g *Game) {})
+	g.ExecuteBettingLoop(actionProvider)
 
 	if g.Pot != 7000 {
 		t.Errorf("Expected pot to be 7000, but got %d", g.Pot)

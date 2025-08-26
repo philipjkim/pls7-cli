@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 	"sort"
 	"strings"
@@ -270,4 +271,61 @@ func getPlayerNames(players []*Player) []string {
 		names[i] = p.Name
 	}
 	return names
+}
+
+func (g *Game) FormatShowdownResults() []string {
+	var outputLines []string
+	outputLines = append(outputLines, "\n--- SHOWDOWN ---")
+	outputLines = append(outputLines, fmt.Sprintf("Community Cards: %s", g.CommunityCards))
+
+	distributionResults := g.DistributePot()
+
+	winnerMap := make(map[string][]string)
+	for _, result := range distributionResults {
+		winType := ""
+		if strings.HasPrefix(result.HandDesc, "High") || strings.HasPrefix(result.HandDesc, "takes") {
+			winType = "High Winner"
+		} else if strings.HasPrefix(result.HandDesc, "Scoop") {
+			winType = "High/Low Winner"
+		} else {
+			winType = "Low Winner"
+		}
+		winnerMap[result.PlayerName] = append(winnerMap[result.PlayerName], winType)
+	}
+
+	for _, player := range g.Players {
+		if player.Status == PlayerStatusFolded || player.Status == PlayerStatusEliminated {
+			continue
+		}
+		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules)
+
+		handDesc := highHand.String()
+		if g.Rules.LowHand.Enabled && lowHand != nil {
+			var lowHandRanks []string
+			for _, c := range lowHand.Cards {
+				lowHandRanks = append(lowHandRanks, c.Rank.String())
+			}
+			if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
+				lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
+			}
+			handDesc += fmt.Sprintf(" | Low: %s-High", strings.Join(lowHandRanks, "-"))
+		}
+
+		winnerStatus := ""
+		if statuses, ok := winnerMap[player.Name]; ok {
+			winnerStatus = fmt.Sprintf(" (%s)", strings.Join(statuses, " & "))
+		}
+
+		outputLines = append(outputLines, fmt.Sprintf("- %-7s: %v -> %s%s", player.Name, player.Hand, handDesc, winnerStatus))
+	}
+
+	outputLines = append(outputLines, "\n--- POT DISTRIBUTION ---")
+	for _, result := range distributionResults {
+		outputLines = append(outputLines, fmt.Sprintf(
+			"%s wins %s chips with %s",
+			result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
+		))
+	}
+	outputLines = append(outputLines, "------------------------")
+	return outputLines
 }

@@ -126,3 +126,35 @@ OK, 너가 제안한 모노레포로 구성하면 될 것 같아. 그런데 아�
 
 * 액션 1: util.FormatNumber 함수를 internal/cli/display.go로 옮깁니다.
 * 액션 2: util 패키지에는 logger.go만 남게 되며, 이는 프로젝트 전반에서 사용되는 로깅 유틸리티로 역할이 명확해집니다.
+
+---
+
+## 질문 3
+
+14-2 의 첫번째 액션플랜에서 제거하려고 하는 "game 패키지 내에서 fmt.Printf 를 통해 출력하는 부분들"은 게임 진행에 있어 필수적이기 때문에 그냥 지우면 안되고, 다른 곳 (cli 패키지 등) 에서 출력해줘야해. 이 부분을 고려해서 다시 작업계획을 세워.
+
+## 답변 3
+
+네, 맞습니다. 단순히 출력 코드를 지우는 것은 해결책이 아닙니다. 게임의 상태 변화를 알려주는 중요한 정보들이기 때문이죠. 지적 감사합니다. 더 나은 리팩토링 계획을 다시 세우겠습니다.
+
+### 수정된 리팩토링 계획 (14-2):
+
+게임 로직(engine)은 상태 변경만 처리하고, 발생한 이벤트에 대한 정보(데이터)를 반환합니다. 그러면 CLI(client)는 그 정보를 받아 사용자에게 어떻게 보여줄지 결정합니다.
+
+1. `ProcessAction` 함수 수정 (`internal/game/run.go`):
+    * 목표: fmt.Printf로 액션을 출력하는 대신, 어떤 액션이 일어났는지 설명하는 이벤트 메시지 문자열을 반환하도록 변경합니다.
+    * 실행:
+        * 함수 시그니처를 func (g *Game) ProcessAction(...) (bool, string)으로 변경합니다.
+        * fmt.Printf("%s folds.\n", player.Name)와 같은 코드를 eventMessage = fmt.Sprintf("%s folds.", player.Name)와 같이 반환할 문자열을 생성하는 코드로 변경합니다.
+
+2. `CleanupHand`, `StartNewHand` 함수 수정 (`internal/game/run.go`):
+    * 목표: 이 함수들도 마찬가지로, 화면에 직접 출력하는 대신 발생한 이벤트(플레이어 탈락, 블라인드 상승 등)에 대한 메시지 목록([]string)을 반환하도록 변경합니다.
+
+3. `cmd/root.go`의 메인 루프 수정:
+    * 목표: 위 함수들이 반환하는 이벤트 메시지를 받아 fmt.Println으로 출력하는 책임을 갖도록 수정합니다.
+
+4. `ExecuteBettingLoop`의 콜백 제거:
+    * 목표: ExecuteBettingLoop가 displayCurrentStatus 함수에 의존하지 않도록 변경합니다.
+    * 실행:
+        * ExecuteBettingLoop의 파라미터에서 displayCurrentStatus를 제거합니다.
+        * 대신 cmd/root.go의 메인 루프가 cli.DisplayGameState(g)를 직접 호출하여 게임 상태를 표시하도록 책임을 옮깁니다.
