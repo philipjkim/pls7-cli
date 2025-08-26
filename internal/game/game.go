@@ -49,6 +49,8 @@ type Game struct {
 	Rand              *rand.Rand // Centralized random number generator
 	BlindUpInterval   int
 	BettingCalculator BettingLimitCalculator
+	Aggressor         *Player
+	ActionCloserPos   int
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.

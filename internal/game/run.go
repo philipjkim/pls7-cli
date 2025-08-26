@@ -60,6 +60,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		}
 		player.LastActionDesc = desc
 		eventMessage = fmt.Sprintf("%s bets %s.", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		g.Aggressor = player
 		return true, eventMessage
 	case ActionRaise:
 		amountToPost := action.Amount - player.CurrentBet
@@ -73,6 +74,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		}
 		player.LastActionDesc = desc
 		eventMessage = fmt.Sprintf("%s raises to %s.", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		g.Aggressor = player
 		return true, eventMessage
 	}
 	return false, eventMessage
@@ -290,10 +292,16 @@ func (g *Game) isBettingActionRequired() bool {
 
 // PrepareNewBettingRound resets player bets and determines the starting player for a new round.
 func (g *Game) PrepareNewBettingRound() {
+	g.Aggressor = nil
+
 	if g.Phase == PhasePreFlop {
 		// Blinds are already posted, no need to reset bets.
+		// Action starts after BB, and the BB is the action closer.
+		bbPos := g.FindNextActivePlayer(g.FindNextActivePlayer(g.DealerPos))
+		g.ActionCloserPos = bbPos
 		return
 	}
+
 	// For post-flop rounds, reset bets and start with the player after the dealer.
 	for _, p := range g.Players {
 		if p.Status != PlayerStatusEliminated {
@@ -304,6 +312,7 @@ func (g *Game) PrepareNewBettingRound() {
 	g.BetToCall = 0
 	g.LastRaiseAmount = 0
 	g.CurrentTurnPos = g.FindNextActivePlayer(g.DealerPos)
+	g.ActionCloserPos = g.FindPreviousActivePlayer(g.CurrentTurnPos)
 }
 
 // FindPreviousActivePlayer finds the index of the previous player who is not eliminated.
@@ -379,6 +388,38 @@ func actionCloserPosForPreFlop(g *Game) int {
 		}
 		ac = (ac + 1) % len(g.Players) // Skip eliminated players
 	}
+}
+
+// IsBettingRoundOver checks if the betting round should end.
+func (g *Game) IsBettingRoundOver() bool {
+	// Condition 1: Not enough players to continue betting.
+	if g.CountNonFoldedPlayers() <= 1 || g.CountPlayersAbleToAct() == 0 {
+		return true
+	}
+
+	// Condition 2: The action has returned to the last aggressor (or the original closer).
+	// Determine who closes the action.
+	closerPos := g.ActionCloserPos
+	if g.Aggressor != nil {
+		closerPos = g.Aggressor.Position
+	}
+
+	// If the current player is the one who closes the action, we then check if bets are settled.
+	if g.CurrentTurnPos == closerPos {
+		// Check if all players who can still act have matched the bet.
+		for _, p := range g.Players {
+			if p.Status == PlayerStatusPlaying {
+				if p.CurrentBet < g.BetToCall {
+					return false // This player still needs to act.
+				}
+			}
+		}
+		// If we are here, the action is on the closer and all bets are matched.
+		return true
+	}
+
+	// If it's not the closer's turn yet, the round is not over.
+	return false
 }
 
 // RunHand executes a single hand of poker, from start to finish.

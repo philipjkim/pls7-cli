@@ -198,3 +198,46 @@ func TestBettingRound_MultiRaiseAndAllIn(t *testing.T) {
 		t.Errorf("CPU 2 should have folded")
 	}
 }
+
+func TestIsBettingRoundOver(t *testing.T) {
+	t.Run("Round not over - bets not matched", func(t *testing.T) {
+		g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1"}, 10000, "NLH")
+		g.Players[0].CurrentBet = 100
+		g.Players[1].CurrentBet = 200
+		g.BetToCall = 200
+		if g.IsBettingRoundOver() {
+			t.Error("Expected betting round to NOT be over")
+		}
+	})
+
+	t.Run("Round over - all bets matched", func(t *testing.T) {
+		g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1"}, 10000, "NLH")
+		g.Players[0].CurrentBet = 200
+		g.Players[1].CurrentBet = 200
+		g.BetToCall = 200
+		if !g.IsBettingRoundOver() {
+			t.Error("Expected betting round to BE over")
+		}
+	})
+
+	t.Run("Round over - one player left", func(t *testing.T) {
+		g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1"}, 10000, "NLH")
+		g.Players[0].Status = PlayerStatusPlaying
+		g.Players[1].Status = PlayerStatusFolded
+		if !g.IsBettingRoundOver() {
+			t.Error("Expected betting round to BE over when only one player remains")
+		}
+	})
+
+	t.Run("Round over - all-in player cannot act on a raise", func(t *testing.T) {
+		g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1"}, 10000, "NLH")
+		g.Players[0].Status = PlayerStatusAllIn
+		g.Players[0].CurrentBet = 100
+		g.Players[1].Status = PlayerStatusPlaying
+		g.Players[1].CurrentBet = 200
+		g.BetToCall = 200
+		if !g.IsBettingRoundOver() {
+			t.Error("Expected betting round to BE over when a player is all-in and cannot call a raise")
+		}
+	})
+}
