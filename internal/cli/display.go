@@ -116,16 +116,16 @@ func DisplayGameState(g *game.Game) {
 		}
 	}
 
-	if totalChips != game.BigBlindAmt*300*len(g.Players) {
+	if totalChips != g.TotalInitialChips {
 		logrus.Warnf(
 			"Total chips mismatch: expected %s, got %s",
-			util.FormatNumber(game.BigBlindAmt*300*len(g.Players)),
+			util.FormatNumber(g.TotalInitialChips),
 			util.FormatNumber(totalChips),
 		)
 	} else {
 		logrus.Debugf(
 			"Total chips match expected value: %s",
-			util.FormatNumber(game.BigBlindAmt*300*len(g.Players)),
+			util.FormatNumber(g.TotalInitialChips),
 		)
 	}
 

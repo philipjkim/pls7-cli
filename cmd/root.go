@@ -10,6 +10,7 @@ import (
 	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -43,6 +44,7 @@ type CombinedActionProvider struct{}
 // GetAction method for CombinedActionProvider
 func (p *CombinedActionProvider) GetAction(g *game.Game, player *game.Player, r *rand.Rand) game.PlayerAction {
 	if player.IsCPU {
+		time.Sleep(g.CPUThinkTime())
 		return g.GetCPUAction(player, r)
 	}
 	return cli.PromptForAction(g)
@@ -58,9 +60,6 @@ func runGame(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("======== %s ========\n", rules.Name)
-
-	// The concept of a single difficulty is removed in favor of varied AI profiles.
-	// We keep the flag for potential future use but it no longer directly sets a single difficulty.
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 	initialChips := game.BigBlindAmt * 300
@@ -84,16 +83,58 @@ func runGame(cmd *cobra.Command, args []string) {
 
 	// Main Game Loop (multi-hand)
 	for {
-
 		cli.DisplayGameState(g)
+
 		blindMessage := g.StartNewHand()
 		if blindMessage != "" {
 			fmt.Println(blindMessage)
 		}
 
-		handMessages := g.RunHand(actionProvider)
-		for _, msg := range handMessages {
-			fmt.Println(msg)
+		// Single Hand Loop
+		for g.Phase != game.PhaseShowdown && g.Phase != game.PhaseHandOver {
+			if g.CountNonFoldedPlayers() <= 1 {
+				break
+			}
+			g.PrepareNewBettingRound()
+
+			// New Turn-by-turn Betting Loop
+			for !g.IsBettingRoundOver() {
+				player := g.CurrentPlayer()
+				var action game.PlayerAction
+
+				if player.Status != game.PlayerStatusPlaying {
+					g.AdvanceTurn()
+					continue
+				}
+
+				action = actionProvider.GetAction(g, player, g.Rand)
+
+				_, eventMessage := g.ProcessAction(player, action)
+				if eventMessage != "" {
+					fmt.Println(eventMessage)
+				}
+				time.Sleep(300 * time.Millisecond) // Delay after action
+				g.AdvanceTurn()
+			}
+			g.Advance()
+		}
+
+		// Conclude the hand
+		if g.CountNonFoldedPlayers() > 1 {
+			showdownMessages := g.FormatShowdownResults()
+			for _, msg := range showdownMessages {
+				fmt.Println(msg)
+			}
+		} else {
+			results := g.AwardPotToLastPlayer()
+			fmt.Println("--- POT DISTRIBUTION ---")
+			for _, result := range results {
+				fmt.Printf(
+					"%s wins %s chips with %s\n",
+					result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
+				)
+			}
+			fmt.Println("------------------------")
 		}
 
 		cleanupMessages := g.CleanupHand()
@@ -107,7 +148,6 @@ func runGame(cmd *cobra.Command, args []string) {
 		}
 
 		if g.CountRemainingPlayers() <= 1 {
-			// The winner message is already handled by CleanupHand
 			fmt.Println("--- GAME OVER ---")
 			break
 		}

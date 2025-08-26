@@ -181,8 +181,8 @@
             *   **14-3-1. 베팅 라운드 종료 조건 함수 구현 (TDD)**
                 - [x] `game.IsBettingRoundOver() bool` 메소드 및 테스트 케이스 추가
             *   **14-3-2. 턴 관리 로직 구현 (TDD)**
-                - [ ] `game.CurrentPlayer() *Player` 메소드 추가
-                - [ ] `game.AdvanceTurn()` 메소드 및 테스트 케이스 추가
+                - [x] `game.CurrentPlayer() *Player` 메소드 추가
+                - [x] `game.AdvanceTurn()` 메소드 및 테스트 케이스 추가
             *   **14-3-3. 기존 루프 로직 제거**
                 - [ ] `game.RunHand()` 메소드 제거
                 - [ ] `game.ExecuteBettingLoop()` 메소드 제거 (또는 내부 로직 비우기)

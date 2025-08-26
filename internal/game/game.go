@@ -51,6 +51,7 @@ type Game struct {
 	BettingCalculator BettingLimitCalculator
 	Aggressor         *Player
 	ActionCloserPos   int
+	TotalInitialChips int
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -128,6 +129,7 @@ func NewGame(
 		Rand:              r,
 		BlindUpInterval:   blindUpInterval,
 		BettingCalculator: calculator,
+		TotalInitialChips: initialChips * len(playerNames),
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength

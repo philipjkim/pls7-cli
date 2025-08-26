@@ -327,69 +327,6 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 	}
 }
 
-// ExecuteBettingLoop runs the core betting logic for a round.
-// It now takes a single ActionProvider for all players.
-func (g *Game) ExecuteBettingLoop(actionProvider ActionProvider) []string {
-	if g.CountNonFoldedPlayers() < 2 {
-		return nil // No betting needed if fewer than 2 players are in the hand.
-	}
-
-	var eventMessages []string
-
-	// Determine who acts last.
-	var actionCloserPos int
-	var aggressor *Player
-
-	if g.Phase == PhasePreFlop {
-		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
-	} else {
-		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
-	}
-
-	for {
-		player := g.Players[g.CurrentTurnPos]
-
-		if player.Status == PlayerStatusPlaying {
-			// All actions are now determined by the single provider.
-			action := actionProvider.GetAction(g, player, g.Rand)
-
-			wasAggressive, msg := g.ProcessAction(player, action)
-			if msg != "" {
-				eventMessages = append(eventMessages, msg)
-			}
-
-			if wasAggressive {
-				aggressor = player
-			}
-		}
-
-		// The betting round ends when the action gets to the last aggressor and they have already acted.
-		if aggressor != nil && g.CurrentTurnPos == g.FindPreviousActivePlayer(aggressor.Position) {
-			break
-		}
-
-		// Or if everyone has had a turn and the bets are called.
-		if g.CurrentTurnPos == actionCloserPos && !g.isBettingActionRequired() {
-			break
-		}
-
-		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
-	}
-	return eventMessages
-}
-
-// actionCloserPosForPreFlop returns the position of the action closer in Pre-Flop phase.
-func actionCloserPosForPreFlop(g *Game) int {
-	// In Pre-Flop, the action closer is the Big Blind.
-	ac := (g.DealerPos + 2) % len(g.Players)
-	for {
-		if g.Players[ac].Status != PlayerStatusEliminated {
-			return ac
-		}
-		ac = (ac + 1) % len(g.Players) // Skip eliminated players
-	}
-}
-
 // IsBettingRoundOver checks if the betting round should end.
 func (g *Game) IsBettingRoundOver() bool {
 	// Condition 1: Not enough players to continue betting.
@@ -422,37 +359,12 @@ func (g *Game) IsBettingRoundOver() bool {
 	return false
 }
 
-// RunHand executes a single hand of poker, from start to finish.
-func (g *Game) RunHand(actionProvider ActionProvider) []string {
-	var allEvents []string
+// CurrentPlayer returns the player whose turn it is.
+func (g *Game) CurrentPlayer() *Player {
+	return g.Players[g.CurrentTurnPos]
+}
 
-	// Single Hand Loop
-	for g.Phase != PhaseShowdown && g.Phase != PhaseHandOver {
-		if g.CountNonFoldedPlayers() <= 1 {
-			break
-		}
-		g.PrepareNewBettingRound()
-		bettingMessages := g.ExecuteBettingLoop(actionProvider)
-		allEvents = append(allEvents, bettingMessages...)
-		g.Advance()
-	}
-
-	// Conclude the hand
-	if g.CountNonFoldedPlayers() > 1 {
-		showdownMessages := g.FormatShowdownResults()
-		allEvents = append(allEvents, showdownMessages...)
-	} else {
-		conclusionMessages := []string{"--- POT DISTRIBUTION ---"}
-		results := g.AwardPotToLastPlayer()
-		for _, result := range results {
-			conclusionMessages = append(conclusionMessages, fmt.Sprintf(
-				"%s wins %s chips with %s",
-				result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
-			))
-		}
-		conclusionMessages = append(conclusionMessages, "------------------------")
-		allEvents = append(allEvents, conclusionMessages...)
-	}
-
-	return allEvents
+// AdvanceTurn moves the turn to the next active player.
+func (g *Game) AdvanceTurn() {
+	g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
 }
