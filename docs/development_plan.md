@@ -148,7 +148,7 @@
 
 ---
 
-### **13단계: 범용 포커 게임 엔진으로 리팩토링**
+### **13단계: 범용 포커 게임 엔진으로 리팩토링 Pt.1**
 
 *   **목표**: 단일 게임(PLS7) 애플리케이션을, 룰(YAML) 파일을 통해 다양한 포커 게임(NLH, PLO 등)을 지원할 수 있는 범용 엔진으로 추상화한다.
 * **주요 작업**:
@@ -157,5 +157,38 @@
     3.  **CLI 명령어(`cmd/root.go`) 수정**: `--rule` 플래그를 추가하여 사용자가 YAML 파일로 정의된 특정 게임 룰을 선택하여 실행할 수 있도록 수정한다. (✅)
     4.  **족보 판정 로직(`evaluation.go`) 리팩토링**: `EvaluateHand` 함수가 `GameRules`를 인자로 받아, 룰에 명시된 홀카드 사용 규칙과 사용 가능한 족보에 따라 동적으로 핸드를 판정하도록 수정한다. (✅)
     5.  **베팅 리밋 로직 추상화**: `BettingLimitCalculator` 인터페이스를 도입하고, 팟 리밋, 노 리밋 등 규칙에 맞는 구현체를 만들어 `GameRules`에 따라 선택적으로 사용하도록 변경한다. (✅)
-    6.  **전체 테스트 및 검증**: 리팩토링된 구성 요소가 올바르게 동작하는지 검증하기 위해 각 게임 룰(PLS7, NLH, PLO)에 대한 단위 테스트 및 통합 테스트를 작성하고 실행한다.
+    6.  **홀카드 사용 방식 추상화**: `hole_cards.use_constraint` 규칙(`any`, `exact` 등)에 따라 핸드 조합을 생성하는 로직을 인터페이스 기반으로 추상화하고, 룰에 맞는 구현체를 동적으로 사용하도록 변경한다.
+    7.  **전체 테스트 및 검증**: 리팩토링된 구성 요소가 올바르게 동작하는지 검증하기 위해 각 게임 룰(PLS7, NLH, PLO)에 대한 단위 테스트 및 통합 테스트를 작성하고 실행한다.
 * **완료여부**: ⏳ (현재 진행 중)
+
+---
+
+### **14단계: 패키지 구조 리팩토링 (추상화 레벨 및 레이어링)**
+
+*   **목표**: `poker-engine`과 `poker-cli` 분리를 위한 사전 작업으로, 패키지 간의 역할과 책임을 명확히 하고 잘못된 의존성을 바로잡는다.
+* **주요 작업**:
+    *   **14-1. `pkg/poker` 의존성 문제 해결**
+        - [ ] `GameRules` 구조체를 `internal/config` -> `pkg/poker` 로 이동
+        - [ ] `internal/config`가 `pkg/poker`를 import 하도록 수정
+        - [ ] `JoinStrings` 유틸리티 함수를 `internal/util` -> `pkg/poker` 로 이동
+    *   **14-2. `game`과 `cli`의 책임 분리**
+        - [ ] `internal/game` 패키지 내의 모든 `fmt.Print*` 호출 제거
+        - [ ] `ExecuteBettingLoop`에서 `displayCurrentStatus` 콜백 제거
+        - [ ] `cmd/root.go`의 메인 게임 루프를 `internal/game`으로 이동
+    *   **14-3. `util` 패키지 정리**
+        - [ ] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
+* **완료여부**: ⬜ (진행 예정)
+
+---
+
+### **15단계: poker-engine, poker-cli 분리 (모노레포 방식)**
+
+*   **목표**: 현재 레포지토리를 Go Workspaces를 이용한 모노레포로 전환하고, `poker-engine`과 `poker-cli`를 별도의 모듈로 분리한다.
+* **주요 작업**:
+    - [ ] `go.work` 파일을 사용하여 워크스페이스 설정
+    - [ ] `/engine`, `/cli` 디렉토리 구조 생성
+    - [ ] `poker-engine` 관련 패키지(`pkg/poker`, `internal/game`, `internal/config`)를 `/engine`으로 이동
+    - [ ] `poker-cli` 관련 패키지(`cmd`, `internal/cli`, `internal/util`)를 `/cli`로 이동
+    - [ ] 각 모듈의 `go.mod` 파일 생성 및 의존성 정리
+    - [ ] `go.work`를 통해 `cli`가 `engine`을 올바르게 참조하는지 확인 및 빌드 테스트
+* **완료여부**: ⬜ (진행 예정)
