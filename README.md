@@ -70,30 +70,41 @@ That's it! You are now ready to run the application.
 
 ## Running the App
 
+You can run the application using `go run main.go` with various flags to customize the game.
+
+### Usage
+
 ```bash
-# Show help message
-go run main.go -h
-Starts a new game of Poker (PLS7, PLS, NLH) with 1 player and 5 CPUs.
+go run main.go [flags]
+```
 
-Usage:
-  pls7 [flags]
+### Flags
 
-Flags:
-      --blind-up int        Sets the number of rounds for blind up. 0 means no blind up. (default 2)
-      --dev                 Enable development mode for verbose logging.
-  -d, --difficulty string   Set AI difficulty (easy, medium, hard) (default "medium")
-  -r, --rule string         Game rule to use (pls7, pls, nlh). (default "pls7")
-  -h, --help                help for pls7
-      --outs                Shows outs for players if found (temporarily draws fixed good hole cards).
+The application accepts the following flags:
 
-# PLS7, medium AI
+| Flag, Short      | Type     | Default  | Description                                                                 |
+| ---------------- | -------- | -------- | --------------------------------------------------------------------------- |
+| `--rule`, `-r`   | `string` | `"pls7"` | Game rule to use. Corresponds to a file in the `/rules` directory (e.g., `pls7`, `pls`, `nlh`). |
+| `--difficulty`, `-d` | `string` | `"medium"` | AI difficulty (`easy`, `medium`, `hard`).                                   |
+| `--blind-up`     | `int`    | `2`      | The number of hands for blinds to increase. `0` disables blind-ups.         |
+| `--dev`          | `bool`   | `false`  | Enables development mode for verbose logging.                               |
+| `--outs`         | `bool`   | `false`  | Shows hand outs for the human player.                                       |
+| `--help`, `-h`   | `bool`   | `false`  | Shows the help message.                                                       |
+
+### Examples
+
+```bash
+# Start a standard PLS7 game with medium AI
 go run main.go
 
-# for debugging (not clearing previous output)
-go run main.go --dev
+# Start a PLS (Pot-Limit Sampyeong) game
+go run main.go --rule pls
 
-# NLH, easy AI, with outs
+# Start a No-Limit Hold'em (NLH) game with easy AI and show outs
 go run main.go -r nlh -d easy --outs
+
+# Run in development mode for detailed logs
+go run main.go --dev
 ```
 
 ## Creating an Executable
