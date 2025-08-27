@@ -121,7 +121,7 @@ func runGame(cmd *cobra.Command, args []string) {
 
 		// Conclude the hand
 		if g.CountNonFoldedPlayers() > 1 {
-			showdownMessages := g.FormatShowdownResults()
+			showdownMessages := cli.FormatShowdownResults(g)
 			for _, msg := range showdownMessages {
 				fmt.Println(msg)
 			}
@@ -131,7 +131,7 @@ func runGame(cmd *cobra.Command, args []string) {
 			for _, result := range results {
 				fmt.Printf(
 					"%s wins %s chips with %s\n",
-					result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
+					result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc,
 				)
 			}
 			fmt.Println("------------------------")

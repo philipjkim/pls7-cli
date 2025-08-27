@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 
 	"github.com/sirupsen/logrus"
@@ -44,22 +43,22 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 	case ActionCall:
 		amountToCall := g.BetToCall - player.CurrentBet
 		g.postBet(player, amountToCall)
-		desc := fmt.Sprintf("Call %s", util.FormatNumber(amountToCall))
+		desc := fmt.Sprintf("Call %d", amountToCall)
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		eventMessage = fmt.Sprintf("%s calls %s.", player.Name, util.FormatNumber(amountToCall))
+		eventMessage = fmt.Sprintf("%s calls %d.", player.Name, amountToCall)
 	case ActionBet:
 		g.LastRaiseAmount = action.Amount
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
-		desc := fmt.Sprintf("Bet %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		desc := fmt.Sprintf("Bet %d", player.CurrentBet) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		eventMessage = fmt.Sprintf("%s bets %s.", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		eventMessage = fmt.Sprintf("%s bets %d.", player.Name, player.CurrentBet) // FIX: Use actual bet amount
 		g.Aggressor = player
 		return true, eventMessage
 	case ActionRaise:
@@ -68,12 +67,12 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
 		g.LastRaiseAmount = g.BetToCall - previousBetToCall
-		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		desc := fmt.Sprintf("Raise to %d", player.CurrentBet) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		eventMessage = fmt.Sprintf("%s raises to %s.", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		eventMessage = fmt.Sprintf("%s raises to %d.", player.Name, player.CurrentBet) // FIX: Use actual bet amount
 		g.Aggressor = player
 		return true, eventMessage
 	}
@@ -147,7 +146,7 @@ func (g *Game) StartNewHand() (eventMessage string) {
 	if g.BlindUpInterval > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
 		SmallBlindAmt *= 2
 		BigBlindAmt *= 2
-		eventMessage = fmt.Sprintf("\n*** Blinds are now %s/%s ***\n", util.FormatNumber(SmallBlindAmt), util.FormatNumber(BigBlindAmt))
+		eventMessage = fmt.Sprintf("\n*** Blinds are now %d/%d ***\n", SmallBlindAmt, BigBlindAmt)
 	}
 
 	g.Phase = PhasePreFlop

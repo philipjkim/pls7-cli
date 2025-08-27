@@ -163,7 +163,7 @@
 
 ---
 
-### **14단계: 패키지 구조 리팩토링 (추상화 레벨 및 레이어링)**
+### **14단계: 패키지 구조 리팩토링 (책임 분리 강화)**
 
 *   **목표**: `poker-engine`과 `poker-cli` 분리를 위한 사전 작업으로, 패키지 간의 역할과 책임을 명확히 하고 잘못된 의존성을 바로잡는다.
 * **주요 작업**:
@@ -189,8 +189,9 @@
             *   **14-3-4. `cmd/root.go`에 새로운 턴 기반 루프 구현**
                 - [x] `cmd/root.go`의 `runGame` 함수에 새로운 베팅 루프 로직 작성
                 - [x] CPU 턴 딜레이(`time.Sleep`) 로직 추가
-    *   **14-4. `util` 패키지 정리**
-        - [ ] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
+    *   **14-4. `util` 패키지 정리 및 `cli` 책임 강화**
+        - [x] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
+        - [x] `FormatShowdownResults` 함수를 `internal/game` -> `internal/cli` 로 이동
 * **완료여부**: ⬜ (진행 예정)
 
 ---

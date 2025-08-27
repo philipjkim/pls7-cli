@@ -227,3 +227,53 @@ OK, 너가 제안한 모노레포로 구성하면 될 것 같아. 그런데 아�
 
 * 구조 분리 유지: game 패키지는 여전히 UI(출력, 딜레이)에 대해 전혀 알지 못하는 순수한 엔진으로 남습니다.
 * 사용자 경험 개선: cmd/root.go가 각 플레이어의 턴마다 제어권을 가지므로, CPU의 "생각하는 시간"을 위한 time.Sleep을 넣고 각 액션의 결과를 즉시 출력하여 이전과 같은 인터랙티브한 경험을 제공할 수 있습니다.
+
+---
+
+## 질문 5
+
+현재 작업중인 feature branch 에 대한 PR 리뷰가 진행중이야: https://github.com/philipjkim/pls7-cli/pull/8
+
+gemini-code-assist bot 의 리뷰 내용중 아래오 같은 피드백이 있는데, 나도 동의하는 부분이야. 너도 동의한다면 이 부분까지 이번 PR 에서 반영하자. 작업을 하게 된다면 docs/development_plan.md 의 14-4 에 작업할 내용들을 추가하고, 기존 14-4 는 14-5 로 바꿔.
+
+From: https://github.com/philipjkim/pls7-cli/pull/8#discussion_r2302440610
+
+> `FormatShowdownResults` 함수는 게임 로직을 담당하는 `game` 패키지에 있지만, `util.FormatNumber`를 호출하여 금액을 포맷하는 등 표현(presentation) 계층의 역할을 수행하고 있습니다. 이는 `poker-engine`과 `poker-cli`의 책임을 분리하려는 이번 리팩토링의 핵심 원칙에 위배됩니다. `game` 패키지는 UI나 포맷팅에 대해 알지 못해야 합니다.
+> 
+> 이 함수의 책임을 분리하기 위해 두 가지 방법을 제안합니다.
+> 1.  **함수를 `cli` 패키지로 이동**: 이 함수를 `internal/cli` 패키지로 옮기고, `cmd/root.go`에서 `cli.FormatShowdownResults(g)` 형태로 호출합니다. 이렇게 하면 `game` 패키지는 순수한 게임 로직만 유지하고, `cli` 패키지가 출력 포맷팅을 책임지게 되어 역할 분리가 더 명확해집니다.
+> 2.  **구조화된 데이터 반환**: `AwardPotToLastPlayer` 함수처럼, `FormatShowdownResults`가 포맷된 문자열(`[]string`) 대신 구조화된 데이터(예: `[]DistributionResult`와 플레이어별 핸드 정보)를 반환하도록 수정합니다. 그리고 `cmd/root.go`에서 이 데이터를 받아 최종 문자열로 포맷합니다.
+> 
+> 두 방법 모두 `game` 패키지의 순수성을 유지하는 좋은 접근 방식입니다.
+
+## 답변 5
+
+네, 좋은 제안입니다. 리뷰 내용에 동의하며, 제안해주신 내용에 따라 리팩토링을 진행하겠습니다. game 패키지는 순수한 게임 로직만 남기고, 포맷팅과 같은 표현(presentation) 로직은 cli 패키지로 옮기는 것이 좋겠습니다.
+
+---
+
+## 질문 6
+
+input.go 는 내가 수정했어. 그리고 internal/util/format.go 를 제거했어. 제거하면 컴파일 에러가 나서 기존 util.FormatNumber 사용처를 쉽게 찾을 수 있기 때문이야. 제거 후 컴파일해보니 internal/game/ 하위의 pot.go 와 run.go 에서 이 함수를 사용하고 있었어. 두 go 파일에서 util.FormatNumber 의존을 어떻게 제거하는 것이 좋을까? game -> cli 의존은 우리가 정한 룰에 위반되니 그 방법은 안돼.
+
+## 답변 6
+
+네, 좋은 접근입니다. 컴파일 에러를 통해 의존성을 찾는 것은 매우 효과적인 방법이죠.
+
+game 패키지에서 cli 패키지에 대한 의존성을 만들지 않으면서 util.FormatNumber 의존성을 제거하는 방법에 대한 제 생각은 다음과 같습니다. 이 문제는 두 파일에서 다른 방식으로 접근해야 합니다.
+
+1. `internal/game/pot.go`의 경우:
+    * FormatShowdownResults 함수는 이름에서 알 수 있듯이, 게임의 최종 결과를 보여주기 위해 포맷하는 역할에 집중되어 있습니다. 이 함수의 모든 내용은 사실상 표현(presentation) 계층의 책임입니다.
+    * 따라서, 리뷰 의견대로 이 함수 전체를 internal/cli/display.go 파일로 옮기는 것이 가장 이상적인 해결책입니다.
+    * cmd/root.go에서는 g.FormatShowdownResults() 대신 cli.FormatShowdownResults(g)를 호출하도록 변경하면 됩니다. 이렇게 하면 game 패키지는 순수한 데이터만 다루고, cli가 포맷팅을 책임지게 되어 역할 분리가 완벽해집니다.
+
+2. `internal/game/run.go`의 경우:
+    * ProcessAction이나 StartNewHand 같은 함수들은 게임 로직을 수행한 후, 발생한 이벤트에 대한 설명 문자열을 반환합니다. 여기서 숫자 포맷팅이 사용됩니다.
+    * game 패키지가 포맷팅된 문자열을 직접 생성하는 것은 책임 분리 원칙에 위배됩니다. game 패키지는 "어떤 일이 일어났는지"에 대한 데이터만 반환하고, 그 데이터를 어떻게 보여줄지는 cli나 cmd가 결정해야 합니다.
+    * 가장 좋은 방법은 ProcessAction과 같은 함수가 포맷된 eventMessage 문자열 대신, 구조화된 데이터(예: type ActionEvent struct { PlayerName string; Action game.ActionType; Amount int })를 반환하는 것입니다. 그리고 cmd/root.go에서 이 구조체를 받아 cli.FormatNumber를 사용해 최종 출력 문자열을 만드는 것입니다.
+    * 하지만 이는 작업 범위가 커질 수 있으므로, 더 간단한 해결책은 숫자 포맷팅을 제거하는 것입니다. 예를 들어, fmt.Sprintf("%s calls %s.", player.Name, util.FormatNumber(amountToCall)) 대신 fmt.Sprintf("%s calls %d.", player.Name, amountToCall) 와 같이 포맷팅 없는 문자열을 반환하도록 수정합니다. 이렇게 하면 game 패키지는 cli에 의존하지 않게 되며, 당장의 문제는 해결됩니다.
+
+### 결론 및 제안:
+
+* `pot.go`: FormatShowdownResults 함수를 internal/cli/display.go로 이동시키겠습니다.
+* `run.go`: util.FormatNumber 호출을 제거하고, 포맷되지 않은 일반 숫자를 포함한 이벤트 문자열을 반환하도록 수정하겠습니다.
