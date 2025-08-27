@@ -36,10 +36,11 @@ func TestBettingLimitCalculatorInterface(t *testing.T) {
 func TestPotLimitCalculator(t *testing.T) {
 	// Scenario:
 	// Pot: 1500 (from blinds)
+	// SB: CPU1, BB: CPU2
 	// Player's turn (YOU), has 10000 chips.
 	// Bet to call is 1000.
 	// Last raise amount was BB post, so 1000.
-	g := newGameForBettingTestsWithRules([]string{"YOU", "SB", "BB"}, 10000, "PLS")
+	g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1", "CPU2"}, 10000, "PLS")
 	g.Pot = 1500
 	g.BetToCall = 1000
 	g.LastRaiseAmount = 1000
@@ -65,10 +66,11 @@ func TestPotLimitCalculator(t *testing.T) {
 // TestNoLimitCalculator tests the no-limit betting logic.
 func TestNoLimitCalculator(t *testing.T) {
 	// Scenario:
+	// SB: CPU1, BB: CPU2
 	// Player's turn (YOU), has 10000 chips.
 	// Bet to call is 1000.
 	// Last raise amount was 1000.
-	g := newGameForBettingTestsWithRules([]string{"YOU", "SB", "BB"}, 10000, "NLH")
+	g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1", "CPU2"}, 10000, "NLH")
 	g.BetToCall = 1000
 	g.LastRaiseAmount = 1000
 	g.CurrentTurnPos = 0 // YOU's turn

@@ -8,7 +8,7 @@ import (
 
 // TestHand_EliminatedPlayersAreSkipped tests that players with zero chips are properly excluded from a new hand.
 func TestHand_EliminatedPlayersAreSkipped(t *testing.T) {
-	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
+	playerNames := []string{"YOU", "CPU1", "CPU2", "CPU3"}
 	initialChips := 100000
 	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
 	if err != nil {
