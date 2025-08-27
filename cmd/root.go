@@ -129,7 +129,6 @@ func runGame(cmd *cobra.Command, args []string) {
 						fmt.Println(eventMessage)
 					}
 				}
-				time.Sleep(300 * time.Millisecond) // Delay after action
 				g.AdvanceTurn()
 			}
 			g.Advance()
