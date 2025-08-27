@@ -13,29 +13,37 @@ This decoupled architecture makes the core engine portable and allows the user i
 
 ## Dependency Diagram
 
-The diagram below illustrates the dependency flow between the major packages. An arrow `A -> B` means that package `A` depends on package `B`.
+The diagram below illustrates the dependency flow between the major packages.
 
-```
-+-----------+      +----------------+      +-------------+
-|   main    |----->|      cmd       |----->| internal/cli|
-+-----------+      +----------------+      +-------------+
-      ^                    |                     |
-      |                    |                     |
-      |                    v                     v
-      |           +----------------+      +-------------+
-      +-----------| internal/game  |----->| pkg/poker   |
-                  +----------------+      +-------------+
-                         ^      ^              ^
-                         |      |              |
-                  +----------------+      +-------------+
-                  | internal/config|----->| rules (YAML)|
-                  +----------------+      +-------------+
+![Architecture Diagram](./images/pls7-cli-architecture-diagram.png)
+
+```mermaid
+graph TD
+    subgraph Application
+        main --> cmd
+    end
+
+    subgraph "Internal Logic"
+        cmd --> internal_cli("internal/cli")
+        cmd --> internal_game("internal/game")
+        cmd --> internal_config("internal/config")
+        internal_cli --> internal_game
+    end
+
+    subgraph "Core Poker Engine"
+        internal_game --> pkg_poker("pkg/poker")
+        internal_config --> pkg_poker
+    end
+    
+    subgraph "Data"
+        internal_config --> rules("rules/*.yml")
+    end
 ```
 
-*   **`cmd`** is the central orchestrator.
-*   **`pkg/poker`** is the core, independent engine.
-*   **`internal/*`** packages provide the application-specific logic that glues the engine to the CLI.
-*   **`rules/`** contains data-only YAML files that configure the engine.
+*   **`cmd`** is the central orchestrator, depending on all `internal` packages.
+*   **`internal/config`** and **`internal/game`** both depend on the **`pkg/poker`** engine.
+*   **`pkg/poker`** is the core, independent engine with no internal dependencies.
+*   **`rules/`** contains data-only YAML files that configure the engine via `internal/config`.
 
 ## Package Responsibilities
 

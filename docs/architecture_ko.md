@@ -13,29 +13,37 @@
 
 ## 의존성 다이어그램
 
-아래 다이어그램은 주요 패키지 간의 의존성 흐름을 보여줍니다. 화살표 `A -> B`는 패키지 `A`가 패키지 `B`에 의존함을 의미합니다.
+아래 다이어그램은 주요 패키지 간의 의존성 흐름을 보여줍니다.
 
-```
-+-----------+      +----------------+      +-------------+
-|   main    |----->|      cmd       |----->| internal/cli|
-+-----------+      +----------------+      +-------------+
-      ^                    |                     |
-      |                    |                     |
-      |                    v                     v
-      |           +----------------+      +-------------+
-      +-----------| internal/game  |----->| pkg/poker   |
-                  +----------------+      +-------------+
-                         ^      ^              ^
-                         |      |              |
-                  +----------------+      +-------------+
-                  | internal/config|----->| rules (YAML)|
-                  +----------------+      +-------------+
+![Architecture Diagram](./images/pls7-cli-architecture-diagram.png)
+
+```mermaid
+graph TD
+    subgraph Application
+        main --> cmd
+    end
+
+    subgraph "내부 로직 (Internal Logic)"
+        cmd --> internal_cli("internal/cli")
+        cmd --> internal_game("internal/game")
+        cmd --> internal_config("internal/config")
+        internal_cli --> internal_game
+    end
+
+    subgraph "코어 포커 엔진 (Core Poker Engine)"
+        internal_game --> pkg_poker("pkg/poker")
+        internal_config --> pkg_poker
+    end
+    
+    subgraph "데이터 (Data)"
+        internal_config --> rules("rules/*.yml")
+    end
 ```
 
-*   **`cmd`**는 중앙 오케스트레이터입니다.
-*   **`pkg/poker`**는 핵심적이고 독립적인 엔진입니다.
-*   **`internal/*`** 패키지들은 엔진을 CLI에 연결하는 애플리케이션별 로직을 제공합니다.
-*   **`rules/`**는 엔진을 설정하는 데이터 전용 YAML 파일을 포함합니다.
+*   **`cmd`**는 모든 `internal` 패키지에 의존하는 중앙 오케스트레이터입니다.
+*   **`internal/config`**와 **`internal/game`**은 모두 **`pkg/poker`** 엔진에 의존합니다.
+*   **`pkg/poker`**는 내부 의존성이 없는 핵심 독립 엔진입니다.
+*   **`rules/`**는 `internal/config`를 통해 엔진을 설정하는 데이터 전용 YAML 파일을 포함합니다.
 
 ## 패키지별 책임
 
