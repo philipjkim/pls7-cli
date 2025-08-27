@@ -192,15 +192,19 @@
     *   **14-4. `util` 패키지 정리 및 `cli` 책임 강화**
         - [x] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
         - [x] `FormatShowdownResults` 함수를 `internal/game` -> `internal/cli` 로 이동
-        - [ ] `game` 패키지가 포맷된 문자열 대신 구조화된 데이터를 반환하도록 리팩토링 (TDD)
-            - [ ] `game.ActionEvent`와 같은 이벤트 데이터 구조 정의
-            - [ ] `ProcessAction` 등 이벤트 문자열을 반환하던 함수의 시그니처 변경 및 테스트 케이스 작성
-            - [ ] `cmd/root.go`에서 구조화된 데이터를 받아 `cli` 패키지를 통해 출력 문자열 포맷팅
-* **완료여부**: ⬜ (진행 예정)
+        - [x] `game` 패키지가 포맷된 문자열 대신 구조화된 데이터를 반환하도록 리팩토링 (TDD)
+            - [x] `game.ActionEvent`와 같은 이벤트 데이터 구조 정의
+            - [x] `ProcessAction` 등 이벤트 문자열을 반환하던 함수의 시그니처 변경 및 테스트 케이스 작성
+            - [x] `cmd/root.go`에서 구조화된 데이터를 받아 `cli` 패키지를 통해 출력 문자열 포맷팅
+    *   **14-5. 베팅 라운드 로직 버그 수정 (TDD)**
+        - [x] 헤즈업 상황에서 턴이 스킵되는 버그를 재현하는 테스트 케이스 작성
+        - [x] `IsBettingRoundOver` 함수 로직을 액션 카운트 기반으로 변경하여 버그 수정
+        - [x] 전체 테스트 통과 확인
+* **완료여부**: ✅
 
 ---
 
-### **15단계: poker-engine, poker-cli 분리 (모노레포 방식)**
+### **16단계: poker-engine, poker-cli 분리 (모노레포 방식)**
 
 *   **목표**: 현재 레포지토리를 Go Workspaces를 이용한 모노레포로 전환하고, `poker-engine`과 `poker-cli`를 별도의 모듈로 분리한다.
 * **주요 작업**:

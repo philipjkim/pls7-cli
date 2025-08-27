@@ -32,6 +32,7 @@ var playerHoleCardsForDebug = map[string]map[string]string{
 // ProcessAction updates the game state based on a player's action.
 // It returns true if an aggressive action (bet, raise) was taken.
 func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool, event *ActionEvent) {
+	g.ActionsTakenThisRound++ // Increment for any action
 	event = &ActionEvent{PlayerName: player.Name, Action: action.Type}
 	switch action.Type {
 	case ActionFold:
@@ -49,6 +50,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		}
 		player.LastActionDesc = desc
 	case ActionBet:
+		g.ActionsTakenThisRound = 1 // This player is the new aggressor, reset the count
 		event.Amount = action.Amount
 		g.LastRaiseAmount = action.Amount
 		g.postBet(player, action.Amount)
@@ -61,6 +63,7 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 		g.Aggressor = player
 		return true, event
 	case ActionRaise:
+		g.ActionsTakenThisRound = 1 // This player is the new aggressor, reset the count
 		event.Amount = action.Amount
 		amountToPost := action.Amount - player.CurrentBet
 		previousBetToCall := g.BetToCall
@@ -291,6 +294,7 @@ func (g *Game) isBettingActionRequired() bool {
 // PrepareNewBettingRound resets player bets and determines the starting player for a new round.
 func (g *Game) PrepareNewBettingRound() {
 	g.Aggressor = nil
+	g.ActionsTakenThisRound = 0 // Reset the counter
 
 	if g.Phase == PhasePreFlop {
 		// Blinds are already posted, no need to reset bets.
@@ -328,33 +332,27 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 // IsBettingRoundOver checks if the betting round should end.
 func (g *Game) IsBettingRoundOver() bool {
 	// Condition 1: Not enough players to continue betting.
-	if g.CountNonFoldedPlayers() <= 1 || g.CountPlayersAbleToAct() == 0 {
+	if g.CountNonFoldedPlayers() <= 1 {
 		return true
 	}
 
-	// Condition 2: The action has returned to the last aggressor (or the original closer).
-	// Determine who closes the action.
-	closerPos := g.ActionCloserPos
-	if g.Aggressor != nil {
-		closerPos = g.Aggressor.Position
+	// Condition 2: All players who can act have taken at least one action.
+	// Note: A player raising means others have to act again, which is handled by checking if bets are matched.
+	if g.ActionsTakenThisRound < g.CountPlayersAbleToAct() {
+		return false
 	}
 
-	// If the current player is the one who closes the action, we then check if bets are settled.
-	if g.CurrentTurnPos == closerPos {
-		// Check if all players who can still act have matched the bet.
-		for _, p := range g.Players {
-			if p.Status == PlayerStatusPlaying {
-				if p.CurrentBet < g.BetToCall {
-					return false // This player still needs to act.
-				}
+	// Condition 3: All bets are matched.
+	for _, p := range g.Players {
+		if p.Status == PlayerStatusPlaying {
+			if p.CurrentBet < g.BetToCall {
+				return false // A player still needs to call a bet.
 			}
 		}
-		// If we are here, the action is on the closer and all bets are matched.
-		return true
 	}
 
-	// If it's not the closer's turn yet, the round is not over.
-	return false
+	// If we reach here, the round is over.
+	return true
 }
 
 // CurrentPlayer returns the player whose turn it is.

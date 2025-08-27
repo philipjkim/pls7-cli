@@ -95,6 +95,7 @@ func TestIsBettingRoundOver(t *testing.T) {
 		g.Players[0].CurrentBet = 100
 		g.Players[1].CurrentBet = 200
 		g.BetToCall = 200
+		g.ActionsTakenThisRound = 2 // Assume both players acted
 		if g.IsBettingRoundOver() {
 			t.Error("Expected betting round to NOT be over")
 		}
@@ -102,9 +103,12 @@ func TestIsBettingRoundOver(t *testing.T) {
 
 	t.Run("Round over - all bets matched", func(t *testing.T) {
 		g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1"}, 10000, "NLH")
+		g.Players[0].Status = PlayerStatusPlaying
+		g.Players[1].Status = PlayerStatusPlaying
 		g.Players[0].CurrentBet = 200
 		g.Players[1].CurrentBet = 200
 		g.BetToCall = 200
+		g.ActionsTakenThisRound = 2 // Manually set that both players have acted
 		if !g.IsBettingRoundOver() {
 			t.Error("Expected betting round to BE over")
 		}
@@ -114,6 +118,7 @@ func TestIsBettingRoundOver(t *testing.T) {
 		g := newGameForBettingTestsWithRules([]string{"YOU", "CPU1"}, 10000, "NLH")
 		g.Players[0].Status = PlayerStatusPlaying
 		g.Players[1].Status = PlayerStatusFolded
+		// This should be true regardless of actions taken
 		if !g.IsBettingRoundOver() {
 			t.Error("Expected betting round to BE over when only one player remains")
 		}
@@ -126,6 +131,7 @@ func TestIsBettingRoundOver(t *testing.T) {
 		g.Players[1].Status = PlayerStatusPlaying
 		g.Players[1].CurrentBet = 200
 		g.BetToCall = 200
+		g.ActionsTakenThisRound = 1 // Only the active player needs to have acted
 		if !g.IsBettingRoundOver() {
 			t.Error("Expected betting round to BE over when a player is all-in and cannot call a raise")
 		}

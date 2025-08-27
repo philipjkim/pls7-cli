@@ -42,16 +42,17 @@ type Game struct {
 	HandCount       int
 	Difficulty      Difficulty // To store the selected AI difficulty
 	// handEvaluator is a function field to allow mocking in tests.
-	handEvaluator     func(g *Game, player *Player) float64
-	DevMode           bool // Flag to indicate if the game is in development mode
-	ShowsOuts         bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
-	Rules             *poker.GameRules
-	Rand              *rand.Rand // Centralized random number generator
-	BlindUpInterval   int
-	BettingCalculator BettingLimitCalculator
-	Aggressor         *Player
-	ActionCloserPos   int
-	TotalInitialChips int
+	handEvaluator         func(g *Game, player *Player) float64
+	DevMode               bool // Flag to indicate if the game is in development mode
+	ShowsOuts             bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
+	Rules                 *poker.GameRules
+	Rand                  *rand.Rand // Centralized random number generator
+	BlindUpInterval       int
+	BettingCalculator     BettingLimitCalculator
+	Aggressor             *Player
+	ActionCloserPos       int
+	ActionsTakenThisRound int
+	TotalInitialChips     int
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
