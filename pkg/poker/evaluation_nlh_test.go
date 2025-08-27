@@ -1,7 +1,6 @@
 package poker
 
 import (
-	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"testing"
 )
@@ -35,14 +34,14 @@ func TestNLHHighHands(t *testing.T) {
 		{name: "3 Card Play (Full House)", cardString: "As Ac Ah Ks Kc 2d 3c", expectedRank: FullHouse},
 	}
 
-	gameRules := &config.GameRules{
-		LowHand: config.LowHandRules{
+	gameRules := &GameRules{
+		LowHand: LowHandRules{
 			Enabled: false, // Low hands are not enabled for these tests
 			MaxRank: 0,     // No low hand rules apply
 		},
-		HandRankings: config.HandRankingsRules{
+		HandRankings: HandRankingsRules{
 			UseStandardRankings: true,
-			CustomRankings:      []config.CustomHandRanking{},
+			CustomRankings:      []CustomHandRanking{},
 		},
 	}
 	for _, tc := range testCases {

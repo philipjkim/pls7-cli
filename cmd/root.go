@@ -9,18 +9,18 @@ import (
 	"pls7-cli/internal/config"
 	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
-	"pls7-cli/pkg/poker"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var (
-	ruleStr       string // To hold the --rule flag value (load rules/{rule}.yml when the game starts)
-	difficultyStr string // To hold the flag value
-	devMode       bool   // To hold the --dev flag value
-	showOuts      bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
+	ruleStr         string // To hold the --rule flag value (load rules/{rule}.yml when the game starts)
+	difficultyStr   string // To hold the flag value
+	devMode         bool   // To hold the --dev flag value
+	showOuts        bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
 	blindUpInterval int    // To hold the --blind-up flag value
 )
 
@@ -44,6 +44,7 @@ type CombinedActionProvider struct{}
 // GetAction method for CombinedActionProvider
 func (p *CombinedActionProvider) GetAction(g *game.Game, player *game.Player, r *rand.Rand) game.PlayerAction {
 	if player.IsCPU {
+		time.Sleep(g.CPUThinkTime())
 		return g.GetCPUAction(player, r)
 	}
 	return cli.PromptForAction(g)
@@ -59,9 +60,6 @@ func runGame(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("======== %s ========\n", rules.Name)
-
-	// The concept of a single difficulty is removed in favor of varied AI profiles.
-	// We keep the flag for potential future use but it no longer directly sets a single difficulty.
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 	initialChips := game.BigBlindAmt * 300
@@ -85,8 +83,13 @@ func runGame(cmd *cobra.Command, args []string) {
 
 	// Main Game Loop (multi-hand)
 	for {
+		cli.DisplayGameState(g)
 
-		g.StartNewHand()
+		blindEvent := g.StartNewHand()
+		if blindEvent != nil {
+			message := fmt.Sprintf("\n*** Blinds are now %s/%s ***\n", cli.FormatNumber(blindEvent.SmallBlind), cli.FormatNumber(blindEvent.BigBlind))
+			fmt.Println(message)
+		}
 
 		// Single Hand Loop
 		for g.Phase != game.PhaseShowdown && g.Phase != game.PhaseHandOver {
@@ -94,27 +97,65 @@ func runGame(cmd *cobra.Command, args []string) {
 				break
 			}
 			g.PrepareNewBettingRound()
-			g.ExecuteBettingLoop(actionProvider, cli.DisplayGameState)
+
+			// New Turn-by-turn Betting Loop
+			for !g.IsBettingRoundOver() {
+				player := g.CurrentPlayer()
+				var action game.PlayerAction
+
+				if player.Status != game.PlayerStatusPlaying {
+					g.AdvanceTurn()
+					continue
+				}
+
+				action = actionProvider.GetAction(g, player, g.Rand)
+
+				_, event := g.ProcessAction(player, action)
+				if event != nil {
+					var eventMessage string
+					switch event.Action {
+					case game.ActionFold:
+						eventMessage = fmt.Sprintf("%s folds.", event.PlayerName)
+					case game.ActionCheck:
+						eventMessage = fmt.Sprintf("%s checks.", event.PlayerName)
+					case game.ActionCall:
+						eventMessage = fmt.Sprintf("%s calls %s.", event.PlayerName, cli.FormatNumber(event.Amount))
+					case game.ActionBet:
+						eventMessage = fmt.Sprintf("%s bets %s.", event.PlayerName, cli.FormatNumber(event.Amount))
+					case game.ActionRaise:
+						eventMessage = fmt.Sprintf("%s raises to %s.", event.PlayerName, cli.FormatNumber(event.Amount))
+					}
+					if eventMessage != "" {
+						fmt.Println(eventMessage)
+					}
+				}
+				g.AdvanceTurn()
+			}
 			g.Advance()
 		}
 
 		// Conclude the hand
 		if g.CountNonFoldedPlayers() > 1 {
-			cli.DisplayGameState(g)
-			showdownResults(g)
+			showdownMessages := cli.FormatShowdownResults(g)
+			for _, msg := range showdownMessages {
+				fmt.Println(msg)
+			}
 		} else {
-			fmt.Println("--- POT DISTRIBUTION ---")
 			results := g.AwardPotToLastPlayer()
+			fmt.Println("--- POT DISTRIBUTION ---")
 			for _, result := range results {
 				fmt.Printf(
 					"%s wins %s chips with %s\n",
-					result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
+					result.PlayerName, cli.FormatNumber(result.AmountWon), result.HandDesc,
 				)
 			}
 			fmt.Println("------------------------")
 		}
 
-		g.CleanupHand()
+		cleanupMessages := g.CleanupHand()
+		for _, msg := range cleanupMessages {
+			fmt.Println(msg)
+		}
 
 		if g.Players[0].Status == game.PlayerStatusEliminated {
 			fmt.Println("You have been eliminated. GAME OVER.")
@@ -134,76 +175,6 @@ func runGame(cmd *cobra.Command, args []string) {
 			break
 		}
 	}
-}
-
-func showdownResults(g *game.Game) {
-	output := "\n--- SHOWDOWN ---\n"
-	output += fmt.Sprintf("Community Cards: %s\n", g.CommunityCards)
-
-	distributionResults := g.DistributePot()
-
-	winnerMap := make(map[string][]string)
-	for _, result := range distributionResults {
-		winType := ""
-		if strings.HasPrefix(result.HandDesc, "High") || strings.HasPrefix(result.HandDesc, "takes") {
-			winType = "High Winner"
-		} else if strings.HasPrefix(result.HandDesc, "Scoop") {
-			winType = "High/Low Winner"
-		} else {
-			winType = "Low Winner"
-		}
-		winnerMap[result.PlayerName] = append(winnerMap[result.PlayerName], winType)
-
-		// For debugging purposes, log the showdown results for "YOU"
-		if result.PlayerName == "YOU" {
-			logrus.Debugf(
-				"showdownResults: YOU - handDesc=%v, winType=%v, winnerMapValue=%+v",
-				result.HandDesc, winType, winnerMap[result.PlayerName],
-			)
-		}
-	}
-	logrus.Debugf(
-		"showdownResults: winnerMap=%+v, distributionResults=%+v",
-		winnerMap, distributionResults,
-	)
-
-	for _, player := range g.Players {
-		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
-			continue
-		}
-		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules)
-
-		handDesc := highHand.String()
-		if g.Rules.LowHand.Enabled && lowHand != nil {
-			var lowHandRanks []string
-			for _, c := range lowHand.Cards {
-				lowHandRanks = append(lowHandRanks, c.Rank.String())
-			}
-			if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
-				lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
-			}
-			handDesc += fmt.Sprintf(" | Low: %s-High", strings.Join(lowHandRanks, "-"))
-		}
-
-		winnerStatus := ""
-		if statuses, ok := winnerMap[player.Name]; ok {
-			winnerStatus = fmt.Sprintf(" (%s)", strings.Join(statuses, " & "))
-		}
-
-		output += fmt.Sprintf("- %-7s: %v -> %s%s\n", player.Name, player.Hand, handDesc, winnerStatus)
-	}
-
-	logrus.Debugf("distributionResults: %+v", distributionResults)
-
-	output += fmt.Sprintln("\n--- POT DISTRIBUTION ---")
-	for _, result := range distributionResults {
-		output += fmt.Sprintf(
-			"%s wins %s chips with %s\n",
-			result.PlayerName, util.FormatNumber(result.AmountWon), result.HandDesc,
-		)
-	}
-	output += fmt.Sprintln("------------------------")
-	fmt.Println(output)
 }
 
 // rootCmd represents the base command when called without any subcommands

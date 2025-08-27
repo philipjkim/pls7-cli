@@ -148,7 +148,7 @@
 
 ---
 
-### **13단계: 범용 포커 게임 엔진으로 리팩토링**
+### **13단계: 범용 포커 게임 엔진으로 리팩토링 Pt.1**
 
 *   **목표**: 단일 게임(PLS7) 애플리케이션을, 룰(YAML) 파일을 통해 다양한 포커 게임(NLH, PLO 등)을 지원할 수 있는 범용 엔진으로 추상화한다.
 * **주요 작업**:
@@ -157,5 +157,61 @@
     3.  **CLI 명령어(`cmd/root.go`) 수정**: `--rule` 플래그를 추가하여 사용자가 YAML 파일로 정의된 특정 게임 룰을 선택하여 실행할 수 있도록 수정한다. (✅)
     4.  **족보 판정 로직(`evaluation.go`) 리팩토링**: `EvaluateHand` 함수가 `GameRules`를 인자로 받아, 룰에 명시된 홀카드 사용 규칙과 사용 가능한 족보에 따라 동적으로 핸드를 판정하도록 수정한다. (✅)
     5.  **베팅 리밋 로직 추상화**: `BettingLimitCalculator` 인터페이스를 도입하고, 팟 리밋, 노 리밋 등 규칙에 맞는 구현체를 만들어 `GameRules`에 따라 선택적으로 사용하도록 변경한다. (✅)
-    6.  **전체 테스트 및 검증**: 리팩토링된 구성 요소가 올바르게 동작하는지 검증하기 위해 각 게임 룰(PLS7, NLH, PLO)에 대한 단위 테스트 및 통합 테스트를 작성하고 실행한다.
+    6.  **홀카드 사용 방식 추상화**: `hole_cards.use_constraint` 규칙(`any`, `exact` 등)에 따라 핸드 조합을 생성하는 로직을 인터페이스 기반으로 추상화하고, 룰에 맞는 구현체를 동적으로 사용하도록 변경한다.
+    7.  **전체 테스트 및 검증**: 리팩토링된 구성 요소가 올바르게 동작하는지 검증하기 위해 각 게임 룰(PLS7, NLH, PLO)에 대한 단위 테스트 및 통합 테스트를 작성하고 실행한다.
 * **완료여부**: ⏳ (현재 진행 중)
+
+---
+
+### **14단계: 패키지 구조 리팩토링 (책임 분리 강화)**
+
+*   **목표**: `poker-engine`과 `poker-cli` 분리를 위한 사전 작업으로, 패키지 간의 역할과 책임을 명확히 하고 잘못된 의존성을 바로잡는다.
+* **주요 작업**:
+    *   **14-1. `pkg/poker` 의존성 문제 해결**
+        - [x] `GameRules` 구조체를 `internal/config` -> `pkg/poker` 로 이동
+        - [x] `internal/config`가 `pkg/poker`를 import 하도록 수정
+        - [x] `JoinStrings` 유틸리티 함수를 `internal/util` -> `pkg/poker` 로 이동
+    *   **14-2. `game`과 `cli`의 책임 분리**
+        - [x] `internal/game` 패키지 내의 모든 `fmt.Print*` 호출 제거
+        - [x] `ExecuteBettingLoop`에서 `displayCurrentStatus` 콜백 제거
+        - [x] `cmd/root.go`의 메인 게임 루프를 `internal/game`으로 이동
+    *   **14-3. 게임 인터랙션 개선 (턴 기반 로직으로 변경)**
+        *   **목표**: `game` 패키지가 한 턴씩 게임을 진행하도록 변경하고, `cmd`가 이를 반복 호출하며 딜레이와 출력을 제어하도록 하여 인터랙티브한 UX를 복원한다.
+        *   **주요 작업**:
+            *   **14-3-1. 베팅 라운드 종료 조건 함수 구현 (TDD)**
+                - [x] `game.IsBettingRoundOver() bool` 메소드 및 테스트 케이스 추가
+            *   **14-3-2. 턴 관리 로직 구현 (TDD)**
+                - [x] `game.CurrentPlayer() *Player` 메소드 추가
+                - [x] `game.AdvanceTurn()` 메소드 및 테스트 케이스 추가
+            *   **14-3-3. 기존 루프 로직 제거**
+                - [x] `game.RunHand()` 메소드 제거
+                - [x] `game.ExecuteBettingLoop()` 메소드 제거 (또는 내부 로직 비우기)
+            *   **14-3-4. `cmd/root.go`에 새로운 턴 기반 루프 구현**
+                - [x] `cmd/root.go`의 `runGame` 함수에 새로운 베팅 루프 로직 작성
+                - [x] CPU 턴 딜레이(`time.Sleep`) 로직 추가
+    *   **14-4. `util` 패키지 정리 및 `cli` 책임 강화**
+        - [x] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
+        - [x] `FormatShowdownResults` 함수를 `internal/game` -> `internal/cli` 로 이동
+        - [x] `game` 패키지가 포맷된 문자열 대신 구조화된 데이터를 반환하도록 리팩토링 (TDD)
+            - [x] `game.ActionEvent`와 같은 이벤트 데이터 구조 정의
+            - [x] `ProcessAction` 등 이벤트 문자열을 반환하던 함수의 시그니처 변경 및 테스트 케이스 작성
+            - [x] `cmd/root.go`에서 구조화된 데이터를 받아 `cli` 패키지를 통해 출력 문자열 포맷팅
+    *   **14-5. 베팅 라운드 로직 버그 수정 (TDD)**
+        - [x] 헤즈업 상황에서 턴이 스킵되는 버그를 재현하는 테스트 케이스 작성
+        - [x] `IsBettingRoundOver` 함수 로직을 액션 카운트 기반으로 변경하여 버그 수정
+        - [x] 전체 테스트 통과 확인
+* **완료여부**: ✅
+
+---
+
+### **16단계: poker-engine, poker-cli 분리 (모노레포 방식)**
+
+*   **목표**: 현재 레포지토리를 Go Workspaces를 이용한 모노레포로 전환하고, `poker-engine`과 `poker-cli`를 별도의 모듈로 분리한다.
+* **주요 작업**:
+    - [ ] `go.work` 파일을 사용하여 워크스페이스 설정
+    - [ ] `/engine`, `/cli` 디렉토리 구조 생성
+    - [ ] `poker-engine` 관련 패키지(`pkg/poker`, `internal/game`, `internal/config`)를 `/engine`으로 이동
+    - [ ] `poker-cli` 관련 패키지(`cmd`, `internal/cli`, `internal/util`)를 `/cli`로 이동
+    - [ ] 각 모듈의 `go.mod` 파일 생성 및 의존성 정리
+    - [ ] `go.work`를 통해 `cli`가 `engine`을 올바르게 참조하는지 확인 및 빌드 테스트
+* **완료여부**: ⬜ (진행 예정)

@@ -2,8 +2,6 @@ package poker
 
 import (
 	"fmt"
-	"pls7-cli/internal/config"
-	"pls7-cli/internal/util"
 	"sort"
 
 	"github.com/sirupsen/logrus"
@@ -122,7 +120,7 @@ func (hr *HandResult) CardsString() string {
 		cards[i] = c.Rank.String()
 		cards[i] += c.Suit.String() + " "
 	}
-	return util.JoinStrings(cards)
+	return JoinStrings(cards)
 }
 
 // handAnalysis is a helper struct to hold counts of ranks and suits.
@@ -169,7 +167,7 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 }
 
 // EvaluateHand analyzes a full 8-card pool and determines the best high and low hands.
-func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *config.GameRules) (highResult *HandResult, lowResult *HandResult) {
+func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules) (highResult *HandResult, lowResult *HandResult) {
 	pool := make([]Card, 0, 8)
 	pool = append(pool, holeCards...)
 	pool = append(pool, communityCards...)
@@ -678,7 +676,7 @@ func compareHandResults(h1, h2 *HandResult) int {
 }
 
 // getHandRanks returns the order of hand ranks based on the game rules.
-func getHandRanks(rules *config.HandRankingsRules) []HandRank {
+func getHandRanks(rules *HandRankingsRules) []HandRank {
 	var handRankOrder []HandRank
 
 	if rules.UseStandardRankings {

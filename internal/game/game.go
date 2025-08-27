@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"pls7-cli/internal/config"
 	"pls7-cli/pkg/poker"
 	"time"
 
@@ -29,27 +28,70 @@ func (gp GamePhase) String() string {
 	return []string{"Pre-Flop", "Flop", "Turn", "River", "Showdown", "Hand Over"}[gp]
 }
 
-// Game represents the state of a single hand of PLS7.
+// Game represents the central state of a poker game. It manages all aspects of a single hand,
+// including players, the deck, community cards, and the betting rounds. It is the primary
+// orchestrator for the game logic.
 type Game struct {
-	Players         []*Player
-	Deck            *poker.Deck
-	CommunityCards  []poker.Card
-	Pot             int
-	DealerPos       int
-	CurrentTurnPos  int
-	Phase           GamePhase
-	BetToCall       int
+	// Players is a slice of pointers to Player objects participating in the game.
+	// The order of players in this slice determines their seating position at the table.
+	Players []*Player
+	// Deck is the deck of cards used for the game. It is shuffled at the beginning of each hand.
+	Deck *poker.Deck
+	// CommunityCards are the shared cards on the board, used by all players to make their hands.
+	CommunityCards []poker.Card
+	// Pot is the total amount of chips that has been bet in the current hand.
+	Pot int
+	// DealerPos is the index of the player who is the dealer in the current hand.
+	// The dealer button moves to the next active player after each hand.
+	DealerPos int
+	// CurrentTurnPos is the index of the player whose turn it is to act.
+	CurrentTurnPos int
+	// Phase represents the current stage of the hand (e.g., Pre-Flop, Flop, Turn, River).
+	Phase GamePhase
+	// BetToCall is the amount that a player must bet to stay in the hand.
+	// It is the highest bet made so far in the current betting round.
+	BetToCall int
+	// LastRaiseAmount stores the size of the last raise made in the current betting round.
+	// This is used to calculate the minimum valid raise amount for the next player.
 	LastRaiseAmount int
-	HandCount       int
-	Difficulty      Difficulty // To store the selected AI difficulty
-	// handEvaluator is a function field to allow mocking in tests.
-	handEvaluator     func(g *Game, player *Player) float64
-	DevMode           bool // Flag to indicate if the game is in development mode
-	ShowsOuts         bool // Flag to indicate if outs should be shown (if DevMode is true, this is always true)
-	Rules             *config.GameRules
-	Rand              *rand.Rand // Centralized random number generator
-	BlindUpInterval   int
+	// HandCount tracks the number of hands that have been played in the current game session.
+	HandCount int
+	// Difficulty stores the selected AI difficulty level for CPU players.
+	Difficulty Difficulty
+	// handEvaluator is a function field that allows for mocking hand evaluation logic in tests.
+	// In a normal game, it points to the `evaluateHandStrength` function.
+	handEvaluator func(g *Game, player *Player) float64
+	// DevMode is a boolean flag that enables or disables development-specific features,
+	// such as detailed logging and predictable card dealing.
+	DevMode bool
+	// ShowsOuts is a boolean flag that, when enabled, shows the player their potential "outs"
+	// (cards that could improve their hand) during the game. This is primarily a debugging
+	// and learning tool.
+	ShowsOuts bool
+	// Rules is a pointer to a GameRules struct, which defines the specific variant of poker being played
+	// (e.g., No-Limit Hold'em, Pot-Limit Sampyeong). The rules are loaded from a YAML file.
+	Rules *poker.GameRules
+	// Rand is a centralized random number generator for the game, ensuring that all random events
+	// (like shuffling and CPU decisions) are derived from a single source.
+	Rand *rand.Rand
+	// BlindUpInterval is the number of hands after which the small and big blinds double.
+	// A value of 0 disables this feature.
+	BlindUpInterval int
+	// BettingCalculator is an interface that provides the logic for calculating betting limits
+	// based on the game's rules (e.g., Pot-Limit, No-Limit).
 	BettingCalculator BettingLimitCalculator
+	// Aggressor is a pointer to the player who made the last aggressive action (bet or raise)
+	// in the current betting round. It is used to determine when the action is closed.
+	Aggressor *Player
+	// ActionCloserPos is the position of the player who closes the betting action if there are no raises.
+	// For pre-flop, this is the Big Blind. For post-flop, it's the player to the left of the dealer.
+	ActionCloserPos int
+	// ActionsTakenThisRound counts the number of actions (fold, check, call, bet, raise) taken
+	// in the current betting round. This is used to determine when the round is over.
+	ActionsTakenThisRound int
+	// TotalInitialChips is the sum of all players' initial chip counts. This is used for sanity checks
+	// to ensure that chips are not being created or destroyed during the game.
+	TotalInitialChips int
 }
 
 // CPUThinkTime returns the delay for CPU actions based on the development mode.
@@ -65,7 +107,7 @@ func NewGame(
 	playerNames []string,
 	initialChips int,
 	difficulty Difficulty,
-	rules *config.GameRules,
+	rules *poker.GameRules,
 	isDev bool,
 	showsOuts bool,
 	blindUpInterval int,
@@ -127,6 +169,7 @@ func NewGame(
 		Rand:              r,
 		BlindUpInterval:   blindUpInterval,
 		BettingCalculator: calculator,
+		TotalInitialChips: initialChips * len(playerNames),
 	}
 	// Set the default hand evaluator.
 	g.handEvaluator = evaluateHandStrength

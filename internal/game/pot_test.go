@@ -10,9 +10,9 @@ import (
 // TestAwardPotToLastPlayer_SkipsEliminatedPlayers tests that the function correctly identifies
 // the last non-folded player, skipping any players who were already eliminated.
 func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
-	// Scenario: 4 players. CPU 1 is eliminated. YOU and CPU 3 fold.
-	// The winner must be CPU 2, not the eliminated CPU 1.
-	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3"}
+	// Scenario: 4 players. CPU1 is eliminated. YOU and CPU3 fold.
+	// The winner must be CPU2, not the eliminated CPU1.
+	playerNames := []string{"YOU", "CPU1", "CPU2", "CPU3"}
 	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
 	if err != nil {
 		t.Fatalf("Failed to load game rules: %v", err)
@@ -22,9 +22,9 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	// Setup the game state
 	g.Pot = 1500
 	g.Players[0].Status = PlayerStatusFolded     // YOU folds.
-	g.Players[1].Status = PlayerStatusEliminated // CPU 1 is eliminated.
-	g.Players[2].Status = PlayerStatusPlaying    // CPU 2 is the last one playing.
-	g.Players[3].Status = PlayerStatusFolded     // CPU 3 folds.
+	g.Players[1].Status = PlayerStatusEliminated // CPU1 is eliminated.
+	g.Players[2].Status = PlayerStatusPlaying    // CPU2 is the last one playing.
+	g.Players[3].Status = PlayerStatusFolded     // CPU3 folds.
 
 	// Action: Award the pot.
 	results := g.AwardPotToLastPlayer()
@@ -35,11 +35,11 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	if len(results) != 1 {
 		t.Fatalf("Expected 1 winner, but got %d", len(results))
 	}
-	if results[0].PlayerName != "CPU 2" {
-		t.Errorf("Expected winner to be 'CPU 2', but got '%s'", results[0].PlayerName)
+	if results[0].PlayerName != "CPU2" {
+		t.Errorf("Expected winner to be 'CPU2', but got '%s'", results[0].PlayerName)
 	}
 	if g.Players[2].Chips != 11500 { // 10000 initial + 1500 pot
-		t.Errorf("Expected CPU 2's chips to be 11500, but got %d", g.Players[2].Chips)
+		t.Errorf("Expected CPU2's chips to be 11500, but got %d", g.Players[2].Chips)
 	}
 }
 
@@ -50,10 +50,10 @@ func TestDistributePot_SidePots(t *testing.T) {
 
 	// Scenario: 3 players go all-in with different stack sizes.
 	// YOU (2000) has the best hand.
-	// MidStack (5000) has the second best hand.
-	// BigStack (10000) has the worst hand.
+	// CPU1 (5000) has the second best hand (MidStack).
+	// CPU2 (10000) has the worst hand (BigStack).
 	// No low hands qualify.
-	playerNames := []string{"YOU", "MidStack", "BigStack"}
+	playerNames := []string{"YOU", "CPU1", "CPU2"}
 	rules, err := config.LoadGameRulesFromFile("../../rules/pls.yml")
 	if err != nil {
 		t.Fatalf("Failed to load game rules: %v", err)
@@ -85,8 +85,8 @@ func TestDistributePot_SidePots(t *testing.T) {
 	// --- Assertions ---
 	// Expected distribution:
 	// Main Pot (2000 * 3 = 6000) goes to YOU.
-	// Side Pot 1 ((5000-2000) * 2 = 6000) goes to MidStack.
-	// Side Pot 2 ((10000-5000) * 1 = 5000) is returned to BigStack.
+	// Side Pot 1 ((5000-2000) * 2 = 6000) goes to CPU1.
+	// Side Pot 2 ((10000-5000) * 1 = 5000) is returned to CPU2.
 
 	if len(results) != 3 {
 		t.Fatalf("Expected 3 distribution results, but got %d", len(results))
@@ -109,9 +109,9 @@ func TestDistributePot_SidePots(t *testing.T) {
 func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 	util.InitLogger(true)
 
-	// Scenario: 3 players. Player C bets 1000 and folds. YOU and B go to showdown with 3000 each.
+	// Scenario: 3 players. CPU2 bets 1000 and folds. YOU and B go to showdown with 3000 each.
 	// The total pot should be 7000. YOU has the winning hand.
-	playerNames := []string{"YOU", "Player B", "Player C"}
+	playerNames := []string{"YOU", "CPU1", "CPU2"}
 	rules, err := config.LoadGameRulesFromFile("../../rules/pls.yml")
 	if err != nil {
 		t.Fatalf("Failed to load game rules: %v", err)
@@ -153,7 +153,7 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 		t.Errorf("Expected YOU to have 14000 chips, but got %d", g.Players[0].Chips)
 	}
 	if g.Players[1].Chips != 7000 {
-		t.Errorf("Expected Player B to have 7000 chips, but got %d", g.Players[1].Chips)
+		t.Errorf("Expected CPU1 to have 7000 chips, but got %d", g.Players[1].Chips)
 	}
 	if g.Pot != 0 {
 		t.Errorf("Expected pot to be 0 after distribution, but got %d", g.Pot)

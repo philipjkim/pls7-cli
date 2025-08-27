@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 
 	"github.com/sirupsen/logrus"
@@ -32,59 +31,64 @@ var playerHoleCardsForDebug = map[string]map[string]string{
 
 // ProcessAction updates the game state based on a player's action.
 // It returns true if an aggressive action (bet, raise) was taken.
-func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool) {
+func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool, event *ActionEvent) {
+	g.ActionsTakenThisRound++ // Increment for any action
+	event = &ActionEvent{PlayerName: player.Name, Action: action.Type}
 	switch action.Type {
 	case ActionFold:
 		player.Status = PlayerStatusFolded
 		player.LastActionDesc = "Fold"
-		fmt.Printf("%s folds.\n", player.Name)
 	case ActionCheck:
 		player.LastActionDesc = "Check"
-		fmt.Printf("%s checks.\n", player.Name)
 	case ActionCall:
 		amountToCall := g.BetToCall - player.CurrentBet
+		event.Amount = amountToCall
 		g.postBet(player, amountToCall)
-		desc := fmt.Sprintf("Call %s", util.FormatNumber(amountToCall))
+		desc := fmt.Sprintf("Call %d", amountToCall)
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s calls %s.\n", player.Name, util.FormatNumber(amountToCall))
 	case ActionBet:
+		g.ActionsTakenThisRound = 1 // This player is the new aggressor, reset the count
+		event.Amount = action.Amount
 		g.LastRaiseAmount = action.Amount
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
-		desc := fmt.Sprintf("Bet %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		desc := fmt.Sprintf("Bet %d", player.CurrentBet) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s bets %s.\n", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
-		return true
+		g.Aggressor = player
+		return true, event
 	case ActionRaise:
+		g.ActionsTakenThisRound = 1 // This player is the new aggressor, reset the count
+		event.Amount = action.Amount
 		amountToPost := action.Amount - player.CurrentBet
 		previousBetToCall := g.BetToCall
 		g.postBet(player, amountToPost)
 		g.BetToCall = player.CurrentBet
 		g.LastRaiseAmount = g.BetToCall - previousBetToCall
-		desc := fmt.Sprintf("Raise to %s", util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
+		desc := fmt.Sprintf("Raise to %d", player.CurrentBet) // FIX: Use actual bet amount
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		fmt.Printf("%s raises to %s.\n", player.Name, util.FormatNumber(player.CurrentBet)) // FIX: Use actual bet amount
-		return true
+		g.Aggressor = player
+		return true, event
 	}
-	return false
+	return false, event
 }
 
 // CleanupHand checks for eliminated players and prepares for the next hand.
-func (g *Game) CleanupHand() {
-	fmt.Println("\n--- End of Hand ---")
+func (g *Game) CleanupHand() []string {
+	var events []string
+	events = append(events, "\n--- End of Hand ---")
 	for _, p := range g.Players {
 		if p.Chips == 0 && p.Status != PlayerStatusEliminated {
 			p.Status = PlayerStatusEliminated
-			fmt.Printf("%s has been eliminated!\n", p.Name)
+			events = append(events, fmt.Sprintf("%s has been eliminated!", p.Name))
 		}
 	}
 
@@ -92,12 +96,12 @@ func (g *Game) CleanupHand() {
 	if g.CountRemainingPlayers() <= 1 {
 		for _, p := range g.Players {
 			if p.Status != PlayerStatusEliminated {
-				fmt.Printf("%s wins the game!\n", p.Name)
+				events = append(events, fmt.Sprintf("%s wins the game!", p.Name))
 				break
 			}
 		}
-		return
 	}
+	return events
 }
 
 // CountRemainingPlayers counts players who have not been eliminated from the entire game.
@@ -137,14 +141,14 @@ func (g *Game) CountPlayersAbleToAct() int {
 }
 
 // StartNewHand now resets the LastActionDesc field.
-func (g *Game) StartNewHand() {
+func (g *Game) StartNewHand() (event *BlindEvent) {
 	g.HandCount++
 
 	// Update blinds based on the interval
 	if g.BlindUpInterval > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
 		SmallBlindAmt *= 2
 		BigBlindAmt *= 2
-		fmt.Printf("\n*** Blinds are now %s/%s ***\n", util.FormatNumber(SmallBlindAmt), util.FormatNumber(BigBlindAmt))
+		event = &BlindEvent{SmallBlind: SmallBlindAmt, BigBlind: BigBlindAmt}
 	}
 
 	g.Phase = PhasePreFlop
@@ -218,6 +222,8 @@ func (g *Game) StartNewHand() {
 			}
 		}
 	}
+
+	return event
 }
 
 // FindNextActivePlayer finds the index of the next player who is not eliminated.
@@ -287,10 +293,17 @@ func (g *Game) isBettingActionRequired() bool {
 
 // PrepareNewBettingRound resets player bets and determines the starting player for a new round.
 func (g *Game) PrepareNewBettingRound() {
+	g.Aggressor = nil
+	g.ActionsTakenThisRound = 0 // Reset the counter
+
 	if g.Phase == PhasePreFlop {
 		// Blinds are already posted, no need to reset bets.
+		// Action starts after BB, and the BB is the action closer.
+		bbPos := g.FindNextActivePlayer(g.FindNextActivePlayer(g.DealerPos))
+		g.ActionCloserPos = bbPos
 		return
 	}
+
 	// For post-flop rounds, reset bets and start with the player after the dealer.
 	for _, p := range g.Players {
 		if p.Status != PlayerStatusEliminated {
@@ -301,6 +314,7 @@ func (g *Game) PrepareNewBettingRound() {
 	g.BetToCall = 0
 	g.LastRaiseAmount = 0
 	g.CurrentTurnPos = g.FindNextActivePlayer(g.DealerPos)
+	g.ActionCloserPos = g.FindPreviousActivePlayer(g.CurrentTurnPos)
 }
 
 // FindPreviousActivePlayer finds the index of the previous player who is not eliminated.
@@ -315,63 +329,38 @@ func (g *Game) FindPreviousActivePlayer(startPos int) int {
 	}
 }
 
-// ExecuteBettingLoop runs the core betting logic for a round.
-// It now takes a single ActionProvider for all players.
-func (g *Game) ExecuteBettingLoop(
-	actionProvider ActionProvider,
-	displayCurrentStatus func(g *Game),
-) {
-	if g.CountNonFoldedPlayers() < 2 {
-		return // No betting needed if fewer than 2 players are in the hand.
+// IsBettingRoundOver checks if the betting round should end.
+func (g *Game) IsBettingRoundOver() bool {
+	// Condition 1: Not enough players to continue betting.
+	if g.CountNonFoldedPlayers() <= 1 {
+		return true
 	}
 
-	// Determine who acts last.
-	var actionCloserPos int
-	var aggressor *Player
-
-	if g.Phase == PhasePreFlop {
-		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
-	} else {
-		actionCloserPos = g.FindPreviousActivePlayer(g.FindNextActivePlayer(g.DealerPos))
+	// Condition 2: All players who can act have taken at least one action.
+	// Note: A player raising means others have to act again, which is handled by checking if bets are matched.
+	if g.ActionsTakenThisRound < g.CountPlayersAbleToAct() {
+		return false
 	}
 
-	for {
-		player := g.Players[g.CurrentTurnPos]
-
-		if player.Status == PlayerStatusPlaying {
-			displayCurrentStatus(g)
-
-			// All actions are now determined by the single provider.
-			action := actionProvider.GetAction(g, player, g.Rand)
-
-			wasAggressive := g.ProcessAction(player, action)
-			if wasAggressive {
-				aggressor = player
+	// Condition 3: All bets are matched.
+	for _, p := range g.Players {
+		if p.Status == PlayerStatusPlaying {
+			if p.CurrentBet < g.BetToCall {
+				return false // A player still needs to call a bet.
 			}
 		}
-
-		// The betting round ends when the action gets to the last aggressor and they have already acted.
-		if aggressor != nil && g.CurrentTurnPos == g.FindPreviousActivePlayer(aggressor.Position) {
-			break
-		}
-
-		// Or if everyone has had a turn and the bets are called.
-		if g.CurrentTurnPos == actionCloserPos && !g.isBettingActionRequired() {
-			break
-		}
-
-		g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
 	}
+
+	// If we reach here, the round is over.
+	return true
 }
 
-// actionCloserPosForPreFlop returns the position of the action closer in Pre-Flop phase.
-func actionCloserPosForPreFlop(g *Game) int {
-	// In Pre-Flop, the action closer is the Big Blind.
-	ac := (g.DealerPos + 2) % len(g.Players)
-	for {
-		if g.Players[ac].Status != PlayerStatusEliminated {
-			return ac
-		}
-		ac = (ac + 1) % len(g.Players) // Skip eliminated players
-	}
+// CurrentPlayer returns the player whose turn it is.
+func (g *Game) CurrentPlayer() *Player {
+	return g.Players[g.CurrentTurnPos]
+}
+
+// AdvanceTurn moves the turn to the next active player.
+func (g *Game) AdvanceTurn() {
+	g.CurrentTurnPos = g.FindNextActivePlayer(g.CurrentTurnPos)
 }

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"pls7-cli/internal/game"
-	"pls7-cli/internal/util"
 	"strconv"
 	"strings"
 )
 
 // PromptForAction requests the player to choose an action during their turn.
 func PromptForAction(g *game.Game) game.PlayerAction {
+	DisplayGameState(g)
+
 	// for loop to keep prompting until a valid action is chosen
 	for {
 		player := g.Players[g.CurrentTurnPos]
@@ -30,7 +31,7 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 				return game.PlayerAction{Type: game.ActionCall}
 			}
 
-			prompt.WriteString(fmt.Sprintf("(c)all %s, ", util.FormatNumber(amountToCall)))
+			prompt.WriteString(fmt.Sprintf("(c)all %s, ", FormatNumber(amountToCall)))
 			// Only show raise option if the player has enough chips to make a valid raise.
 			minRaise, _ := g.CalculateBettingLimits()
 			if player.Chips > amountToCall && player.CurrentBet+player.Chips >= minRaise {
@@ -80,7 +81,7 @@ func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction
 
 		fmt.Printf(
 			"Enter amount to %s (min: %s, max: %s): ",
-			actionName, util.FormatNumber(minBet), util.FormatNumber(maxBet),
+			actionName, FormatNumber(minBet), FormatNumber(maxBet),
 		)
 
 		reader := bufio.NewReader(os.Stdin)

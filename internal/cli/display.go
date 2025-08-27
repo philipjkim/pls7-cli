@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"pls7-cli/internal/game"
-	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 	"sort"
 	"strings"
@@ -22,7 +21,7 @@ func DisplayGameState(g *game.Game) {
 	phaseName := strings.ToUpper(g.Phase.String())
 	output += fmt.Sprintf("\n\n--- %s (%s) | HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
 		g.Rules.Abbreviation, g.Difficulty, g.HandCount, phaseName,
-		util.FormatNumber(g.Pot), util.FormatNumber(game.SmallBlindAmt), util.FormatNumber(game.BigBlindAmt),
+		FormatNumber(g.Pot), FormatNumber(game.SmallBlindAmt), FormatNumber(game.BigBlindAmt),
 	)
 
 	var communityCardStrings []string
@@ -76,21 +75,21 @@ func DisplayGameState(g *game.Game) {
 
 		actionInfo := ""
 		if p.Status != game.PlayerStatusEliminated {
-			actionInfo = fmt.Sprintf(", Current Bet: %-6s", util.FormatNumber(p.CurrentBet))
+			actionInfo = fmt.Sprintf(", Current Bet: %-6s", FormatNumber(p.CurrentBet))
 			if p.LastActionDesc != "" && i != g.CurrentTurnPos {
 				actionInfo += fmt.Sprintf(" - %s", p.LastActionDesc)
 			}
 		}
 		logrus.Debugf(
 			"Player %s: Status: %v, Current Bet: %s, Last Action: %s, actionInfo: [%s]",
-			p.Name, p.Status, util.FormatNumber(p.CurrentBet), p.LastActionDesc, actionInfo,
+			p.Name, p.Status, FormatNumber(p.CurrentBet), p.LastActionDesc, actionInfo,
 		)
 
 		nameInfo := fmt.Sprintf("%s%s", indicator, p.Name)
 		if p.IsCPU && g.DevMode {
 			nameInfo = fmt.Sprintf("%s%s (%s)", indicator, p.Name, p.Profile.Name)
 		}
-		line := fmt.Sprintf("%-30s: Chips: %-9s%s %s %s", nameInfo, util.FormatNumber(p.Chips), actionInfo, status, handInfo)
+		line := fmt.Sprintf("% -30s: Chips: %-9s%s %s %s", nameInfo, FormatNumber(p.Chips), actionInfo, status, handInfo)
 		output += fmt.Sprintln(strings.TrimSpace(line))
 
 		// Display outs for the player in dev mode
@@ -116,16 +115,16 @@ func DisplayGameState(g *game.Game) {
 		}
 	}
 
-	if totalChips != game.BigBlindAmt*300*len(g.Players) {
+	if totalChips != g.TotalInitialChips {
 		logrus.Warnf(
 			"Total chips mismatch: expected %s, got %s",
-			util.FormatNumber(game.BigBlindAmt*300*len(g.Players)),
-			util.FormatNumber(totalChips),
+			FormatNumber(g.TotalInitialChips),
+			FormatNumber(totalChips),
 		)
 	} else {
 		logrus.Debugf(
 			"Total chips match expected value: %s",
-			util.FormatNumber(game.BigBlindAmt*300*len(g.Players)),
+			FormatNumber(g.TotalInitialChips),
 		)
 	}
 
@@ -183,4 +182,61 @@ func formatEquities(pot, amountToCall, numOuts int, phase game.GamePhase) string
 // clearScreen clears the console. (Note: This is a simple implementation)
 func clearScreen() {
 	fmt.Print("\033[H\033[2J")
+}
+
+func FormatShowdownResults(g *game.Game) []string {
+	var outputLines []string
+	outputLines = append(outputLines, "\n--- SHOWDOWN ---")
+	outputLines = append(outputLines, fmt.Sprintf("Community Cards: %s", g.CommunityCards))
+
+	distributionResults := g.DistributePot()
+
+	winnerMap := make(map[string][]string)
+	for _, result := range distributionResults {
+		winType := ""
+		if strings.HasPrefix(result.HandDesc, "High") || strings.HasPrefix(result.HandDesc, "takes") {
+			winType = "High Winner"
+		} else if strings.HasPrefix(result.HandDesc, "Scoop") {
+			winType = "High/Low Winner"
+		} else {
+			winType = "Low Winner"
+		}
+		winnerMap[result.PlayerName] = append(winnerMap[result.PlayerName], winType)
+	}
+
+	for _, player := range g.Players {
+		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
+			continue
+		}
+		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules)
+
+		handDesc := highHand.String()
+		if g.Rules.LowHand.Enabled && lowHand != nil {
+			var lowHandRanks []string
+			for _, c := range lowHand.Cards {
+				lowHandRanks = append(lowHandRanks, c.Rank.String())
+			}
+			if len(lowHandRanks) > 0 && lowHandRanks[0] == "A" {
+				lowHandRanks = append(lowHandRanks[1:], lowHandRanks[0])
+			}
+			handDesc += fmt.Sprintf(" | Low: %s-High", strings.Join(lowHandRanks, "-"))
+		}
+
+		winnerStatus := ""
+		if statuses, ok := winnerMap[player.Name]; ok {
+			winnerStatus = fmt.Sprintf(" (%s)", strings.Join(statuses, " & "))
+		}
+
+		outputLines = append(outputLines, fmt.Sprintf("- %-7s: %v -> %s%s", player.Name, player.Hand, handDesc, winnerStatus))
+	}
+
+	outputLines = append(outputLines, "\n--- POT DISTRIBUTION ---")
+	for _, result := range distributionResults {
+		outputLines = append(outputLines, fmt.Sprintf(
+			"%s wins %s chips with %s",
+			result.PlayerName, FormatNumber(result.AmountWon), result.HandDesc,
+		))
+	}
+	outputLines = append(outputLines, "------------------------")
+	return outputLines
 }
