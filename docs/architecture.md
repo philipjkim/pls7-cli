@@ -15,8 +15,6 @@ This decoupled architecture makes the core engine portable and allows the user i
 
 The diagram below illustrates the dependency flow between the major packages.
 
-![Architecture Diagram](./images/pls7-cli-architecture-diagram.png)
-
 ```mermaid
 graph TD
     subgraph Application

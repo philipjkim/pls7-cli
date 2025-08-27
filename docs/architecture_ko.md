@@ -15,8 +15,6 @@
 
 아래 다이어그램은 주요 패키지 간의 의존성 흐름을 보여줍니다.
 
-![Architecture Diagram](./images/pls7-cli-architecture-diagram.png)
-
 ```mermaid
 graph TD
     subgraph Application
