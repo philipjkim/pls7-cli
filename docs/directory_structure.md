@@ -87,7 +87,6 @@ pls7-cli/
         *   `ai.go`: Contains the logic for CPU player decisions based on their assigned `AIProfile`.
         *   `betting_limit.go`: Implements the `BettingLimitCalculator` interface (Strategy Pattern) to handle different betting structures like Pot-Limit and No-Limit.
         *   `pot.go`: Manages complex pot calculations, including side pots for all-in situations.
-        *   `turn.go`: Logic for advancing turns between active players.
     *   **`util/`**: General-purpose utility functions.
         *   `logger.go`: Initializes and configures the `logrus` logger.
 

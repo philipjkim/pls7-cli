@@ -87,7 +87,6 @@ pls7-cli/
         *   `ai.go`: 할당된 `AIProfile`에 따라 CPU 플레이어의 의사 결정을 위한 로직을 포함합니다.
         *   `betting_limit.go`: 팟리밋, 노리밋과 같은 다양한 베팅 구조를 처리하기 위해 `BettingLimitCalculator` 인터페이스(전략 패턴)를 구현합니다.
         *   `pot.go`: 올인 상황에서의 사이드 팟을 포함한 복잡한 팟 계산을 관리합니다.
-        *   `turn.go`: 활성 플레이어 간의 턴을 진행하는 로직.
     *   **`util/`**: 범용 유틸리티 함수.
         *   `logger.go`: `logrus` 로거를 초기화하고 설정합니다.
 
