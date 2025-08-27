@@ -192,6 +192,10 @@
     *   **14-4. `util` 패키지 정리 및 `cli` 책임 강화**
         - [x] `FormatNumber` 함수를 `internal/util` -> `internal/cli` 로 이동
         - [x] `FormatShowdownResults` 함수를 `internal/game` -> `internal/cli` 로 이동
+        - [ ] `game` 패키지가 포맷된 문자열 대신 구조화된 데이터를 반환하도록 리팩토링 (TDD)
+            - [ ] `game.ActionEvent`와 같은 이벤트 데이터 구조 정의
+            - [ ] `ProcessAction` 등 이벤트 문자열을 반환하던 함수의 시그니처 변경 및 테스트 케이스 작성
+            - [ ] `cmd/root.go`에서 구조화된 데이터를 받아 `cli` 패키지를 통해 출력 문자열 포맷팅
 * **완료여부**: ⬜ (진행 예정)
 
 ---

@@ -31,25 +31,25 @@ var playerHoleCardsForDebug = map[string]map[string]string{
 
 // ProcessAction updates the game state based on a player's action.
 // It returns true if an aggressive action (bet, raise) was taken.
-func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool, eventMessage string) {
+func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive bool, event *ActionEvent) {
+	event = &ActionEvent{PlayerName: player.Name, Action: action.Type}
 	switch action.Type {
 	case ActionFold:
 		player.Status = PlayerStatusFolded
 		player.LastActionDesc = "Fold"
-		eventMessage = fmt.Sprintf("%s folds.", player.Name)
 	case ActionCheck:
 		player.LastActionDesc = "Check"
-		eventMessage = fmt.Sprintf("%s checks.", player.Name)
 	case ActionCall:
 		amountToCall := g.BetToCall - player.CurrentBet
+		event.Amount = amountToCall
 		g.postBet(player, amountToCall)
 		desc := fmt.Sprintf("Call %d", amountToCall)
 		if player.Status == PlayerStatusAllIn {
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		eventMessage = fmt.Sprintf("%s calls %d.", player.Name, amountToCall)
 	case ActionBet:
+		event.Amount = action.Amount
 		g.LastRaiseAmount = action.Amount
 		g.postBet(player, action.Amount)
 		g.BetToCall = player.CurrentBet
@@ -58,10 +58,10 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		eventMessage = fmt.Sprintf("%s bets %d.", player.Name, player.CurrentBet) // FIX: Use actual bet amount
 		g.Aggressor = player
-		return true, eventMessage
+		return true, event
 	case ActionRaise:
+		event.Amount = action.Amount
 		amountToPost := action.Amount - player.CurrentBet
 		previousBetToCall := g.BetToCall
 		g.postBet(player, amountToPost)
@@ -72,11 +72,10 @@ func (g *Game) ProcessAction(player *Player, action PlayerAction) (wasAggressive
 			desc += " (All-in)"
 		}
 		player.LastActionDesc = desc
-		eventMessage = fmt.Sprintf("%s raises to %d.", player.Name, player.CurrentBet) // FIX: Use actual bet amount
 		g.Aggressor = player
-		return true, eventMessage
+		return true, event
 	}
-	return false, eventMessage
+	return false, event
 }
 
 // CleanupHand checks for eliminated players and prepares for the next hand.
@@ -139,14 +138,14 @@ func (g *Game) CountPlayersAbleToAct() int {
 }
 
 // StartNewHand now resets the LastActionDesc field.
-func (g *Game) StartNewHand() (eventMessage string) {
+func (g *Game) StartNewHand() (event *BlindEvent) {
 	g.HandCount++
 
 	// Update blinds based on the interval
 	if g.BlindUpInterval > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
 		SmallBlindAmt *= 2
 		BigBlindAmt *= 2
-		eventMessage = fmt.Sprintf("\n*** Blinds are now %d/%d ***\n", SmallBlindAmt, BigBlindAmt)
+		event = &BlindEvent{SmallBlind: SmallBlindAmt, BigBlind: BigBlindAmt}
 	}
 
 	g.Phase = PhasePreFlop
@@ -221,7 +220,7 @@ func (g *Game) StartNewHand() (eventMessage string) {
 		}
 	}
 
-	return eventMessage
+	return event
 }
 
 // FindNextActivePlayer finds the index of the next player who is not eliminated.

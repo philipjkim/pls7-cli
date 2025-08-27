@@ -85,9 +85,10 @@ func runGame(cmd *cobra.Command, args []string) {
 	for {
 		cli.DisplayGameState(g)
 
-		blindMessage := g.StartNewHand()
-		if blindMessage != "" {
-			fmt.Println(blindMessage)
+		blindEvent := g.StartNewHand()
+		if blindEvent != nil {
+			message := fmt.Sprintf("\n*** Blinds are now %s/%s ***\n", cli.FormatNumber(blindEvent.SmallBlind), cli.FormatNumber(blindEvent.BigBlind))
+			fmt.Println(message)
 		}
 
 		// Single Hand Loop
@@ -109,9 +110,24 @@ func runGame(cmd *cobra.Command, args []string) {
 
 				action = actionProvider.GetAction(g, player, g.Rand)
 
-				_, eventMessage := g.ProcessAction(player, action)
-				if eventMessage != "" {
-					fmt.Println(eventMessage)
+				_, event := g.ProcessAction(player, action)
+				if event != nil {
+					var eventMessage string
+					switch event.Action {
+					case game.ActionFold:
+						eventMessage = fmt.Sprintf("%s folds.", event.PlayerName)
+					case game.ActionCheck:
+						eventMessage = fmt.Sprintf("%s checks.", event.PlayerName)
+					case game.ActionCall:
+						eventMessage = fmt.Sprintf("%s calls %s.", event.PlayerName, cli.FormatNumber(event.Amount))
+					case game.ActionBet:
+						eventMessage = fmt.Sprintf("%s bets %s.", event.PlayerName, cli.FormatNumber(event.Amount))
+					case game.ActionRaise:
+						eventMessage = fmt.Sprintf("%s raises to %s.", event.PlayerName, cli.FormatNumber(event.Amount))
+					}
+					if eventMessage != "" {
+						fmt.Println(eventMessage)
+					}
 				}
 				time.Sleep(300 * time.Millisecond) // Delay after action
 				g.AdvanceTurn()
