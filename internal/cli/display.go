@@ -21,7 +21,7 @@ func DisplayGameState(g *game.Game) {
 	phaseName := strings.ToUpper(g.Phase.String())
 	output += fmt.Sprintf("\n\n--- %s (%s) | HAND #%d | PHASE: %s | POT: %s | BLINDS: %s/%s ---\n",
 		g.Rules.Abbreviation, g.Difficulty, g.HandCount, phaseName,
-		FormatNumber(g.Pot), FormatNumber(game.SmallBlindAmt), FormatNumber(game.BigBlindAmt),
+		FormatNumber(g.Pot), FormatNumber(g.SmallBlind), FormatNumber(g.BigBlind),
 	)
 
 	var communityCardStrings []string

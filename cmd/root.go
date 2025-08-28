@@ -22,6 +22,9 @@ var (
 	devMode         bool   // To hold the --dev flag value
 	showOuts        bool   // To hold the --outs flag value (this does not work if devMode is true, as it will always show outs in dev mode)
 	blindUpInterval int    // To hold the --blind-up flag value
+	initialChips    int    // To hold the --initial-chips flag value
+	smallBlind      int    // To hold the --small-blind flag value
+	bigBlind        int    // To hold the --big-blind flag value
 )
 
 // CLIActionProvider implements the ActionProvider interface using the CLI.
@@ -62,7 +65,6 @@ func runGame(cmd *cobra.Command, args []string) {
 	fmt.Printf("======== %s ========\n", rules.Name)
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
-	initialChips := game.BigBlindAmt * 300
 
 	var difficulty game.Difficulty
 	switch difficultyStr {
@@ -77,7 +79,7 @@ func runGame(cmd *cobra.Command, args []string) {
 		difficulty = game.DifficultyMedium
 	}
 
-	g := game.NewGame(playerNames, initialChips, difficulty, rules, devMode, showOuts, blindUpInterval)
+	g := game.NewGame(playerNames, initialChips, smallBlind, bigBlind, difficulty, rules, devMode, showOuts, blindUpInterval)
 
 	actionProvider := &CombinedActionProvider{}
 
@@ -142,7 +144,7 @@ func runGame(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			results := g.AwardPotToLastPlayer()
-			fmt.Println("--- POT DISTRIBUTION ---")
+			fmt.Println("---")
 			for _, result := range results {
 				fmt.Printf(
 					"%s wins %s chips with %s\n",
@@ -200,4 +202,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&devMode, "dev", false, "Enable development mode for verbose logging.")
 	rootCmd.Flags().BoolVar(&showOuts, "outs", false, "Shows outs for players if found (temporarily draws fixed good hole cards).")
 	rootCmd.Flags().IntVar(&blindUpInterval, "blind-up", 2, "Sets the number of rounds for blind up. 0 means no blind up.")
+	rootCmd.Flags().IntVar(&initialChips, "initial-chips", 300000, "Initial chips for each player.")
+	rootCmd.Flags().IntVar(&smallBlind, "small-blind", 500, "Small blind amount.")
+	rootCmd.Flags().IntVar(&bigBlind, "big-blind", 1000, "Big blind amount.")
 }

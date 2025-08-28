@@ -6,7 +6,7 @@ import (
 )
 
 func TestProcessAction_ReturnsActionEvent(t *testing.T) {
-	g := newGameForBettingTests([]string{"YOU", "CPU1"}, 10000)
+	g := newGameForBettingTests([]string{"YOU", "CPU1"}, 10000, 500, 1000)
 	player := g.Players[0]
 
 	// Test Call Action
@@ -29,17 +29,7 @@ func TestProcessAction_ReturnsActionEvent(t *testing.T) {
 }
 
 func TestStartNewHand_ReturnsBlindEvent(t *testing.T) {
-	// Set blinds for this test
-	originalSmallBlind := SmallBlindAmt
-	originalBigBlind := BigBlindAmt
-	SmallBlindAmt = 100
-	BigBlindAmt = 200
-	defer func() {
-		SmallBlindAmt = originalSmallBlind
-		BigBlindAmt = originalBigBlind
-	}()
-
-	g := newGameForBettingTests([]string{"YOU", "CPU1"}, 10000)
+	g := newGameForBettingTests([]string{"YOU", "CPU1"}, 10000, 100, 200)
 	g.HandCount = 2 // This is the second hand, so the next hand will be the third
 	g.BlindUpInterval = 2
 

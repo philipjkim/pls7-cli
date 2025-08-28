@@ -1,10 +1,6 @@
 package game
 
 // Game settings constants
-var (
-	SmallBlindAmt = 500
-	BigBlindAmt   = 1000
-)
 
 // Difficulty defines the AI difficulty level.
 type Difficulty int
