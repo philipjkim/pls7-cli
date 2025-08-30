@@ -1,7 +1,7 @@
 ## 질문 1
 
-현재 poker-engine 으로 구분되는 범위는 poker 패키지 (pkg/poker/*.go) 야. 그런데, 내가 poker 패키지를 import 해서 포커 게임을 만든다고 생각해보면 poker 패키지가 제공하는 APIs 만으로는 포커 게임을 구현하기 위해 너무 많은 일을 추가적으로 해야 해. 현재 internal/game/*.go 에 구현된 대부분의 로직을 poker  패키지를 사용하는 다른 개발자들이 중복해서 구현해야 하는 것은 비효율적이라고 생각해. 따라서, internal/game/*.go 즉, game 패키지도 pkg/game/*.go 로 옮겨서 poker 패키지와 game 패키지 두 개를 합쳐서 poker-engine 모듈로 구분하는 것이 더 좋을 것 같은데 어떻게 생각해? 관련해 조금 더 구체적 질문들이 있어.    
-- internal/game/*.go 전체를 그대로 pkg/game/*.go 로 옮기는 것이 좋을까? 아니면 poker 패키지에 있는 것처럼 poker-engine 패키지로 새로 만들고, poker 패키지와 game 패키지 두 개를 합쳐서 poker-engine 모듈로 구분하는 것이 좋을까?
+현재 poker-engine 으로 구분되는 범위는 poker 패키지 (`pkg/poker/\*.go`) 야. 그런데, 내가 poker 패키지를 import 해서 포커 게임을 만든다고 생각해보면 poker 패키지가 제공하는 APIs 만으로는 포커 게임을 구현하기 위해 너무 많은 일을 추가적으로 해야 해. 현재 `internal/game/\*.go` 에 구현된 대부분의 로직을 poker  패키지를 사용하는 다른 개발자들이 중복해서 구현해야 하는 것은 비효율적이라고 생각해. 따라서, `internal/game/\*.go` 즉, game 패키지도 `pkg/game/\*.go` 로 옮겨서 poker 패키지와 game 패키지 두 개를 합쳐서 poker-engine 모듈로 구분하는 것이 더 좋을 것 같은데 어떻게 생각해? 관련해 조금 더 구체적 질문들이 있어.    
+- `internal/game/*.go` 전체를 그대로 `pkg/game/\*.go` 로 옮기는 것이 좋을까? 아니면 poker 패키지에 있는 것처럼 poker-engine 패키지로 새로 만들고, poker 패키지와 game 패키지 두 개를 합쳐서 poker-engine 모듈로 구분하는 것이 좋을까?
 - internal/game 패키지가 pkg/game 패키지로 이동할 때 game 패키지의 public APIs 의 리택토링이 필요할까? 필요하다면 어느정도의 작업이 필요할까?
 - 현재 구조에서는 pkg/game 패키지가 pkg/poker 패키지를 사용하고 있는데, poker-engine 라이브러리를 사용할 사람들에게는 poker 패키지와 game 패키지 양쪽 모두의 APIs 를 노출하는 것이 좋을까, 아니면 game 패키지의 APIs 만 노출하고, poker 패키지는 game 패키지 내부에서만 사용하도록 하는 것이 좋을까?
 
