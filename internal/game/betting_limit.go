@@ -74,7 +74,7 @@ func calculateMinRaiseTotal(g *Game, player *Player) int {
 		minRaiseIncrease = g.BetToCall
 	}
 	if g.BetToCall == 0 { // If no bet, min bet is the Big Blind
-		minRaiseIncrease = BigBlindAmt
+		minRaiseIncrease = g.BigBlind
 	}
 	return g.BetToCall + minRaiseIncrease
 }
