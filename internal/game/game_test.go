@@ -14,7 +14,7 @@ func TestHand_EliminatedPlayersAreSkipped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to load game rules: %v", err)
 	}
-	g := NewGame(playerNames, initialChips, DifficultyMedium, rules, true, false, 0)
+	g := NewGame(playerNames, initialChips, 500, 1000, DifficultyMedium, rules, true, false, 0)
 
 	// Manually eliminate two players
 	g.Players[1].Chips = 0
@@ -67,7 +67,7 @@ func TestNewGame_AssignsCorrectCalculator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to load game rules: %v", err)
 			}
-			g := NewGame([]string{"YOU", "CPU1"}, 1000, DifficultyEasy, rules, false, false, 0)
+			g := NewGame([]string{"YOU", "CPU1"}, 1000, 500, 1000, DifficultyEasy, rules, false, false, 0)
 
 			if g.BettingCalculator == nil {
 				t.Fatal("g.BettingCalculator is nil")

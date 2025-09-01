@@ -23,7 +23,7 @@ func (m *MockActionRecorder) GetAction(g *Game, p *Player, r *rand.Rand) PlayerA
 // in a heads-up situation post-flop.
 func TestHeadsUpPostFlopBettingRound(t *testing.T) {
 	// Setup: 3 players, one folds pre-flop, leaving a heads-up match.
-	g := newGameForBettingTests([]string{"YOU", "CPU1", "CPU2"}, 10000)
+	g := newGameForBettingTests([]string{"YOU", "CPU1", "CPU2"}, 10000, 500, 1000)
 	g.StartNewHand() // Start the hand to set up blinds, etc.
 
 	// Manually set state to be post-flop, heads-up

@@ -56,6 +56,10 @@ type Game struct {
 	LastRaiseAmount int
 	// HandCount tracks the number of hands that have been played in the current game session.
 	HandCount int
+	// SmallBlind is the current small blind amount.
+	SmallBlind int
+	// BigBlind is the current big blind amount.
+	BigBlind int
 	// Difficulty stores the selected AI difficulty level for CPU players.
 	Difficulty Difficulty
 	// handEvaluator is a function field that allows for mocking hand evaluation logic in tests.
@@ -106,6 +110,8 @@ func (g *Game) CPUThinkTime() time.Duration {
 func NewGame(
 	playerNames []string,
 	initialChips int,
+	smallBlind int,
+	bigBlind int,
 	difficulty Difficulty,
 	rules *poker.GameRules,
 	isDev bool,
@@ -162,6 +168,8 @@ func NewGame(
 	g := &Game{
 		Players:           players,
 		DealerPos:         -1,
+		SmallBlind:        smallBlind,
+		BigBlind:          bigBlind,
 		Difficulty:        difficulty,
 		DevMode:           isDev,
 		ShowsOuts:         showsOuts,
@@ -190,11 +198,11 @@ func (g *Game) String() string {
 
 	return fmt.Sprintf(
 		"[Game State]:\n"+
-			"- Hand #%d, Phase: %s, Difficulty: %v\n"+
-			"- Pot: %d, BetToCall: %d, LastRaise: %d\n"+
-			"- Dealer: %s, Turn: %s\n"+
-			"- Community: %v\n"+
-			"- Players: %+v\n",
+		"- Hand #%d, Phase: %s, Difficulty: %v\n"+
+		"- Pot: %d, BetToCall: %d, LastRaise: %d\n"+
+		"- Dealer: %s, Turn: %s\n"+
+		"- Community: %v\n"+
+		"- Players: %+v\n",
 		g.HandCount, g.Phase, g.Difficulty, g.Pot, g.BetToCall, g.LastRaiseAmount,
 		dealerName, turnPlayerName, g.CommunityCards, g.Players,
 	)
@@ -220,7 +228,7 @@ func (g *Game) minRaiseAmount() int {
 		minRaiseIncrease = g.BetToCall
 	}
 	if g.BetToCall == 0 {
-		minRaiseIncrease = BigBlindAmt
+		minRaiseIncrease = g.BigBlind
 	}
 	return g.BetToCall + minRaiseIncrease
 }

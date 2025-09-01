@@ -146,9 +146,9 @@ func (g *Game) StartNewHand() (event *BlindEvent) {
 
 	// Update blinds based on the interval
 	if g.BlindUpInterval > 0 && g.HandCount > 1 && (g.HandCount-1)%g.BlindUpInterval == 0 {
-		SmallBlindAmt *= 2
-		BigBlindAmt *= 2
-		event = &BlindEvent{SmallBlind: SmallBlindAmt, BigBlind: BigBlindAmt}
+		g.SmallBlind *= 2
+		g.BigBlind *= 2
+		event = &BlindEvent{SmallBlind: g.SmallBlind, BigBlind: g.BigBlind}
 	}
 
 	g.Phase = PhasePreFlop
@@ -172,10 +172,10 @@ func (g *Game) StartNewHand() (event *BlindEvent) {
 
 	sbPos := g.FindNextActivePlayer(g.DealerPos)
 	bbPos := g.FindNextActivePlayer(sbPos)
-	g.postBet(g.Players[sbPos], SmallBlindAmt)
-	g.postBet(g.Players[bbPos], BigBlindAmt)
+	g.postBet(g.Players[sbPos], g.SmallBlind)
+	g.postBet(g.Players[bbPos], g.BigBlind)
 
-	g.BetToCall = BigBlindAmt
+	g.BetToCall = g.BigBlind
 	g.CurrentTurnPos = g.FindNextActivePlayer(bbPos)
 
 	ruleAbbr := g.Rules.Abbreviation
