@@ -144,7 +144,7 @@ func runGame(cmd *cobra.Command, args []string) {
 			}
 		} else {
 			results := g.AwardPotToLastPlayer()
-			fmt.Println("---")
+			fmt.Println("--- POT AWARDED ---")
 			for _, result := range results {
 				fmt.Printf(
 					"%s wins %s chips with %s\n",
@@ -205,4 +205,20 @@ func init() {
 	rootCmd.Flags().IntVar(&initialChips, "initial-chips", 300000, "Initial chips for each player.")
 	rootCmd.Flags().IntVar(&smallBlind, "small-blind", 500, "Small blind amount.")
 	rootCmd.Flags().IntVar(&bigBlind, "big-blind", 1000, "Big blind amount.")
+
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if initialChips <= 0 {
+			return fmt.Errorf("initial-chips는 0보다 커야 합니다. 입력값: %d", initialChips)
+		}
+		if smallBlind <= 0 {
+			return fmt.Errorf("small-blind는 0보다 커야 합니다. 입력값: %d", smallBlind)
+		}
+		if bigBlind <= 0 {
+			return fmt.Errorf("big-blind는 0보다 커야 합니다. 입력값: %d", bigBlind)
+		}
+		if smallBlind >= bigBlind {
+			return fmt.Errorf("small-blind(%d)는 big-blind(%d)보다 작아야 합니다.", smallBlind, bigBlind)
+		}
+		return nil
+	}
 }
