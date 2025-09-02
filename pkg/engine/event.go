@@ -1,4 +1,4 @@
-package game
+package engine
 
 // ActionEvent represents a player's action and the data associated with it.
 type ActionEvent struct {

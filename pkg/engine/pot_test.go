@@ -1,4 +1,4 @@
-package game
+package engine
 
 import (
 	"pls7-cli/internal/config"

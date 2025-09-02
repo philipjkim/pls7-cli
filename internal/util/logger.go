@@ -1,8 +1,9 @@
 package util
 
 import (
-	"github.com/sirupsen/logrus"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 // InitLogger initializes the global logrus logger based on the development mode flag.

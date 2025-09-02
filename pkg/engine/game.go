@@ -1,4 +1,4 @@
-package game
+package engine
 
 import (
 	"fmt"
@@ -198,11 +198,11 @@ func (g *Game) String() string {
 
 	return fmt.Sprintf(
 		"[Game State]:\n"+
-		"- Hand #%d, Phase: %s, Difficulty: %v\n"+
-		"- Pot: %d, BetToCall: %d, LastRaise: %d\n"+
-		"- Dealer: %s, Turn: %s\n"+
-		"- Community: %v\n"+
-		"- Players: %+v\n",
+			"- Hand #%d, Phase: %s, Difficulty: %v\n"+
+			"- Pot: %d, BetToCall: %d, LastRaise: %d\n"+
+			"- Dealer: %s, Turn: %s\n"+
+			"- Community: %v\n"+
+			"- Players: %+v\n",
 		g.HandCount, g.Phase, g.Difficulty, g.Pot, g.BetToCall, g.LastRaiseAmount,
 		dealerName, turnPlayerName, g.CommunityCards, g.Players,
 	)

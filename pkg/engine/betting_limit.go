@@ -1,4 +1,4 @@
-package game
+package engine
 
 // BettingLimitCalculator defines the interface for different betting limit strategies.
 type BettingLimitCalculator interface {

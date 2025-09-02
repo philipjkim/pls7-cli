@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"pls7-cli/internal/game"
+	"pls7-cli/pkg/engine"
 	"strconv"
 	"strings"
 )
 
 // PromptForAction requests the player to choose an action during their turn.
-func PromptForAction(g *game.Game) game.PlayerAction {
+func PromptForAction(g *engine.Game) engine.PlayerAction {
 	DisplayGameState(g)
 
 	// for loop to keep prompting until a valid action is chosen
@@ -28,7 +28,7 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 			// If amountToCall is negative, it means remaining players have bet all-in with less than the current bet.
 			// So the player does not need to act anything, call.
 			if amountToCall < 0 {
-				return game.PlayerAction{Type: game.ActionCall}
+				return engine.PlayerAction{Type: engine.ActionCall}
 			}
 
 			prompt.WriteString(fmt.Sprintf("(c)all %s, ", FormatNumber(amountToCall)))
@@ -47,22 +47,22 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 
 		switch input {
 		case "f":
-			return game.PlayerAction{Type: game.ActionFold}
+			return engine.PlayerAction{Type: engine.ActionFold}
 		case "k":
 			if canCheck {
-				return game.PlayerAction{Type: game.ActionCheck}
+				return engine.PlayerAction{Type: engine.ActionCheck}
 			}
 		case "c":
 			if !canCheck {
-				return game.PlayerAction{Type: game.ActionCall}
+				return engine.PlayerAction{Type: engine.ActionCall}
 			}
 		case "b":
 			if canCheck {
-				return promptForAmount(g, game.ActionBet)
+				return promptForAmount(g, engine.ActionBet)
 			}
 		case "r":
 			if !canCheck {
-				return promptForAmount(g, game.ActionRaise)
+				return promptForAmount(g, engine.ActionRaise)
 			}
 		}
 
@@ -71,11 +71,11 @@ func PromptForAction(g *game.Game) game.PlayerAction {
 }
 
 // promptForAmount requests the betting/raising amount.
-func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction {
+func promptForAmount(g *engine.Game, actionType engine.ActionType) engine.PlayerAction {
 	for {
 		minBet, maxBet := g.CalculateBettingLimits()
 		actionName := "bet"
-		if actionType == game.ActionRaise {
+		if actionType == engine.ActionRaise {
 			actionName = "raise to"
 		}
 
@@ -91,7 +91,7 @@ func promptForAmount(g *game.Game, actionType game.ActionType) game.PlayerAction
 		if err != nil || amount < minBet || amount > maxBet {
 			fmt.Println("Invalid amount. Please try again.")
 		} else {
-			return game.PlayerAction{Type: actionType, Amount: amount}
+			return engine.PlayerAction{Type: actionType, Amount: amount}
 		}
 	}
 }
