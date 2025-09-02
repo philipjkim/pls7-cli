@@ -59,7 +59,12 @@ func TestCPUActionProfileBased(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := &Game{Phase: tc.phase, Pot: 100, BetToCall: 0}
+			g := &Game{
+				Phase:     tc.phase,
+				Pot:       100,
+				BetToCall: 0,
+				Rules:     &poker.GameRules{LowHand: poker.LowHandRules{Enabled: false}},
+			}
 			if !tc.canCheck {
 				g.BetToCall = 10
 			}
