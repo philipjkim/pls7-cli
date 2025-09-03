@@ -2,6 +2,8 @@ package poker
 
 import (
 	"pls7-cli/internal/util"
+	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -337,6 +339,76 @@ func TestHandRankOrder(t *testing.T) {
 				if rank != tc.expectedRank[i] {
 					t.Errorf("Expected rank %v at position %d, but got %v", tc.expectedRank[i], i, rank)
 				}
+			}
+		})
+	}
+}
+
+func TestPLOHandEvaluation(t *testing.T) {
+	// PLO Rule: Must use exactly 2 hole cards and 3 community cards.
+	ploRules := &GameRules{
+		Name:         "Pot-Limit Omaha",
+		Abbreviation: "PLO",
+		HoleCards: HoleCardRules{
+			Count:         4,
+			UseConstraint: "exact",
+			UseCount:      2,
+		},
+		HandRankings: HandRankingsRules{
+			UseStandardRankings: true,
+		},
+	}
+
+	testCases := []struct {
+		name           string
+		holeCards      []Card
+		communityCards []Card
+		expectedRank   HandRank
+		expectedCards  string
+	}{
+		{
+			name: "Player cannot make flush with 4 hole cards",
+			// Player has 4 hearts, but board only has 1. A flush is impossible under PLO rules.
+			// The current "any" logic would find a flush.
+			// The best hand should be Ace High.
+			holeCards:      CardsFromStrings("Ah Kh Qh Jh"),
+			communityCards: CardsFromStrings("9h 2s 3s 4s 5d"),
+			expectedRank:   HighCard,
+			// Best hand is Ah, Kh from hand, and 9h, 5d, 4s from board.
+			expectedCards: "Ah Kh 9h 5d 4s",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			highResult, _ := EvaluateHand(tc.holeCards, tc.communityCards, ploRules)
+
+			if highResult == nil {
+				t.Fatalf("EvaluateHand returned nil for highResult")
+			}
+
+			if highResult.Rank != tc.expectedRank {
+				t.Errorf("Expected hand rank %v, but got %v", tc.expectedRank, highResult.Rank)
+			}
+
+			// Sort cards for deterministic comparison.
+			sort.Slice(highResult.Cards, func(i, j int) bool {
+				if highResult.Cards[i].Rank != highResult.Cards[j].Rank {
+					return highResult.Cards[i].Rank > highResult.Cards[j].Rank
+				}
+				return highResult.Cards[i].Suit > highResult.Cards[j].Suit
+			})
+
+			expectedHandCards := CardsFromStrings(tc.expectedCards)
+			sort.Slice(expectedHandCards, func(i, j int) bool {
+				if expectedHandCards[i].Rank != expectedHandCards[j].Rank {
+					return expectedHandCards[i].Rank > expectedHandCards[j].Rank
+				}
+				return expectedHandCards[i].Suit > expectedHandCards[j].Suit
+			})
+
+			if !reflect.DeepEqual(highResult.Cards, expectedHandCards) {
+				t.Errorf("Expected best hand to be %v, but got %v", expectedHandCards, highResult.Cards)
 			}
 		})
 	}
