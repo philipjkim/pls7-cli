@@ -1,6 +1,9 @@
 package poker
 
-// JoinStrings joins a slice of strings with hyphens such as "A-K-Q-J-10".
+// JoinStrings joins a slice of strings into a single string, with each element
+// separated by a hyphen. For example, a slice `[]string{"A", "K", "Q"}` would
+// become `"A-K-Q"`. This is a utility function for creating formatted string
+// representations of card collections.
 func JoinStrings(s []string) string {
 	if len(s) == 0 {
 		return ""

@@ -2,7 +2,7 @@ package cli
 
 import (
 	"fmt"
-	"pls7-cli/internal/game"
+	"pls7-cli/pkg/engine"
 	"pls7-cli/pkg/poker"
 	"sort"
 	"strings"
@@ -11,7 +11,7 @@ import (
 )
 
 // DisplayGameState prints the current state of the game board and players.
-func DisplayGameState(g *game.Game) {
+func DisplayGameState(g *engine.Game) {
 	if !g.DevMode {
 		clearScreen()
 	}
@@ -34,7 +34,7 @@ func DisplayGameState(g *game.Game) {
 	output += fmt.Sprintln("Players:")
 	for i, p := range g.Players {
 		// --- NEW: Skip eliminated players from the display ---
-		if p.Status == game.PlayerStatusEliminated {
+		if p.Status == engine.PlayerStatusEliminated {
 			continue
 		}
 		// --- END OF NEW PART ---
@@ -48,10 +48,10 @@ func DisplayGameState(g *game.Game) {
 		}
 
 		status := ""
-		if p.Status == game.PlayerStatusFolded {
+		if p.Status == engine.PlayerStatusFolded {
 			status = "(Folded)"
 		}
-		if p.Status == game.PlayerStatusAllIn && p.CurrentBet == 0 {
+		if p.Status == engine.PlayerStatusAllIn && p.CurrentBet == 0 {
 			status = "(All In)"
 		}
 
@@ -63,7 +63,7 @@ func DisplayGameState(g *game.Game) {
 			}
 			handInfo = fmt.Sprintf("| Hand: %s", strings.Join(handStrings, " "))
 
-			if g.Phase > game.PhasePreFlop {
+			if g.Phase > engine.PhasePreFlop {
 				highRank, lowRank := poker.EvaluateHand(p.Hand, g.CommunityCards, g.Rules)
 				rankInfo := fmt.Sprintf(" | High: %s", highRank.String())
 				if g.Rules.LowHand.Enabled && lowRank != nil {
@@ -74,7 +74,7 @@ func DisplayGameState(g *game.Game) {
 		}
 
 		actionInfo := ""
-		if p.Status != game.PlayerStatusEliminated {
+		if p.Status != engine.PlayerStatusEliminated {
 			actionInfo = fmt.Sprintf(", Current Bet: %-6s", FormatNumber(p.CurrentBet))
 			if p.LastActionDesc != "" && i != g.CurrentTurnPos {
 				actionInfo += fmt.Sprintf(" - %s", p.LastActionDesc)
@@ -110,7 +110,7 @@ func DisplayGameState(g *game.Game) {
 		}
 
 		// Calculate total chips for the game
-		if p.Status != game.PlayerStatusEliminated {
+		if p.Status != engine.PlayerStatusEliminated {
 			totalChips += p.Chips
 		}
 	}
@@ -162,11 +162,11 @@ func formatOuts(outsInfo *poker.OutsInfo) string {
 	return result
 }
 
-func formatEquities(pot, amountToCall, numOuts int, phase game.GamePhase) string {
+func formatEquities(pot, amountToCall, numOuts int, phase engine.GamePhase) string {
 	numCommunityCards := 0
-	if phase == game.PhaseFlop {
+	if phase == engine.PhaseFlop {
 		numCommunityCards = 3
-	} else if phase == game.PhaseTurn {
+	} else if phase == engine.PhaseTurn {
 		numCommunityCards = 4
 	} else {
 		// For Pre-Flop and River, we don't calculate outs or equities
@@ -184,7 +184,7 @@ func clearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
-func FormatShowdownResults(g *game.Game) []string {
+func FormatShowdownResults(g *engine.Game) []string {
 	var outputLines []string
 	outputLines = append(outputLines, "\n--- SHOWDOWN ---")
 	outputLines = append(outputLines, fmt.Sprintf("Community Cards: %s", g.CommunityCards))
@@ -205,7 +205,7 @@ func FormatShowdownResults(g *game.Game) []string {
 	}
 
 	for _, player := range g.Players {
-		if player.Status == game.PlayerStatusFolded || player.Status == game.PlayerStatusEliminated {
+		if player.Status == engine.PlayerStatusFolded || player.Status == engine.PlayerStatusEliminated {
 			continue
 		}
 		highHand, lowHand := poker.EvaluateHand(player.Hand, g.CommunityCards, g.Rules)

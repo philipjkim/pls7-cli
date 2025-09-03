@@ -1,3 +1,6 @@
+// Package poker provides the core data structures and rules for playing poker.
+// It includes types for cards, decks, hand evaluation, and game rules, forming
+// the foundational building blocks for a poker game engine.
 package poker
 
 import (
@@ -7,26 +10,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// HandRank defines the ranking of a poker hand.
-// The order is important, from lowest to highest rank.
+// HandRank defines the ranking of a poker hand. The integer values are ordered
+// from the lowest rank (HighCard) to the highest (RoyalFlush), which allows for
+// direct comparison.
 type HandRank int
 
+// HandRank constants represent the possible poker hand rankings.
+// These are ordered from weakest to strongest.
 const (
-	HighCard HandRank = iota
-	OnePair
-	TwoPair
-	ThreeOfAKind
-	Straight
-	SkipStraight // PLS7 Special
-	Flush
-	FullHouse
-	FourOfAKind
-	StraightFlush
-	SkipStraightFlush // New rank, 2nd highest
-	RoyalFlush        // Highest rank
+	HighCard          HandRank = iota // HighCard represents the lowest-ranking hand, determined by the highest card.
+	OnePair                           // OnePair consists of two cards of the same rank.
+	TwoPair                           // TwoPair consists of two pairs of different ranks.
+	ThreeOfAKind                      // ThreeOfAKind consists of three cards of the same rank.
+	Straight                          // Straight consists of five cards of sequential rank.
+	SkipStraight                      // SkipStraight is a special hand for PLS7, with ranks in a gapped sequence (e.g., A-J-9-7-5).
+	Flush                             // Flush consists of five cards of the same suit.
+	FullHouse                         // FullHouse consists of a ThreeOfAKind and a OnePair.
+	FourOfAKind                       // FourOfAKind consists of four cards of the same rank.
+	StraightFlush                     // StraightFlush consists of five cards of sequential rank and the same suit.
+	SkipStraightFlush                 // SkipStraightFlush is a special hand for PLS7, a SkipStraight with all cards of the same suit.
+	RoyalFlush                        // RoyalFlush is the highest-ranking hand, an Ace-high StraightFlush.
 )
 
-// String makes HandRank implement the Stringer interface for easy printing.
+// String returns the string representation of a HandRank (e.g., "High Card", "Royal Flush").
+// It implements the fmt.Stringer interface.
 func (hr HandRank) String() string {
 	return []string{
 		"High Card",
@@ -44,7 +51,9 @@ func (hr HandRank) String() string {
 	}[hr]
 }
 
-// handRankFromString converts a string representation of a hand rank to its HandRank enum value.
+// handRankFromString converts a string representation of a hand rank (e.g., "high_card")
+// to its corresponding HandRank constant. It returns the HandRank and a boolean
+// indicating if the conversion was successful.
 func handRankFromString(s string) (HandRank, bool) {
 	switch s {
 	case "high_card":
@@ -76,14 +85,16 @@ func handRankFromString(s string) (HandRank, bool) {
 	}
 }
 
-// HandResult stores the outcome of a hand evaluation.
+// HandResult stores the complete details of an evaluated poker hand, including its
+// rank, the cards that form the hand, and values for tie-breaking.
 type HandResult struct {
-	Rank       HandRank
-	Cards      []Card
-	HighValues []Rank // For tie-breaking (e.g., [Ace, King] for A-high flush)
+	Rank       HandRank // The rank of the hand (e.g., Flush, Straight).
+	Cards      []Card   // The best 5 cards that form this hand.
+	HighValues []Rank   // A sorted slice of ranks used for tie-breaking. For a pair, this would be [PairRank, Kicker1, Kicker2, Kicker3]. For a flush, it's the ranks of the 5 flush cards.
 }
 
-// String makes HandResult implement the Stringer interface for detailed printing.
+// String returns a detailed string representation of the HandResult,
+// suitable for display (e.g., "Two Pair, Kings and Queens, K♠ K♦ Q♥ Q♣ A♣").
 func (hr *HandResult) String() string {
 	if hr == nil {
 		return "N/A"
@@ -110,7 +121,7 @@ func (hr *HandResult) String() string {
 	}
 }
 
-// CardsString returns a string representation of the cards in the hand.
+// CardsString returns a string representation of just the cards in the hand result.
 func (hr *HandResult) CardsString() string {
 	if hr == nil || len(hr.Cards) == 0 {
 		return "No Cards"
@@ -123,14 +134,16 @@ func (hr *HandResult) CardsString() string {
 	return JoinStrings(cards)
 }
 
-// handAnalysis is a helper struct to hold counts of ranks and suits.
+// handAnalysis is a private helper struct used during hand evaluation. It stores
+// pre-calculated information about a pool of cards, such as rank and suit counts,
+// to avoid redundant calculations.
 type handAnalysis struct {
-	rankCounts map[Rank]int
-	suitCounts map[Suit]int
-	cards      []Card // Original 8 cards, sorted by rank descending
+	rankCounts map[Rank]int // Maps each rank to its frequency.
+	suitCounts map[Suit]int // Maps each suit to its frequency.
+	cards      []Card       // The original pool of cards, sorted by rank in descending order.
 }
 
-// String makes handAnalysis implement the Stringer interface for debugging.
+// String provides a string representation of the handAnalysis for debugging purposes.
 func (ha *handAnalysis) String() string {
 	if ha == nil {
 		return "N/A"
@@ -146,7 +159,8 @@ func (ha *handAnalysis) String() string {
 	return fmt.Sprintf("%s, %s, Cards: %v", rankStr, suitStr, ha.cards)
 }
 
-// newHandAnalysis creates an analysis object from an 8-card pool.
+// newHandAnalysis creates and populates a handAnalysis struct from a given pool of cards.
+// It sorts the cards by rank descending and calculates rank/suit frequencies.
 func newHandAnalysis(pool []Card) *handAnalysis {
 	analysis := &handAnalysis{
 		rankCounts: make(map[Rank]int),
@@ -155,6 +169,7 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 	}
 	copy(analysis.cards, pool)
 
+	// Sort cards by rank descending for consistent processing.
 	sort.Slice(analysis.cards, func(i, j int) bool {
 		return analysis.cards[i].Rank > analysis.cards[j].Rank
 	})
@@ -166,7 +181,35 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 	return analysis
 }
 
-// EvaluateHand analyzes a full 8-card pool and determines the best high and low hands.
+// EvaluateHand is the main evaluation function. It takes a player's hole cards and the
+// community cards and, based on the provided game rules, determines the best possible
+// high hand and, if applicable, the best possible low hand.
+//
+// The evaluation process is as follows:
+//
+// 1. High Hand Evaluation:
+//   - The function first combines the hole cards and community cards into a single pool.
+//   - It then iterates through a list of hand ranks, ordered from highest to lowest
+//     (e.g., Royal Flush, then Straight Flush, etc.), which is determined by the game rules.
+//   - For each rank, it calls a specific `find...` helper function (e.g., `findStraightFlush`)
+//     to check if that hand can be made from the pool of cards.
+//   - If a hand is found, it is compared to the best hand found so far (`highResult`).
+//     If the new hand is better, it replaces `highResult`. This process continues through
+//     all hand ranks to ensure the absolute best hand is found.
+//
+// 2. Low Hand Evaluation (only for Hi-Lo games):
+//   - If the game rules enable low hands, it calls `findBestLowHand`.
+//   - This function attempts to find the best qualifying low hand (e.g., 8-low or better)
+//     from the card pool, independent of the high hand result.
+//
+// Parameters:
+//   - holeCards: The player's private cards.
+//   - communityCards: The shared cards on the board.
+//   - gameRules: The ruleset defining which hands are valid and their rankings.
+//
+// Returns:
+//   - highResult: A HandResult for the best high hand, or nil if no hand could be formed.
+//   - lowResult: A HandResult for the best low hand (if enabled by rules), or nil.
 func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules) (highResult *HandResult, lowResult *HandResult) {
 	pool := make([]Card, 0, 8)
 	pool = append(pool, holeCards...)
@@ -331,16 +374,19 @@ func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules)
 	return highResult, lowResult
 }
 
-// findSkipStraightFlush finds a Skip Straight Flush from the pool.
+// findSkipStraightFlush checks for a Skip Straight Flush. It first identifies a
+// potential flush and then checks if the flushed cards form a Skip Straight.
 func findSkipStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 	for suit, count := range analysis.suitCounts {
 		if count >= 5 {
+			// Extract all cards of the potential flush suit.
 			flushCards := make([]Card, 0, count)
 			for _, card := range analysis.cards {
 				if card.Suit == suit {
 					flushCards = append(flushCards, card)
 				}
 			}
+			// Analyze these flushed cards to see if they form a Skip Straight.
 			flushAnalysis := newHandAnalysis(flushCards)
 			if ssfCards, ok := findSkipStraight(flushAnalysis); ok {
 				return ssfCards, true
@@ -350,14 +396,21 @@ func findSkipStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
-// --- New Helper Function for Low Hand ---
-
-// findBestLowHand finds the best possible N-or-better low hand from the pool.
+// findBestLowHand identifies the best possible "N-or-better" low hand from the card pool.
+// A low hand consists of five unique cards with ranks at or below `maxRank` (e.g., 8),
+// with Aces counting as low. The "best" low hand is the one with the lowest high card
+// (e.g., 7-5-4-3-2 is better than 8-4-3-2-A).
+//
+// The process is:
+// 1. Collect all unique cards from the pool that are eligible for a low hand.
+// 2. If there are fewer than 5 such cards, no low hand is possible.
+// 3. Sort the eligible cards ascending (Ace is lowest) to find the best combination.
+// 4. The 5 lowest cards form the best possible low hand.
 func findBestLowHand(analysis *handAnalysis, maxRank Rank) (*HandResult, bool) {
 	uniqueLowCards := make([]Card, 0, 8)
 	usedRanks := make(map[Rank]bool)
 
-	// Find all unique cards with rank N or lower, treating Ace as a low card.
+	// Collect all unique cards that qualify for a low hand.
 	for _, card := range analysis.cards {
 		isLowCard := card.Rank <= maxRank || card.Rank == Ace
 		if isLowCard && !usedRanks[card.Rank] {
@@ -366,26 +419,26 @@ func findBestLowHand(analysis *handAnalysis, maxRank Rank) (*HandResult, bool) {
 		}
 	}
 
-	// A low hand must have at least 5 unique cards of rank N or lower
+	// A valid low hand requires at least 5 qualifying cards.
 	if len(uniqueLowCards) < 5 {
 		return nil, false
 	}
 
-	// Sort the unique low cards by rank ascending to find the best (lowest) hand
+	// Sort the qualifying cards by rank ascending (Ace is lowest) to find the best hand.
 	sort.Slice(uniqueLowCards, func(i, j int) bool {
 		return getLowRankValue(uniqueLowCards[i].Rank) < getLowRankValue(uniqueLowCards[j].Rank)
 	})
 
-	// The best low hand consists of the 5 lowest cards
+	// The best 5-card low hand is the 5 lowest unique cards.
 	bestLowCards := uniqueLowCards[:5]
 
-	// Sort descending for HighValues comparison, treating Ace as the lowest rank.
+	// Sort the final 5 cards descending for tie-breaking purposes, with Ace treated as low.
 	sort.Slice(bestLowCards, func(i, j int) bool {
 		return getLowRankValue(bestLowCards[i].Rank) > getLowRankValue(bestLowCards[j].Rank)
 	})
 
 	return &HandResult{
-		Rank:  HighCard, // Rank is not relevant for low hands in this context
+		Rank:  HighCard, // Low hands are ranked as HighCard but compared by their low values.
 		Cards: bestLowCards,
 		HighValues: []Rank{
 			bestLowCards[0].Rank,
@@ -397,7 +450,8 @@ func findBestLowHand(analysis *handAnalysis, maxRank Rank) (*HandResult, bool) {
 	}, true
 }
 
-// getLowRankValue returns the integer value of a rank for low hand comparisons, treating Ace as 1.
+// getLowRankValue returns the numeric value of a rank for low hand comparisons,
+// where Ace is treated as 1.
 func getLowRankValue(r Rank) int {
 	if r == Ace {
 		return 1
@@ -405,8 +459,8 @@ func getLowRankValue(r Rank) int {
 	return int(r)
 }
 
-// --- Existing Helper Functions ---
-
+// findStraightFlush checks for a Straight Flush. It first identifies a potential
+// flush and then checks if the flushed cards form a regular Straight.
 func findStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 	for suit, count := range analysis.suitCounts {
 		if count >= 5 {
@@ -425,6 +479,8 @@ func findStraightFlush(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
+// findSkipStraight checks for a Skip Straight. This is a special PLS7 hand
+// with a specific gapped sequence of 5 cards (e.g., K-J-9-7-5).
 func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	logrus.Tracef("findSkipStraight: Analyzing handAnalysis: %+v", analysis)
 
@@ -444,7 +500,7 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	sort.Slice(uniqueRanksAceHigh, func(i, j int) bool { return uniqueRanksAceHigh[i] > uniqueRanksAceHigh[j] })
 	listOfUniqueRanks := [][]Rank{uniqueRanksAceHigh}
 
-	// If Ace is present, create a second list treating Ace as 1 (14 in PLS7)
+	// If Ace is present, create a second list treating Ace as 1 (for low-end straights)
 	if hasAce {
 		logrus.Tracef("findSkipStraight: Ace found, creating alternative rank list treating Ace as 1.")
 		uniqueRanksAceLow := make([]Rank, 0)
@@ -455,8 +511,8 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	logrus.Tracef("findSkipStraight: listOfUniqueRanks: %+v", listOfUniqueRanks)
 
 	for _, uniqueRanks := range listOfUniqueRanks {
-		// In Skip Straight, the highest rank must be at least 9
-		if uniqueRanks[0] < 9 {
+		// In PLS7, a Skip Straight's highest card must be 9 or greater.
+		if len(uniqueRanks) > 0 && uniqueRanks[0] < 9 {
 			logrus.Tracef(
 				"findSkipStraight: Skipping analysis for uniqueRanks starting with %v, as it is less than 9.",
 				uniqueRanks[0],
@@ -501,9 +557,14 @@ func findSkipStraight(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
+// findBestFullHouse finds the best possible Full House (three of a kind and a pair).
+// It looks for the highest-ranked three of a kind, then the highest-ranked pair
+// from the remaining cards.
 func findBestFullHouse(rankCounts map[Rank]int) (Rank, Rank, bool) {
 	var bestTripleRank Rank = -1
 	var bestPairRank Rank = -1
+
+	// Find the highest rank with at least 3 cards.
 	for rank, count := range rankCounts {
 		if count >= 3 {
 			if rank > bestTripleRank {
@@ -514,6 +575,8 @@ func findBestFullHouse(rankCounts map[Rank]int) (Rank, Rank, bool) {
 	if bestTripleRank == -1 {
 		return -1, -1, false
 	}
+
+	// Find the highest rank with at least 2 cards, excluding the triple.
 	for rank, count := range rankCounts {
 		if count >= 2 && rank != bestTripleRank {
 			if rank > bestPairRank {
@@ -524,13 +587,18 @@ func findBestFullHouse(rankCounts map[Rank]int) (Rank, Rank, bool) {
 	if bestPairRank == -1 {
 		return -1, -1, false
 	}
+
 	return bestTripleRank, bestPairRank, true
 }
 
+// findBestFlush finds the best possible Flush (five cards of the same suit).
+// It returns the 5 highest-ranked cards of the most common suit.
 func findBestFlush(analysis *handAnalysis) ([]Card, bool) {
 	for suit, count := range analysis.suitCounts {
 		if count >= 5 {
 			flushCards := make([]Card, 0, count)
+			// Since analysis.cards is pre-sorted high-to-low, the first cards
+			// of the flush suit we find are the highest ones.
 			for _, card := range analysis.cards {
 				if card.Suit == suit {
 					flushCards = append(flushCards, card)
@@ -542,19 +610,29 @@ func findBestFlush(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
+// findBestStraight finds the best possible Straight (five cards of sequential rank).
+// It handles both standard straights and the A-2-3-4-5 "wheel" straight.
 func findBestStraight(analysis *handAnalysis) ([]Card, bool) {
 	uniqueRanks := make([]Rank, 0, len(analysis.rankCounts))
 	for rank := range analysis.rankCounts {
 		uniqueRanks = append(uniqueRanks, rank)
 	}
 	sort.Slice(uniqueRanks, func(i, j int) bool { return uniqueRanks[i] > uniqueRanks[j] })
-	if uniqueRanks[0] == Ace &&
+
+	if len(uniqueRanks) < 5 {
+		return nil, false
+	}
+
+	// Special case: Check for the A-2-3-4-5 "wheel" straight.
+	if containsRank(uniqueRanks, Ace) &&
 		containsRank(uniqueRanks, Five) &&
 		containsRank(uniqueRanks, Four) &&
 		containsRank(uniqueRanks, Three) &&
 		containsRank(uniqueRanks, Two) {
 		return findCardsForStraight(analysis.cards, []Rank{Five, Four, Three, Two, Ace}), true
 	}
+
+	// Check for other straights, starting from the highest rank.
 	for i := 0; i <= len(uniqueRanks)-5; i++ {
 		isStraight := true
 		for j := 0; j < 4; j++ {
@@ -572,6 +650,8 @@ func findBestStraight(analysis *handAnalysis) ([]Card, bool) {
 	return nil, false
 }
 
+// findCardsForStraight constructs a 5-card hand from a pool of cards, given a slice
+// of 5 ranks that are known to form a straight. It picks one card for each rank.
 func findCardsForStraight(pool []Card, ranks []Rank) []Card {
 	straightCards := make([]Card, 0, 5)
 	usedRanks := make(map[Rank]bool)
@@ -587,6 +667,7 @@ func findCardsForStraight(pool []Card, ranks []Rank) []Card {
 	return straightCards
 }
 
+// containsRank is a helper to check if a slice of ranks contains a target rank.
 func containsRank(ranks []Rank, target Rank) bool {
 	for _, r := range ranks {
 		if r == target {
@@ -596,6 +677,8 @@ func containsRank(ranks []Rank, target Rank) bool {
 	return false
 }
 
+// findBestNOfAKind finds the highest-ranked set of N cards of the same rank.
+// For example, with n=4, it finds the best Four of a Kind.
 func findBestNOfAKind(rankCounts map[Rank]int, n int) (Rank, bool) {
 	bestRank := Rank(-1)
 	found := false
@@ -610,8 +693,9 @@ func findBestNOfAKind(rankCounts map[Rank]int, n int) (Rank, bool) {
 	return bestRank, found
 }
 
+// findBestTwoPair finds the two highest-ranked pairs in the hand.
 func findBestTwoPair(rankCounts map[Rank]int) (Rank, Rank, bool) {
-	pairs := []Rank{}
+	var pairs []Rank
 	for rank, count := range rankCounts {
 		if count >= 2 {
 			pairs = append(pairs, rank)
@@ -620,10 +704,12 @@ func findBestTwoPair(rankCounts map[Rank]int) (Rank, Rank, bool) {
 	if len(pairs) < 2 {
 		return -1, -1, false
 	}
+	// Sort pairs descending to find the highest two.
 	sort.Slice(pairs, func(i, j int) bool { return pairs[i] > pairs[j] })
 	return pairs[0], pairs[1], true
 }
 
+// findCardsByRank finds the first 'n' cards of a specific rank from a pool.
 func findCardsByRank(pool []Card, rank Rank, n int) []Card {
 	cards := make([]Card, 0, n)
 	for _, c := range pool {
@@ -637,6 +723,9 @@ func findCardsByRank(pool []Card, rank Rank, n int) []Card {
 	return cards
 }
 
+// findKickers finds 'n' kicker cards from a sorted pool of cards, excluding
+// any ranks specified in excludeRanks. It returns the highest available cards
+// that are not part of the main hand (e.g., not part of the pair in a OnePair hand).
 func findKickers(sortedPool []Card, excludeRanks []Rank, n int) (bool, []Card) {
 	kickers := make([]Card, 0, n)
 	excludeMap := make(map[Rank]bool)
@@ -651,12 +740,13 @@ func findKickers(sortedPool []Card, excludeRanks []Rank, n int) (bool, []Card) {
 			}
 		}
 	}
-
+	// Returns true only if the requested number of kickers was found.
 	return len(kickers) == n, kickers
 }
 
-// compareHandResults is a helper function to compare two hand results.
-// It returns 1 if h1 is better, -1 if h2 is better, and 0 if they are equal.
+// compareHandResults compares two HandResult objects to determine which is stronger.
+// It first compares by HandRank, then by HighValues for tie-breaking.
+// Returns 1 if h1 > h2, -1 if h1 < h2, 0 if h1 == h2.
 func compareHandResults(h1, h2 *HandResult) int {
 	if h1.Rank > h2.Rank {
 		return 1
@@ -664,6 +754,7 @@ func compareHandResults(h1, h2 *HandResult) int {
 	if h1.Rank < h2.Rank {
 		return -1
 	}
+	// Ranks are the same, compare kickers.
 	for i := 0; i < len(h1.HighValues); i++ {
 		if h1.HighValues[i] > h2.HighValues[i] {
 			return 1
@@ -672,15 +763,16 @@ func compareHandResults(h1, h2 *HandResult) int {
 			return -1
 		}
 	}
-	return 0
+	return 0 // Hands are identical.
 }
 
-// getHandRanks returns the order of hand ranks based on the game rules.
+// getHandRanks determines the order of hand ranks to be evaluated based on the game rules.
+// It can either use the standard poker ranking or a custom ranking defined in the rules.
 func getHandRanks(rules *HandRankingsRules) []HandRank {
 	var handRankOrder []HandRank
 
 	if rules.UseStandardRankings {
-		// Standard poker hand rankings (from highest to lowest)
+		// Standard poker hand rankings (from highest to lowest).
 		handRankOrder = []HandRank{
 			RoyalFlush,
 			StraightFlush,
@@ -694,8 +786,7 @@ func getHandRanks(rules *HandRankingsRules) []HandRank {
 			HighCard,
 		}
 	} else {
-		// Build hand ranking order based on custom rules
-		// Start with a base set of standard ranks, then insert custom ranks
+		// Start with a base set of standard ranks to be modified.
 		baseOrder := []HandRank{
 			RoyalFlush,
 			StraightFlush,
@@ -708,18 +799,10 @@ func getHandRanks(rules *HandRankingsRules) []HandRank {
 			OnePair,
 			HighCard,
 		}
-
-		// Create a map for quick lookup of ranks and their positions
-		rankMap := make(map[HandRank]int)
-		for i, rank := range baseOrder {
-			rankMap[rank] = i
-		}
-
-		// Initialize with base order
 		handRankOrder = make([]HandRank, len(baseOrder))
 		copy(handRankOrder, baseOrder)
 
-		// Insert custom rankings
+		// Insert custom rankings into the order.
 		for _, customRank := range rules.CustomRankings {
 			hr, ok := handRankFromString(customRank.Name)
 			if !ok {
@@ -733,21 +816,21 @@ func getHandRanks(rules *HandRankingsRules) []HandRank {
 				continue
 			}
 
-			// Find insertion point
+			// Find the index where the custom rank should be inserted.
 			insertIndex := -1
 			for i, rank := range handRankOrder {
 				if rank == insertAfterHr {
-					insertIndex = i + 1 // Insert after this rank
+					insertIndex = i + 1 // Insert after the matched rank.
 					break
 				}
 			}
 
 			if insertIndex != -1 {
-				// Insert the custom rank
+				// Insert the custom rank into the slice.
 				handRankOrder = append(handRankOrder[:insertIndex], append([]HandRank{hr}, handRankOrder[insertIndex:]...)...)
 			} else {
 				logrus.Warnf("Could not find insertion point for custom rank %s after %s. Appending to end.", customRank.Name, customRank.InsertAfterRank)
-				handRankOrder = append(handRankOrder, hr) // Fallback: append to end
+				handRankOrder = append(handRankOrder, hr) // Fallback to appending.
 			}
 		}
 	}

@@ -43,6 +43,7 @@ low_hand:
 
 	// --- This is the function we are testing ---
 	rules, err := LoadGameRulesFromFile(filePath)
+
 	// ---
 
 	if err != nil {

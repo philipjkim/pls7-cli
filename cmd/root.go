@@ -7,8 +7,8 @@ import (
 	"os"
 	"pls7-cli/internal/cli"
 	"pls7-cli/internal/config"
-	"pls7-cli/internal/game"
 	"pls7-cli/internal/util"
+	"pls7-cli/pkg/engine"
 	"strings"
 	"time"
 
@@ -30,14 +30,14 @@ var (
 // CLIActionProvider implements the ActionProvider interface using the CLI.
 type CLIActionProvider struct{}
 
-func (p *CLIActionProvider) GetAction(g *game.Game, _ *game.Player, r *rand.Rand) game.PlayerAction {
+func (p *CLIActionProvider) GetAction(g *engine.Game, _ *engine.Player, _ *rand.Rand) engine.PlayerAction {
 	return cli.PromptForAction(g)
 }
 
 // CPUActionProvider implements the ActionProvider interface for CPU players.
 type CPUActionProvider struct{}
 
-func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player, r *rand.Rand) game.PlayerAction {
+func (p *CPUActionProvider) GetAction(g *engine.Game, pl *engine.Player, r *rand.Rand) engine.PlayerAction {
 	return g.GetCPUAction(pl, r)
 }
 
@@ -45,7 +45,7 @@ func (p *CPUActionProvider) GetAction(g *game.Game, pl *game.Player, r *rand.Ran
 type CombinedActionProvider struct{}
 
 // GetAction method for CombinedActionProvider
-func (p *CombinedActionProvider) GetAction(g *game.Game, player *game.Player, r *rand.Rand) game.PlayerAction {
+func (p *CombinedActionProvider) GetAction(g *engine.Game, player *engine.Player, r *rand.Rand) engine.PlayerAction {
 	if player.IsCPU {
 		time.Sleep(g.CPUThinkTime())
 		return g.GetCPUAction(player, r)
@@ -53,7 +53,7 @@ func (p *CombinedActionProvider) GetAction(g *game.Game, player *game.Player, r 
 	return cli.PromptForAction(g)
 }
 
-func runGame(cmd *cobra.Command, args []string) {
+func runGame(_ *cobra.Command, _ []string) {
 	util.InitLogger(devMode)
 
 	// Load game rules
@@ -66,20 +66,20 @@ func runGame(cmd *cobra.Command, args []string) {
 
 	playerNames := []string{"YOU", "CPU 1", "CPU 2", "CPU 3", "CPU 4", "CPU 5"}
 
-	var difficulty game.Difficulty
+	var difficulty engine.Difficulty
 	switch difficultyStr {
 	case "easy":
-		difficulty = game.DifficultyEasy
+		difficulty = engine.DifficultyEasy
 	case "medium":
-		difficulty = game.DifficultyMedium
+		difficulty = engine.DifficultyMedium
 	case "hard":
-		difficulty = game.DifficultyHard
+		difficulty = engine.DifficultyHard
 	default:
 		logrus.Warnf("Invalid difficulty '%s' specified. Defaulting to medium.", difficultyStr)
-		difficulty = game.DifficultyMedium
+		difficulty = engine.DifficultyMedium
 	}
 
-	g := game.NewGame(playerNames, initialChips, smallBlind, bigBlind, difficulty, rules, devMode, showOuts, blindUpInterval)
+	g := engine.NewGame(playerNames, initialChips, smallBlind, bigBlind, difficulty, rules, devMode, showOuts, blindUpInterval)
 
 	actionProvider := &CombinedActionProvider{}
 
@@ -94,7 +94,7 @@ func runGame(cmd *cobra.Command, args []string) {
 		}
 
 		// Single Hand Loop
-		for g.Phase != game.PhaseShowdown && g.Phase != game.PhaseHandOver {
+		for g.Phase != engine.PhaseShowdown && g.Phase != engine.PhaseHandOver {
 			if g.CountNonFoldedPlayers() <= 1 {
 				break
 			}
@@ -103,9 +103,9 @@ func runGame(cmd *cobra.Command, args []string) {
 			// New Turn-by-turn Betting Loop
 			for !g.IsBettingRoundOver() {
 				player := g.CurrentPlayer()
-				var action game.PlayerAction
+				var action engine.PlayerAction
 
-				if player.Status != game.PlayerStatusPlaying {
+				if player.Status != engine.PlayerStatusPlaying {
 					g.AdvanceTurn()
 					continue
 				}
@@ -116,15 +116,15 @@ func runGame(cmd *cobra.Command, args []string) {
 				if event != nil {
 					var eventMessage string
 					switch event.Action {
-					case game.ActionFold:
+					case engine.ActionFold:
 						eventMessage = fmt.Sprintf("%s folds.", event.PlayerName)
-					case game.ActionCheck:
+					case engine.ActionCheck:
 						eventMessage = fmt.Sprintf("%s checks.", event.PlayerName)
-					case game.ActionCall:
+					case engine.ActionCall:
 						eventMessage = fmt.Sprintf("%s calls %s.", event.PlayerName, cli.FormatNumber(event.Amount))
-					case game.ActionBet:
+					case engine.ActionBet:
 						eventMessage = fmt.Sprintf("%s bets %s.", event.PlayerName, cli.FormatNumber(event.Amount))
-					case game.ActionRaise:
+					case engine.ActionRaise:
 						eventMessage = fmt.Sprintf("%s raises to %s.", event.PlayerName, cli.FormatNumber(event.Amount))
 					}
 					if eventMessage != "" {
@@ -159,7 +159,7 @@ func runGame(cmd *cobra.Command, args []string) {
 			fmt.Println(msg)
 		}
 
-		if g.Players[0].Status == game.PlayerStatusEliminated {
+		if g.Players[0].Status == engine.PlayerStatusEliminated {
 			fmt.Println("You have been eliminated. GAME OVER.")
 			break
 		}
@@ -217,7 +217,7 @@ func init() {
 			return fmt.Errorf("big-blind는 0보다 커야 합니다. 입력값: %d", bigBlind)
 		}
 		if smallBlind >= bigBlind {
-			return fmt.Errorf("small-blind(%d)는 big-blind(%d)보다 작아야 합니다.", smallBlind, bigBlind)
+			return fmt.Errorf("small-blind(%d)는 big-blind(%d)보다 작아야 합니다", smallBlind, bigBlind)
 		}
 		return nil
 	}

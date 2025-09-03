@@ -217,7 +217,30 @@ func TestCalculateOuts(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			gameRules := &GameRules{
-				LowHand: LowHandRules{Enabled: tc.lowGameEnabled, MaxRank: 7},
+				Name:         "Pot-Limit Sampyeong 7-or-Better",
+				Abbreviation: "PLS7",
+				BettingLimit: "pot_limit",
+				HoleCards: HoleCardRules{
+					Count:         3,
+					UseConstraint: "any",
+					UseCount:      0,
+				},
+				HandRankings: HandRankingsRules{
+					UseStandardRankings: false,
+					CustomRankings: []CustomHandRanking{
+						{
+							Name:            "skip_straight_flush",
+							InsertAfterRank: "royal_flush",
+						}, {
+							Name:            "skip_straight",
+							InsertAfterRank: "flush",
+						},
+					},
+				},
+				LowHand: LowHandRules{
+					Enabled: tc.lowGameEnabled,
+					MaxRank: 7,
+				},
 			}
 			hasOuts, outsInfo := CalculateOuts(tc.holeCards, tc.communityCards, gameRules)
 			fmt.Printf("hasOuts: %v, outsInfo: %+v\n", hasOuts, outsInfo)
