@@ -24,7 +24,7 @@ func (c *PotLimitCalculator) CalculateBettingLimits(g *Game) (minRaiseTotal int,
 	player := g.Players[g.CurrentTurnPos]
 	amountToCall := g.BetToCall - player.CurrentBet
 
-	minRaiseTotal = calculateMinRaiseTotal(g, player)
+	minRaiseTotal = g.minRaiseAmount()
 
 	// Pot-Limit Raise calculation: The maximum raise is the size of the pot
 	// after the player has notionally made their call.
@@ -62,7 +62,7 @@ type NoLimitCalculator struct{}
 func (c *NoLimitCalculator) CalculateBettingLimits(g *Game) (minRaiseTotal int, maxRaiseTotal int) {
 	player := g.Players[g.CurrentTurnPos]
 
-	minRaiseTotal = calculateMinRaiseTotal(g, player)
+	minRaiseTotal = g.minRaiseAmount()
 
 	// The maximum raise in No-Limit is the player's entire stack.
 	maxRaiseTotal = player.Chips + player.CurrentBet
@@ -73,22 +73,4 @@ func (c *NoLimitCalculator) CalculateBettingLimits(g *Game) (minRaiseTotal int, 
 	}
 
 	return minRaiseTotal, maxRaiseTotal
-}
-
-// calculateMinRaiseTotal is a helper function that calculates the minimum total
-// bet required for a valid raise. The universal rule is that a raise must be at
-// least as large as the previous bet or raise in the same betting round.
-func calculateMinRaiseTotal(g *Game, player *Player) int {
-	// The minimum *increase* for a raise must be at least the size of the last raise.
-	minRaiseIncrease := g.LastRaiseAmount
-	// If there was no raise yet in this round, the minimum increase is the size of the opening bet.
-	if minRaiseIncrease == 0 {
-		minRaiseIncrease = g.BetToCall
-	}
-	// If there is no bet at all (e.g., first to act), the minimum bet is the big blind.
-	if g.BetToCall == 0 {
-		minRaiseIncrease = g.BigBlind
-	}
-	// The total bet will be the amount to call plus this minimum increase.
-	return g.BetToCall + minRaiseIncrease
 }

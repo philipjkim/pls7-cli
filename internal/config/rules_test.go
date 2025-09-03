@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +43,6 @@ low_hand:
 
 	// --- This is the function we are testing ---
 	rules, err := LoadGameRulesFromFile(filePath)
-	fmt.Printf("%+v\n", rules)
 
 	// ---
 
