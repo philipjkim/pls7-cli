@@ -194,7 +194,7 @@ func (g *Game) StartNewHand() (event *BlindEvent) {
 	// Deal hole cards.
 	// In dev/debug mode, specific cards can be dealt to the human player.
 	ruleAbbr := g.Rules.Abbreviation
-	if g.DevMode || g.ShowsOuts {
+	if g.DevMode {
 		you := g.Players[0]
 		if you.Status == PlayerStatusPlaying {
 			// Deal specific debug cards to the human player.
