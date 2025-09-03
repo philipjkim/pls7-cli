@@ -225,19 +225,6 @@ func getHandIterator(rules *GameRules) HandIterator {
 //   - highResult: A HandResult for the best high hand, or nil if no hand could be formed.
 //   - lowResult: A HandResult for the best low hand (if enabled by rules), or nil.
 func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules) (highResult *HandResult, lowResult *HandResult) {
-	// --- Low Hand Evaluation ---
-	// Low hand evaluation is independent of high hand combinations and can be done first.
-	if gameRules.LowHand.Enabled {
-		pool := make([]Card, 0, len(holeCards)+len(communityCards))
-		pool = append(pool, holeCards...)
-		pool = append(pool, communityCards...)
-		analysis := newHandAnalysis(pool)
-		if lowHand, ok := findBestLowHand(analysis, Rank(gameRules.LowHand.MaxRank)); ok {
-			lowResult = lowHand
-		}
-	}
-
-	// --- High Hand Evaluation ---
 	// 1. Select the combination generation strategy based on the game rules.
 	iterator := getHandIterator(gameRules)
 
@@ -245,10 +232,11 @@ func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules)
 	all5CardCombos := iterator.Generate(holeCards, communityCards, gameRules)
 
 	if all5CardCombos == nil {
-		return nil, lowResult // No valid high hand could be formed.
+		logrus.Warnf("EvaluateHand: No card combinations could be generated with the given hole and community cards.")
+		return nil, nil // No valid high hand could be formed, and by extension no low hand.
 	}
 
-	// 3. Evaluate each 5-card combination and find the best one.
+	// 3. Evaluate each 5-card combination to find the best high hand.
 	var bestHand *HandResult
 	for _, combo := range all5CardCombos {
 		handResult := evaluateSingleHand(combo, gameRules)
@@ -260,7 +248,79 @@ func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules)
 	}
 	highResult = bestHand
 
+	// 4. From the same combinations, find the best low hand if the game rules enable it.
+	if gameRules.LowHand.Enabled {
+		var bestLowHand *HandResult
+		for _, combo := range all5CardCombos {
+			if isQualifyingLowHand(combo, Rank(gameRules.LowHand.MaxRank)) {
+				// This combo is a valid low hand. We create a HandResult for it
+				// so we can use the standard comparison logic.
+				currentLowHand := &HandResult{
+					Rank:       HighCard, // Low hands are ranked as HighCard for comparison.
+					Cards:      combo,
+					HighValues: getLowHandHighValues(combo),
+				}
+
+				if bestLowHand == nil || compareLowHands(currentLowHand, bestLowHand) > 0 {
+					bestLowHand = currentLowHand
+				}
+			}
+		}
+		lowResult = bestLowHand
+	}
+
 	return highResult, lowResult
+}
+
+// isQualifyingLowHand checks if a 5-card hand meets the criteria for a low hand.
+func isQualifyingLowHand(cards []Card, maxRank Rank) bool {
+	if len(cards) != 5 {
+		return false
+	}
+	usedRanks := make(map[Rank]bool)
+	for _, card := range cards {
+		if card.Rank > maxRank && card.Rank != Ace {
+			return false // A card is too high.
+		}
+		if usedRanks[card.Rank] {
+			return false // Contains a pair, not a valid low hand.
+		}
+		usedRanks[card.Rank] = true
+	}
+	return true
+}
+
+// compareLowHands compares two low hands. It returns 1 if h1 is better (lower) than h2,
+// -1 if h2 is better, and 0 if they are identical.
+func compareLowHands(h1, h2 *HandResult) int {
+	for i := 0; i < len(h1.HighValues); i++ {
+		v1 := getLowRankValue(h1.HighValues[i])
+		v2 := getLowRankValue(h2.HighValues[i])
+		if v1 < v2 {
+			return 1 // h1 is better because its card is lower.
+		}
+		if v1 > v2 {
+			return -1 // h2 is better.
+		}
+	}
+	return 0 // Hands are identical.
+}
+
+// getLowHandHighValues returns the ranks of the cards sorted for low-hand comparison (highest to lowest).
+func getLowHandHighValues(cards []Card) []Rank {
+	sortedCards := make([]Card, 5)
+	copy(sortedCards, cards)
+	// Sort descending by low-rank value (Ace=1, Two=2, etc.)
+	sort.Slice(sortedCards, func(i, j int) bool {
+		return getLowRankValue(sortedCards[i].Rank) > getLowRankValue(sortedCards[j].Rank)
+	})
+	return []Rank{
+		sortedCards[0].Rank,
+		sortedCards[1].Rank,
+		sortedCards[2].Rank,
+		sortedCards[3].Rank,
+		sortedCards[4].Rank,
+	}
 }
 
 // evaluateSingleHand takes exactly 5 cards and determines their rank.

@@ -413,3 +413,88 @@ func TestPLOHandEvaluation(t *testing.T) {
 		})
 	}
 }
+
+func TestPLO8LowHandEvaluation(t *testing.T) {
+	// PLO8 Rule: Must use exactly 2 hole cards and 3 community cards for low hand.
+	plo8Rules := &GameRules{
+		Name:         "Pot-Limit Omaha 8-or-Better",
+		Abbreviation: "PLO8",
+		HoleCards: HoleCardRules{
+			Count:         4,
+			UseConstraint: "exact",
+			UseCount:      2,
+		},
+		HandRankings: HandRankingsRules{
+			UseStandardRankings: true,
+		},
+		LowHand: LowHandRules{
+			Enabled: true,
+			MaxRank: 8,
+		},
+	}
+
+	testCases := []struct {
+		name           string
+		holeCards      []Card
+		communityCards []Card
+		expectLowHand  bool
+		expectedCards  string
+	}{
+		{
+			name: "No low hand possible with only 1 low card in hole",
+			// Player has only one low card (Ace). Board has four low cards.
+			// The old logic would find a 5-4-3-2-A low hand by using 1 hole card and 4 board cards.
+			// Correct PLO8 logic should find no qualifying low hand because 2 hole cards must be used.
+			holeCards:      CardsFromStrings("Ah 9c Td Js"),
+			communityCards: CardsFromStrings("2s 3s 4c 5d Ks"),
+			expectLowHand:  false,
+			expectedCards:  "",
+		},
+		{
+			name: "Valid low hand using 2 hole and 3 board cards",
+			// Player has two low cards. Board has three low cards.
+			holeCards:      CardsFromStrings("Ah 2c Td Js"),
+			communityCards: CardsFromStrings("3s 4s 8c Qs Ks"),
+			expectLowHand:  true,
+			// Best low is 8,4,3,2,A
+			expectedCards: "8c 4s 3s 2c Ah",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, lowResult := EvaluateHand(tc.holeCards, tc.communityCards, plo8Rules)
+
+			if !tc.expectLowHand {
+				if lowResult != nil {
+					t.Errorf("Expected no low hand, but got %v", lowResult.Cards)
+				}
+				return // Test passed
+			}
+
+			if lowResult == nil {
+				t.Fatalf("Expected a low hand, but got nil")
+			}
+
+			// Sort cards for deterministic comparison.
+			sort.Slice(lowResult.Cards, func(i, j int) bool {
+				if lowResult.Cards[i].Rank != lowResult.Cards[j].Rank {
+					return lowResult.Cards[i].Rank > lowResult.Cards[j].Rank
+				}
+				return lowResult.Cards[i].Suit > lowResult.Cards[j].Suit
+			})
+
+			expectedHandCards := CardsFromStrings(tc.expectedCards)
+			sort.Slice(expectedHandCards, func(i, j int) bool {
+				if expectedHandCards[i].Rank != expectedHandCards[j].Rank {
+					return expectedHandCards[i].Rank > expectedHandCards[j].Rank
+				}
+				return expectedHandCards[i].Suit > expectedHandCards[j].Suit
+			})
+
+			if !reflect.DeepEqual(lowResult.Cards, expectedHandCards) {
+				t.Errorf("Expected best low hand to be %v, but got %v", expectedHandCards, lowResult.Cards)
+			}
+		})
+	}
+}
