@@ -78,3 +78,25 @@ init 함수 내에서 실행한 logrus.SetLevel(logrus.DebugLevel) 코드는 log
 따라서 init 함수가 실행된 이후부터는, 해당 테스트 프로그램이 끝날 때까지 poker 패키지 내의 다른 어떤 파일(evaluation.go, deck.go 등)에서 logrus를 사용하더라도 모두 Debug 레벨이 적용됩니다. 즉, 영향 범위는 파일 하나에 국한되지 않고 패키지 전체입니다.
 
 ---
+
+## 질문 3
+
+evaluation.go L229-251 을 보니, 인터페이스를 하나 정의하고 gameRules.HoleCards.UseConstraint 에 따라 그에 맞는 all5CardCombos slice 값을 리턴하는 구현체를 만들어 사용하면 코드 가독성이 더 올라갈 것 같은데 너의 생각은 어때?
+
+## 답변 3
+
+매우 좋은 제안입니다. 코드 가독성과 확장성을 크게 높일 수 있는 훌륭한 리팩토링 아이디어라고 생각합니다.
+
+말씀하신 대로, UseConstraint 값에 따라 조합 생성 로직을 선택하는 부분을 전략 패턴(Strategy Pattern)을 적용하여 추상화하면 다음과 같은 장점이 있습니다.
+
+1. 가독성 향상: EvaluateHand 함수는 "어떤 전략을 사용해 카드 조합을 생성하고, 각 조합을 평가하여 최고를 가린다"는 핵심 흐름만 남게 되어 훨씬 이해하기 쉬워집니다. 복잡한 if/else 분기문이 사라지기 때문입니다.
+2. 개방-폐쇄 원칙(OCP) 준수: 나중에 "최대 2장 사용"과 같은 새로운 홀카드 사용 규칙이 추가되더라도, EvaluateHand 함수 자체를 수정할 필요 없이 새로운 전략 구현체만 추가하면 됩니다. 이는 코드 변경을 최소화하여 버그 발생 가능성을 줄입니다.
+3. 책임 분리: 핸드 평가 로직과 카드 조합 생성 로직의 책임이 명확하게 분리됩니다.
+
+제안해주신 방향에 맞춰 리팩토링을 진행하겠습니다.
+
+리팩토링 계획:
+
+1. 카드 조합을 생성하는 로직의 인터페이스(HandCombinationGenerator)를 정의합니다.
+2. "exact"와 "any" 제약 조건에 맞는 구체적인 구현체(ExactCombinationGenerator, AnyCombinationGenerator)를 만듭니다.
+3. EvaluateHand 함수가 이 인터페이스를 사용하도록 구조를 변경합니다.

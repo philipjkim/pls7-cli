@@ -181,6 +181,20 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 	return analysis
 }
 
+// getHandIterator selects the appropriate hand combination strategy based on the game rules.
+func getHandIterator(rules *GameRules) HandIterator {
+	switch rules.HoleCards.UseConstraint {
+	case "exact":
+		return &ExactCombinationGenerator{}
+	default:
+		// Default to "any" for safety and backward compatibility.
+		if rules.HoleCards.UseConstraint != "any" && rules.HoleCards.UseConstraint != "" {
+			logrus.Warnf("Unknown UseConstraint '%s', defaulting to 'any'", rules.HoleCards.UseConstraint)
+		}
+		return &AnyCombinationGenerator{}
+	}
+}
+
 // EvaluateHand is the main evaluation function. It takes a player's hole cards and the
 // community cards and, based on the provided game rules, determines the best possible
 // high hand and, if applicable, the best possible low hand.
@@ -211,12 +225,12 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 //   - highResult: A HandResult for the best high hand, or nil if no hand could be formed.
 //   - lowResult: A HandResult for the best low hand (if enabled by rules), or nil.
 func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules) (highResult *HandResult, lowResult *HandResult) {
-	pool := make([]Card, 0, len(holeCards)+len(communityCards))
-	pool = append(pool, holeCards...)
-	pool = append(pool, communityCards...)
-
 	// --- Low Hand Evaluation ---
+	// Low hand evaluation is independent of high hand combinations and can be done first.
 	if gameRules.LowHand.Enabled {
+		pool := make([]Card, 0, len(holeCards)+len(communityCards))
+		pool = append(pool, holeCards...)
+		pool = append(pool, communityCards...)
 		analysis := newHandAnalysis(pool)
 		if lowHand, ok := findBestLowHand(analysis, Rank(gameRules.LowHand.MaxRank)); ok {
 			lowResult = lowHand
@@ -224,32 +238,17 @@ func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules)
 	}
 
 	// --- High Hand Evaluation ---
-	var all5CardCombos [][]Card
+	// 1. Select the combination generation strategy based on the game rules.
+	iterator := getHandIterator(gameRules)
 
-	if gameRules.HoleCards.UseConstraint == "exact" {
-		numHoleCardsToUse := gameRules.HoleCards.UseCount
-		numBoardCardsToUse := 5 - numHoleCardsToUse
+	// 2. Generate all possible 5-card hand combinations using the selected strategy.
+	all5CardCombos := iterator.Generate(holeCards, communityCards, gameRules)
 
-		if len(holeCards) < numHoleCardsToUse || len(communityCards) < numBoardCardsToUse {
-			logrus.Warnf("Not enough cards for 'exact' evaluation. Have %d hole, %d board. Need %d, %d.", len(holeCards), len(communityCards), numHoleCardsToUse, numBoardCardsToUse)
-			return nil, lowResult
-		}
-
-		holeCombos := combinations(holeCards, numHoleCardsToUse)
-		boardCombos := combinations(communityCards, numBoardCardsToUse)
-
-		for _, hc := range holeCombos {
-			for _, bc := range boardCombos {
-				current5CardHand := append([]Card{}, hc...)
-				current5CardHand = append(current5CardHand, bc...)
-				all5CardCombos = append(all5CardCombos, current5CardHand)
-			}
-		}
-	} else {
-		// "any" constraint: combine all cards and find the best 5-card hand
-		all5CardCombos = combinations(pool, 5)
+	if all5CardCombos == nil {
+		return nil, lowResult // No valid high hand could be formed.
 	}
 
+	// 3. Evaluate each 5-card combination and find the best one.
 	var bestHand *HandResult
 	for _, combo := range all5CardCombos {
 		handResult := evaluateSingleHand(combo, gameRules)
