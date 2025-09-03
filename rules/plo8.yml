@@ -1,0 +1,12 @@
+name: "Pot-Limit Omaha 8-or-Better"
+abbreviation: "PLO8"
+betting_limit: "pot_limit"
+hole_cards:
+  count: 4
+  use_constraint: "exact"
+  use_count: 2
+hand_rankings:
+  use_standard_rankings: true
+low_hand:
+  enabled: true
+  max_rank: 8
