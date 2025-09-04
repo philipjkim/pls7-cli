@@ -136,4 +136,4 @@ go test -v ./...
 
 This project is being actively developed with extensive use of AI tools such as GEMINI CLI, Claude Code, Codex, etc.
 
-For basic development rules, please refer to the guidelines in [docs/GEMINI.md](./docs/GEMINI.md).
+For basic development rules, please refer to the guidelines in [docs/GEMINI_en.md](./docs/GEMINI_en.md). For Korean, refer to [docs/GEMINI.md](./docs/GEMINI.md).
