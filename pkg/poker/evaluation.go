@@ -181,6 +181,20 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 	return analysis
 }
 
+// getHandIterator selects the appropriate hand combination strategy based on the game rules.
+func getHandIterator(rules *GameRules) HandIterator {
+	switch rules.HoleCards.UseConstraint {
+	case "exact":
+		return &ExactCombinationGenerator{}
+	default:
+		// Default to "any" for safety and backward compatibility.
+		if rules.HoleCards.UseConstraint != "any" && rules.HoleCards.UseConstraint != "" {
+			logrus.Warnf("Unknown UseConstraint '%s', defaulting to 'any'", rules.HoleCards.UseConstraint)
+		}
+		return &AnyCombinationGenerator{}
+	}
+}
+
 // EvaluateHand is the main evaluation function. It takes a player's hole cards and the
 // community cards and, based on the provided game rules, determines the best possible
 // high hand and, if applicable, the best possible low hand.
@@ -211,167 +225,218 @@ func newHandAnalysis(pool []Card) *handAnalysis {
 //   - highResult: A HandResult for the best high hand, or nil if no hand could be formed.
 //   - lowResult: A HandResult for the best low hand (if enabled by rules), or nil.
 func EvaluateHand(holeCards []Card, communityCards []Card, gameRules *GameRules) (highResult *HandResult, lowResult *HandResult) {
-	pool := make([]Card, 0, 8)
-	pool = append(pool, holeCards...)
-	pool = append(pool, communityCards...)
+	// 1. Select the combination generation strategy based on the game rules.
+	iterator := getHandIterator(gameRules)
 
-	analysis := newHandAnalysis(pool)
+	// 2. Generate all possible 5-card hand combinations using the selected strategy.
+	all5CardCombos := iterator.Generate(holeCards, communityCards, gameRules)
 
-	// --- High Hand Evaluation ---
+	if all5CardCombos == nil {
+		logrus.Warnf("EvaluateHand: No card combinations could be generated with the given hole and community cards.")
+		return nil, nil // No valid high hand could be formed, and by extension no low hand.
+	}
+
+	// 3. Evaluate each 5-card combination to find the best high hand.
+	var bestHand *HandResult
+	for _, combo := range all5CardCombos {
+		handResult := evaluateSingleHand(combo, gameRules)
+		if handResult != nil {
+			if bestHand == nil || compareHandResults(handResult, bestHand) > 0 {
+				bestHand = handResult
+			}
+		}
+	}
+	highResult = bestHand
+
+	// 4. From the same combinations, find the best low hand if the game rules enable it.
+	if gameRules.LowHand.Enabled {
+		var bestLowHand *HandResult
+		for _, combo := range all5CardCombos {
+			if isQualifyingLowHand(combo, Rank(gameRules.LowHand.MaxRank)) {
+				// This combo is a valid low hand. We create a HandResult for it
+				// so we can use the standard comparison logic.
+				currentLowHand := &HandResult{
+					Rank:       HighCard, // Low hands are ranked as HighCard for comparison.
+					Cards:      combo,
+					HighValues: getLowHandHighValues(combo),
+				}
+
+				if bestLowHand == nil || compareLowHands(currentLowHand, bestLowHand) > 0 {
+					bestLowHand = currentLowHand
+				}
+			}
+		}
+		lowResult = bestLowHand
+	}
+
+	return highResult, lowResult
+}
+
+// isQualifyingLowHand checks if a 5-card hand meets the criteria for a low hand.
+func isQualifyingLowHand(cards []Card, maxRank Rank) bool {
+	if len(cards) != 5 {
+		return false
+	}
+	usedRanks := make(map[Rank]bool)
+	for _, card := range cards {
+		if card.Rank > maxRank && card.Rank != Ace {
+			return false // A card is too high.
+		}
+		if usedRanks[card.Rank] {
+			return false // Contains a pair, not a valid low hand.
+		}
+		usedRanks[card.Rank] = true
+	}
+	return true
+}
+
+// compareLowHands compares two low hands. It returns 1 if h1 is better (lower) than h2,
+// -1 if h2 is better, and 0 if they are identical.
+func compareLowHands(h1, h2 *HandResult) int {
+	for i := 0; i < len(h1.HighValues); i++ {
+		v1 := getLowRankValue(h1.HighValues[i])
+		v2 := getLowRankValue(h2.HighValues[i])
+		if v1 < v2 {
+			return 1 // h1 is better because its card is lower.
+		}
+		if v1 > v2 {
+			return -1 // h2 is better.
+		}
+	}
+	return 0 // Hands are identical.
+}
+
+// getLowHandHighValues returns the ranks of the cards sorted for low-hand comparison (highest to lowest).
+func getLowHandHighValues(cards []Card) []Rank {
+	sortedCards := make([]Card, 5)
+	copy(sortedCards, cards)
+	// Sort descending by low-rank value (Ace=1, Two=2, etc.)
+	sort.Slice(sortedCards, func(i, j int) bool {
+		return getLowRankValue(sortedCards[i].Rank) > getLowRankValue(sortedCards[j].Rank)
+	})
+	return []Rank{
+		sortedCards[0].Rank,
+		sortedCards[1].Rank,
+		sortedCards[2].Rank,
+		sortedCards[3].Rank,
+		sortedCards[4].Rank,
+	}
+}
+
+// evaluateSingleHand takes exactly 5 cards and determines their rank.
+func evaluateSingleHand(cards []Card, gameRules *GameRules) *HandResult {
+	if len(cards) != 5 {
+		logrus.Warnf("evaluateSingleHand called with %d cards, but expected 5", len(cards))
+		return nil
+	}
+
+	analysis := newHandAnalysis(cards)
 	handRankOrder := getHandRanks(&gameRules.HandRankings)
-	logrus.Tracef("EvaluateHand: handRankOrder: %+v", handRankOrder)
 
-	// Iterate through the determined hand ranking order and evaluate
 	for _, rank := range handRankOrder {
 		var currentHand *HandResult
 		switch rank {
 		case RoyalFlush:
 			if sfCards, ok := findStraightFlush(analysis); ok {
-				if sfCards[0].Rank == Ace { // Royal Flush is a specific Straight Flush
+				if sfCards[0].Rank == Ace {
 					currentHand = &HandResult{Rank: RoyalFlush, Cards: sfCards, HighValues: []Rank{sfCards[0].Rank}}
+					return currentHand
 				}
 			}
 		case SkipStraightFlush:
 			if ssfCards, ok := findSkipStraightFlush(analysis); ok {
 				currentHand = &HandResult{Rank: SkipStraightFlush, Cards: ssfCards, HighValues: []Rank{ssfCards[0].Rank}}
+				return currentHand
 			}
 		case StraightFlush:
 			if sfCards, ok := findStraightFlush(analysis); ok {
-				// Already handled Royal Flush, so this is a non-royal Straight Flush
 				currentHand = &HandResult{Rank: StraightFlush, Cards: sfCards, HighValues: []Rank{sfCards[0].Rank}}
+				return currentHand
 			}
 		case FourOfAKind:
 			if quadRank, ok := findBestNOfAKind(analysis.rankCounts, 4); ok {
 				found, kickers := findKickers(analysis.cards, []Rank{quadRank}, 1)
-				if !found {
-					logrus.Warnf(
-						"EvaluateHand: kicker size invalid for Four of a Kind: %d available, need 1 "+
-							"- holeCards: %+v, communityCards: %+v",
-						len(kickers), holeCards, communityCards,
-					)
-					continue
+				if found {
+					quadCards := findCardsByRank(analysis.cards, quadRank, 4)
+					currentHand = &HandResult{Rank: FourOfAKind, Cards: append(quadCards, kickers...), HighValues: []Rank{quadRank, kickers[0].Rank}}
+					return currentHand
 				}
-				quadCards := findCardsByRank(pool, quadRank, 4)
-				currentHand = &HandResult{Rank: FourOfAKind, Cards: append(quadCards, kickers...), HighValues: []Rank{quadRank, kickers[0].Rank}}
 			}
 		case FullHouse:
 			if tripleRank, pairRank, ok := findBestFullHouse(analysis.rankCounts); ok {
-				tripleCards := findCardsByRank(pool, tripleRank, 3)
-				pairCards := findCardsByRank(pool, pairRank, 2)
+				tripleCards := findCardsByRank(analysis.cards, tripleRank, 3)
+				pairCards := findCardsByRank(analysis.cards, pairRank, 2)
 				currentHand = &HandResult{Rank: FullHouse, Cards: append(tripleCards, pairCards...), HighValues: []Rank{tripleRank, pairRank}}
+				return currentHand
 			}
 		case Flush:
 			if flushCards, ok := findBestFlush(analysis); ok {
 				currentHand = &HandResult{
-					Rank:  Flush,
-					Cards: flushCards,
-					HighValues: []Rank{
-						flushCards[0].Rank,
-						flushCards[1].Rank,
-						flushCards[2].Rank,
-						flushCards[3].Rank,
-						flushCards[4].Rank,
-					},
+					Rank:       Flush,
+					Cards:      flushCards,
+					HighValues: []Rank{flushCards[0].Rank, flushCards[1].Rank, flushCards[2].Rank, flushCards[3].Rank, flushCards[4].Rank},
 				}
+				return currentHand
 			}
 		case SkipStraight:
 			if ssCards, ok := findSkipStraight(analysis); ok {
 				currentHand = &HandResult{Rank: SkipStraight, Cards: ssCards, HighValues: []Rank{ssCards[0].Rank}}
+				return currentHand
 			}
 		case Straight:
 			if straightCards, ok := findBestStraight(analysis); ok {
 				currentHand = &HandResult{Rank: Straight, Cards: straightCards, HighValues: []Rank{straightCards[0].Rank}}
+				return currentHand
 			}
 		case ThreeOfAKind:
 			if tripleRank, ok := findBestNOfAKind(analysis.rankCounts, 3); ok {
 				found, kickers := findKickers(analysis.cards, []Rank{tripleRank}, 2)
-				if !found {
-					logrus.Warnf(
-						"EvaluateHand: kicker size invalid for Three of a Kind: %d available, need 2 "+
-							"- holeCards: %+v, communityCards: %+v",
-						len(kickers), holeCards, communityCards,
-					)
-					continue
-				}
-				tripleCards := findCardsByRank(pool, tripleRank, 3)
-				currentHand = &HandResult{
-					Rank:       ThreeOfAKind,
-					Cards:      append(tripleCards, kickers...),
-					HighValues: []Rank{tripleRank, kickers[0].Rank, kickers[1].Rank},
+				if found {
+					tripleCards := findCardsByRank(analysis.cards, tripleRank, 3)
+					currentHand = &HandResult{
+						Rank:       ThreeOfAKind,
+						Cards:      append(tripleCards, kickers...),
+						HighValues: []Rank{tripleRank, kickers[0].Rank, kickers[1].Rank},
+					}
+					return currentHand
 				}
 			}
 		case TwoPair:
 			if highPair, lowPair, ok := findBestTwoPair(analysis.rankCounts); ok {
 				found, kickers := findKickers(analysis.cards, []Rank{highPair, lowPair}, 1)
-				if !found {
-					logrus.Warnf(
-						"EvaluateHand: kicker size invalid for Two Pair: %d available, need 1 "+
-							"- holeCards: %+v, communityCards: %+v",
-						len(kickers), holeCards, communityCards,
-					)
-					continue
+				if found {
+					highPairCards := findCardsByRank(analysis.cards, highPair, 2)
+					lowPairCards := findCardsByRank(analysis.cards, lowPair, 2)
+					allCards := append(highPairCards, lowPairCards...)
+					allCards = append(allCards, kickers...)
+					currentHand = &HandResult{Rank: TwoPair, Cards: allCards, HighValues: []Rank{highPair, lowPair, kickers[0].Rank}}
+					return currentHand
 				}
-				highPairCards := findCardsByRank(pool, highPair, 2)
-				lowPairCards := findCardsByRank(pool, lowPair, 2)
-				allCards := append(highPairCards, lowPairCards...)
-				allCards = append(allCards, kickers...)
-				currentHand = &HandResult{Rank: TwoPair, Cards: allCards, HighValues: []Rank{highPair, lowPair, kickers[0].Rank}}
 			}
 		case OnePair:
 			if pairRank, ok := findBestNOfAKind(analysis.rankCounts, 2); ok {
 				found, kickers := findKickers(analysis.cards, []Rank{pairRank}, 3)
-				if !found {
-					logrus.Warnf(
-						"EvaluateHand: kicker size invalid for One Pair: %d available, need 3 "+
-							"- holeCards: %+v, communityCards: %+v",
-						len(kickers), holeCards, communityCards,
-					)
-					continue
-				}
-				pairCards := findCardsByRank(pool, pairRank, 2)
-				currentHand = &HandResult{
-					Rank:       OnePair,
-					Cards:      append(pairCards, kickers...),
-					HighValues: []Rank{pairRank, kickers[0].Rank, kickers[1].Rank, kickers[2].Rank},
+				if found {
+					pairCards := findCardsByRank(analysis.cards, pairRank, 2)
+					currentHand = &HandResult{
+						Rank:       OnePair,
+						Cards:      append(pairCards, kickers...),
+						HighValues: []Rank{pairRank, kickers[0].Rank, kickers[1].Rank, kickers[2].Rank},
+					}
+					return currentHand
 				}
 			}
 		case HighCard:
-			if len(analysis.cards) < 5 {
-				logrus.Warnf(
-					"Not enough cards to evaluate a high hand: %d cards available - holeCards: %+v, communityCards: %+v",
-					len(analysis.cards), holeCards, communityCards,
-				)
-			} else {
-				currentHand = &HandResult{
-					Rank:  HighCard,
-					Cards: analysis.cards[:5],
-					HighValues: []Rank{
-						analysis.cards[0].Rank,
-						analysis.cards[1].Rank,
-						analysis.cards[2].Rank,
-						analysis.cards[3].Rank,
-						analysis.cards[4].Rank,
-					},
-				}
-			}
-		}
-
-		if currentHand != nil {
-			if highResult == nil || compareHandResults(currentHand, highResult) > 0 {
-				highResult = currentHand
+			return &HandResult{
+				Rank:  HighCard,
+				Cards: analysis.cards[:5],
+				HighValues: []Rank{
+					analysis.cards[0].Rank, analysis.cards[1].Rank, analysis.cards[2].Rank, analysis.cards[3].Rank, analysis.cards[4].Rank,
+				},
 			}
 		}
 	}
-
-	// --- Low Hand Evaluation ---
-	logrus.Tracef("EvaluateHand: lowHandEnabled=%v, maxRank=%v", gameRules.LowHand.Enabled, gameRules.LowHand.MaxRank)
-	if gameRules.LowHand.Enabled {
-		if lowHand, ok := findBestLowHand(analysis, Rank(gameRules.LowHand.MaxRank)); ok {
-			lowResult = lowHand
-		}
-	}
-
-	return highResult, lowResult
+	return nil // Should not be reached if HighCard is always possible
 }
 
 // findSkipStraightFlush checks for a Skip Straight Flush. It first identifies a

@@ -24,6 +24,16 @@ func LoadGameRulesFromFile(filePath string) (*poker.GameRules, error) {
 	return &rules, nil
 }
 
+// LoadGameRulesFromBytes unmarshals a byte slice into a GameRules struct.
+func LoadGameRulesFromBytes(data []byte) (*poker.GameRules, error) {
+	var rules poker.GameRules
+	err := yaml.Unmarshal(data, &rules)
+	if err != nil {
+		return nil, err
+	}
+	return &rules, nil
+}
+
 // LoadGameRulesFromOptions loads game rules from a YAML string by option value.
 // - Available ruleStr: "pls", "pls7"
 func LoadGameRulesFromOptions(ruleStr string) (*poker.GameRules, error) {

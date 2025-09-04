@@ -123,6 +123,17 @@ go test ./...
 go test -v ./...
 ```
 
-## 📝 Development Plan
+## 📖 Documentation
 
-For a detailed step-by-step development plan, please see the [Development Plan](./docs/development_plan.md) document.
+- [Architecture (EN)](./docs/architecture.md)
+- [Architecture (KO)](./docs/architecture_ko.md)
+- [Directory Structure (EN)](./docs/directory_structure.md)
+- [Directory Structure (KO)](./docs/directory_structure_ko.md)
+- [Development Plan (KO)](./docs/development_plan.md)
+- [Project Roadmap (KO)](./docs/roadmap_v20250827.md)
+
+## Contributing
+
+This project is being actively developed with extensive use of AI tools such as GEMINI CLI, Claude Code, Codex, etc.
+
+For basic development rules, please refer to the guidelines in [docs/GEMINI.md](./docs/GEMINI.md).

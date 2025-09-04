@@ -1,0 +1,17 @@
+name: "Pot-Limit Sampyeong 7-or-Better"
+abbreviation: "PLS7"
+betting_limit: "pot_limit"
+hole_cards:
+  count: 3
+  use_constraint: "any"
+  use_count: 0
+hand_rankings:
+  use_standard_rankings: false
+  custom_rankings:
+    - name: "skip_straight_flush"
+      insert_after_rank: "royal_flush"
+    - name: "skip_straight"
+      insert_after_rank: "flush"
+low_hand:
+  enabled: true
+  max_rank: 7
