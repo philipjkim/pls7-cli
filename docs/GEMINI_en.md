@@ -6,7 +6,7 @@ The rules specified in this document outline what the Gemini CLI should and shou
 
 - Always check and act according to the rules specified in the `docs/GEMINI_en.md` document.
 - Converse with the user in English. This is to facilitate smooth communication with the user.
-- For the command "Reload project context," read `README.md` > `docs/development_plan.md`, then read `**/*.go` files to understand the current state of the project, and ask additional questions if necessary to ensure a clear understanding.
+- For the command "Reload project context," read `README.md` and `docs/development_plan.md`, then read `**/*.go` files to understand the current state of the project, and ask additional questions if necessary to ensure a clear understanding.
 - All feature additions will be done in a TDD fashion. Therefore, always write test cases before adding a feature, confirm that the test fails, and then implement the feature. After implementation, confirm that the test passes.
 - When refactoring, also write as many diverse test cases as possible for the logic being refactored, and confirm that all tests pass after the refactoring.
 - All comments and documentation within the code should be written in English. This is to improve code readability and facilitate international collaboration.
