@@ -498,3 +498,78 @@ func TestPLO8LowHandEvaluation(t *testing.T) {
 		})
 	}
 }
+
+func TestEvaluationRegression_AnyConstraint(t *testing.T) {
+	anyConstraintRules := &GameRules{
+		HoleCards: HoleCardRules{
+			UseConstraint: "any",
+		},
+		HandRankings: HandRankingsRules{
+			UseStandardRankings: true,
+		},
+	}
+
+	testCases := []struct {
+		name           string
+		holeCards      []Card
+		communityCards []Card
+		expectedRank   HandRank
+		expectedCards  string
+	}{
+		{
+			name:           "NLH - Board makes a flush",
+			holeCards:      CardsFromStrings("As Ks"),
+			communityCards: CardsFromStrings("Qh Jh Th 5h 4h"),
+			expectedRank:   Flush,
+			expectedCards:  "Qh Jh Th 5h 4h",
+		},
+		{
+			name:           "NLH - Player uses one card for a better flush",
+			holeCards:      CardsFromStrings("Ah 2c"),
+			communityCards: CardsFromStrings("Kh Qh Jh 5h 2s"),
+			expectedRank:   Flush,
+			expectedCards:  "Ah Kh Qh Jh 5h",
+		},
+		{
+			name:           "PLS7 - Player uses 3 cards for a full house",
+			holeCards:      CardsFromStrings("Ah As Ac"),
+			communityCards: CardsFromStrings("Kh Ks 2d 3c 4d"),
+			expectedRank:   FullHouse,
+			expectedCards:  "Ah As Ac Kh Ks",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			highResult, _ := EvaluateHand(tc.holeCards, tc.communityCards, anyConstraintRules)
+
+			if highResult == nil {
+				t.Fatalf("EvaluateHand returned nil for highResult")
+			}
+
+			if highResult.Rank != tc.expectedRank {
+				t.Errorf("Expected hand rank %v, but got %v", tc.expectedRank, highResult.Rank)
+			}
+
+			// Sort cards for deterministic comparison.
+			sort.Slice(highResult.Cards, func(i, j int) bool {
+				if highResult.Cards[i].Rank != highResult.Cards[j].Rank {
+					return highResult.Cards[i].Rank > highResult.Cards[j].Rank
+				}
+				return highResult.Cards[i].Suit > highResult.Cards[j].Suit
+			})
+
+			expectedHandCards := CardsFromStrings(tc.expectedCards)
+			sort.Slice(expectedHandCards, func(i, j int) bool {
+				if expectedHandCards[i].Rank != expectedHandCards[j].Rank {
+					return expectedHandCards[i].Rank > expectedHandCards[j].Rank
+				}
+				return expectedHandCards[i].Suit > expectedHandCards[j].Suit
+			})
+
+			if !reflect.DeepEqual(highResult.Cards, expectedHandCards) {
+				t.Errorf("Expected best hand to be %v, but got %v", expectedHandCards, highResult.Cards)
+			}
+		})
+	}
+}
