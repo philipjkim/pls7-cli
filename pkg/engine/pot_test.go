@@ -1,11 +1,30 @@
 package engine
 
 import (
+	"embed"
+	"path/filepath"
 	"pls7-cli/internal/config"
 	"pls7-cli/internal/util"
 	"pls7-cli/pkg/poker"
 	"testing"
 )
+
+//go:embed testdata
+var rulesFS embed.FS
+
+func loadRule(t *testing.T, ruleFileName string) *poker.GameRules {
+	// The path must be relative to the embedded directory.
+	filePath := filepath.Join("testdata", ruleFileName)
+	fileBytes, err := rulesFS.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read embedded rule file %s: %v", filePath, err)
+	}
+	rules, err := config.LoadGameRulesFromBytes(fileBytes)
+	if err != nil {
+		t.Fatalf("Failed to parse rule file %s: %v", ruleFileName, err)
+	}
+	return rules
+}
 
 // TestAwardPotToLastPlayer_SkipsEliminatedPlayers tests that the function correctly identifies
 // the last non-folded player, skipping any players who were already eliminated.
@@ -13,10 +32,7 @@ func TestAwardPotToLastPlayer_SkipsEliminatedPlayers(t *testing.T) {
 	// Scenario: 4 players. CPU1 is eliminated. YOU and CPU3 fold.
 	// The winner must be CPU2, not the eliminated CPU1.
 	playerNames := []string{"YOU", "CPU1", "CPU2", "CPU3"}
-	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
-	if err != nil {
-		t.Fatalf("Failed to load game rules: %v", err)
-	}
+	rules := loadRule(t, "pls7.yml")
 	g := NewGame(playerNames, 10000, 500, 1000, DifficultyMedium, rules, true, false, 0)
 
 	// Setup the game state
@@ -54,10 +70,7 @@ func TestDistributePot_SidePots(t *testing.T) {
 	// CPU2 (10000) has the worst hand (BigStack).
 	// No low hands qualify.
 	playerNames := []string{"YOU", "CPU1", "CPU2"}
-	rules, err := config.LoadGameRulesFromFile("../../rules/pls.yml")
-	if err != nil {
-		t.Fatalf("Failed to load game rules: %v", err)
-	}
+	rules := loadRule(t, "pls.yml")
 	g := NewGame(playerNames, 0, 500, 1000, DifficultyMedium, rules, true, false, 0)
 
 	// Setup player states
@@ -114,10 +127,7 @@ func TestDistributePot_FoldedPlayerBetNotLost(t *testing.T) {
 	// Scenario: 3 players. CPU2 bets 1000 and folds. YOU and B go to showdown with 3000 each.
 	// The total pot should be 7000. YOU has the winning hand.
 	playerNames := []string{"YOU", "CPU1", "CPU2"}
-	rules, err := config.LoadGameRulesFromFile("../../rules/pls.yml")
-	if err != nil {
-		t.Fatalf("Failed to load game rules: %v", err)
-	}
+	rules := loadRule(t, "pls.yml")
 	g := NewGame(playerNames, 10000, 500, 1000, DifficultyMedium, rules, true, false, 0)
 
 	// Setup player states
@@ -171,10 +181,7 @@ func TestDistributePot_ComplexSidePotAndAllIn(t *testing.T) {
 
 	// Scenario setup based on the bug log
 	playerNames := []string{"YOU", "CPU 1", "CPU 4"}
-	rules, err := config.LoadGameRulesFromFile("../../rules/pls7.yml")
-	if err != nil {
-		t.Fatalf("Failed to load game rules: %v", err)
-	}
+	rules := loadRule(t, "pls7.yml")
 	g := NewGame(playerNames, 0, 500, 1000, DifficultyEasy, rules, true, false, 0)
 
 	// Player states based on the corrected scenario
@@ -249,10 +256,7 @@ func TestDistributePot_PLO8_HiLoSplit(t *testing.T) {
 	// YOU wins High (Full House), CPU1 wins Low (8,7,4,3,2).
 	// Pot should be split 50/50.
 	playerNames := []string{"YOU", "CPU1", "CPU2"}
-	rules, err := config.LoadGameRulesFromFile("../../rules/plo8.yml")
-	if err != nil {
-		t.Fatalf("Failed to load game rules: %v", err)
-	}
+	rules := loadRule(t, "plo8.yml")
 	g := NewGame(playerNames, 10000, 0, 0, DifficultyMedium, rules, true, false, 0)
 
 	// Setup player states

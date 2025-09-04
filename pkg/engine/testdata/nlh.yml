@@ -1,0 +1,12 @@
+name: "No-Limit Texas Hold'em"
+abbreviation: "NLH"
+betting_limit: "no_limit"
+hole_cards:
+  count: 2
+  use_constraint: "any"
+  use_count: 0
+hand_rankings:
+  use_standard_rankings: true
+low_hand:
+  enabled: false
+  max_rank: 0

@@ -2,11 +2,10 @@ package poker
 
 import (
 	"reflect"
-
-	"github.com/sirupsen/logrus"
-
 	"sort"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -19,9 +18,26 @@ type cardSliceSorter [][]Card
 func (s cardSliceSorter) Len() int      { return len(s) }
 func (s cardSliceSorter) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s cardSliceSorter) Less(i, j int) bool {
-	// This is a simplified comparison for testing; it sorts based on the string representation.
-	// A more robust implementation would compare card ranks and suits directly.
-	return reflect.DeepEqual(s[i], s[j])
+	// This implementation compares card slices lexicographically in descending order
+	// to match the test case expectations.
+	sliceI, sliceJ := s[i], s[j]
+	lenI, lenJ := len(sliceI), len(sliceJ)
+	minLen := lenI
+	if lenJ < minLen {
+		minLen = lenJ
+	}
+
+	for k := 0; k < minLen; k++ {
+		cardI, cardJ := sliceI[k], sliceJ[k]
+		if cardI.Rank != cardJ.Rank {
+			return cardI.Rank > cardJ.Rank
+		}
+		if cardI.Suit != cardJ.Suit {
+			return cardI.Suit > cardJ.Suit
+		}
+	}
+
+	return lenI > lenJ
 }
 
 func TestCombinations(t *testing.T) {
