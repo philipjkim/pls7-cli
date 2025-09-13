@@ -17,16 +17,16 @@
 ---
 
 ##### **1. 통신 프로토콜 정의 (기반 설계)**
-- [ ] **메시지 기본 구조 정의**: 모든 메시지가 공통적으로 사용할 기본 구조체(struct)를 `pkg/network/protocol.go` 와 같은 파일에 정의합니다. (예: `type Message struct { Type string; Data json.RawMessage }`)
-- [ ] **서버 -> 클라이언트 메시지 타입 정의**:
-    - [ ] `Welcome`: 클라이언트가 처음 접속했을 때 플레이어 정보(이름, 위치 등)를 전달하기 위한 메시지
-    - [ ] `GameStateUpdate`: 게임의 전체 상태(`engine.Game`)를 전달하기 위한 메시지
-    - [ ] `GameEvent`: 개별 이벤트(예: "CPU1 Folds")를 전달하기 위한 메시지 (`engine.ActionEvent` 재사용)
-    - [ ] `YourTurn`: 특정 클라이언트에게 행동을 요청하는 메시지
-    - [ ] `Error`: 잘못된 액션이나 오류 상황을 알리는 메시지
-- [ ] **클라이언트 -> 서버 메시지 타입 정의**:
-    - [ ] `PlayerAction`: 플레이어의 행동(`engine.PlayerAction`)을 서버로 전달하기 위한 메시지
-    - [ ] `Identify`: 클라이언트가 자신의 이름을 서버에 알리기 위한 초기 메시지
+- [x] **메시지 기본 구조 정의**: 모든 메시지가 공통적으로 사용할 기본 구조체(struct)를 `pkg/network/protocol.go` 와 같은 파일에 정의합니다. (예: `type Message struct { Type string; Data json.RawMessage }`)
+- [x] **서버 -> 클라이언트 메시지 타입 정의**:
+    - [x] `Welcome`: 클라이언트가 처음 접속했을 때 플레이어 정보(이름, 위치 등)를 전달하기 위한 메시지
+    - [x] `GameStateUpdate`: 게임의 전체 상태(`engine.Game`)를 전달하기 위한 메시지
+    - [x] `GameEvent`: 개별 이벤트(예: "CPU1 Folds")를 전달하기 위한 메시지 (`engine.ActionEvent` 재사용)
+    - [x] `YourTurn`: 특정 클라이언트에게 행동을 요청하는 메시지
+    - [x] `Error`: 잘못된 액션이나 오류 상황을 알리는 메시지
+- [x] **클라이언트 -> 서버 메시지 타입 정의**:
+    - [x] `PlayerAction`: 플레이어의 행동(`engine.PlayerAction`)을 서버로 전달하기 위한 메시지
+    - [x] `Identify`: 클라이언트가 자신의 이름을 서버에 알리기 위한 초기 메시지
 
 ---
 
