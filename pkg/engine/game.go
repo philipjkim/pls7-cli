@@ -76,7 +76,7 @@ type Game struct {
 	// BlindUpInterval is the number of hands after which the blinds increase. 0 disables this.
 	BlindUpInterval int
 	// BettingCalculator is an interface that calculates valid bet/raise sizes based on the game's betting limit.
-	BettingCalculator BettingLimitCalculator
+	BettingCalculator BettingLimitCalculator `json:"-"`
 	// Aggressor points to the player who made the last aggressive action (bet or raise).
 	// This is key to determining when a betting round ends.
 	Aggressor *Player
